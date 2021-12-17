@@ -1,0 +1,34 @@
+{
+  "main": "lib/binding.js",
+  "dependencies": {
+    "node-addon-api": "^1.1.0"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "gypfile": true,
+  "name": "exprtk.js",
+  "version": "1.0.0",
+  "description": "JS Mathematical Expression Toolkit Library",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mmomtchev/exprtk.js.git"
+  },
+  "keywords": [
+    "node.js",
+    "math",
+    "multithreading"
+  ],
+  "author": "Momtchil Momtchev <momtchil@momtchev.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mmomtchev/exprtk.js/issues"
+  },
+  "homepage": "https://github.com/mmomtchev/exprtk.js#readme",
+  "devDependencies": {
+    "chai": "^4.3.4",
+    "chai-as-promised": "^7.1.1",
+    "mocha": "^9.1.3",
+    "node-gyp": "^8.4.1"
+  }
+}
