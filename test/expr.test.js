@@ -58,7 +58,7 @@ describe('Expression', () => {
             pi = new expr('22 / 7', []);
         })
 
-        describe('eval()', () => {
+        describe('eval() object form', () => {
             it('should accept variables', () => {
                 const r = mean.eval({ a: 5, b: 10 });
                 assert.closeTo(r, (5 + 10) / 2, 10e-9);
@@ -70,14 +70,14 @@ describe('Expression', () => {
             it('should throw if not all arguments are given', () => {
                 assert.throws(() => {
                     const r = vectorMean.eval();
-                }, /mandatory arguments/)
+                }, /wrong number of input arguments/)
             })
             it('should support expression without arguments', () => {
                 assert.closeTo(pi.eval(), 3.14, 0.01);
             })
         })
 
-        describe('evalAsync()', () => {
+        describe('evalAsync() object form', () => {
             it('should accept variables', () => {
                 return assert.eventually.closeTo(mean.evalAsync({ a: 5, b: 10 }), (5 + 10) / 2, 10e-9);
             })
@@ -92,40 +92,40 @@ describe('Expression', () => {
             })
         })
 
-        describe('fn()', () => {
+        describe('eval() argument list form', () => {
             it('should accept variables', () => {
-                const r = mean.fn(5, 10);
+                const r = mean.eval(5, 10);
                 assert.closeTo(r, (5 + 10) / 2, 10e-9);
             })
-            it('should accept an TypedArray', () => {
+            it('should accept a TypedArray', () => {
                 assert.instanceOf(mean, expr);
-                const r = vectorMean.fn(vector);
+                const r = vectorMean.eval(vector);
                 assert.closeTo(r, 3.5, 10e-9);
             })
             it('should throw w/ vector that is not a Float64Array', () => {
                 assert.throws(() => {
-                    vectorMean.fn(new Uint32Array(6))
+                    vectorMean.eval(new Uint32Array(6))
                 }, /vector data must be a Float64Array/)
             })
             it('should throw w/ vector that is not the right size', () => {
                 assert.throws(() => {
-                    vectorMean.fn(new Float64Array(4))
+                    vectorMean.eval(new Float64Array(4))
                 }, /size 4 does not match declared size 6/)
             })
         })
 
-        describe('fnAsync()', () => {
+        describe('evalAsync() argument list form', () => {
             it('should accept variables', () => {
-                return assert.eventually.closeTo(mean.fnAsync(5, 10), (5 + 10) / 2, 10e-9);
+                return assert.eventually.closeTo(mean.evalAsync(5, 10), (5 + 10) / 2, 10e-9);
             })
             it('should accept an TypedArray', () => {
-                return assert.eventually.closeTo(vectorMean.fnAsync(vector), 3.5, 10e-9);
+                return assert.eventually.closeTo(vectorMean.evalAsync(vector), 3.5, 10e-9);
             })
             it('should reject w/ vector that is not a Float64Array', () => {
-                return assert.isRejected(vectorMean.fnAsync(new Uint32Array(6)), /vector data must be a Float64Array/);
+                return assert.isRejected(vectorMean.evalAsync(new Uint32Array(6)), /vector data must be a Float64Array/);
             })
             it('should reject w/ vector that is not the right size', () => {
-                return assert.isRejected(vectorMean.fnAsync(new Float64Array(4)), /size 4 does not match declared size 6/);
+                return assert.isRejected(vectorMean.evalAsync(new Float64Array(4)), /size 4 does not match declared size 6/);
             })
             it('should work with concurrent invocations', () => {
                 const big = 128*1024;
@@ -137,7 +137,7 @@ describe('Expression', () => {
                 const a2 = new Float64Array(big);
                 a2.fill(15);
                 return assert.isFulfilled(Promise.all([
-                    vectorMean.fnAsync(a1), vectorMean.fnAsync(a2)
+                    vectorMean.evalAsync(a1), vectorMean.evalAsync(a2)
                 ]).then(([m1, m2]) => {
                     assert.closeTo(m1, 12, 10e-9);
                     assert.closeTo(m2, 15, 10e-9);

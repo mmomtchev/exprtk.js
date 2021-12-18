@@ -111,9 +111,13 @@ Expression::~Expression() {
  * @returns {number}
  *
  * @example
- * const r = expr.eval({a: 2, b: 5});
+ * // These two are equivalent
+ * const r1 = expr.eval({a: 2, b: 5});  // less error-prone
+ * const r2 = expr.eval(2, 5);          // slightly faster
  *
+ * // These two are equivalent
  * expr.evalAsync({a: 2, b: 5}, (e,r) => console.log(e, r));
+ * expr.evalAsync(2, 5, (e,r) => console.log(e, r));
  */
 ASYNCABLE_DEFINE(Expression::eval) {
   Napi::Env env = info.Env();
@@ -121,34 +125,20 @@ ASYNCABLE_DEFINE(Expression::eval) {
   ExprTkJob<double> job(asyncLock);
 
   std::vector<std::function<void()>> importers;
-  if (info.Length() > 0) {
-    if (!info[0].IsObject()) {
-      Napi::TypeError::New(env, "arguments must be an object").ThrowAsJavaScriptException();
-      return env.Null();
-    }
 
-    Napi::Object args = info[0].As<Napi::Object>();
-    Napi::Array argNames = args.GetPropertyNames();
-    if (symbolTable.variable_count() + symbolTable.vector_count() != argNames.Length()) {
-      Napi::TypeError::New(env, "wrong number of input arguments").ThrowAsJavaScriptException();
-      return env.Null();
-    }
-    for (std::size_t i = 0; i < argNames.Length(); i++) {
-      const std::string name = argNames.Get(i).As<Napi::String>().Utf8Value();
-      Napi::Value value = args.Get(name);
-      try {
-        auto f = importValue(env, job, name, value);
-        importers.push_back(f);
-      } catch (const Napi::Error &err) {
-        err.ThrowAsJavaScriptException();
-        return env.Null();
-      }
-    }
-  } else {
-    if (symbolTable.variable_count() + symbolTable.vector_count() > 0) {
-      Napi::TypeError::New(env, "expression has mandatory arguments").ThrowAsJavaScriptException();
-      return env.Null();
-    }
+  if (info.Length() > 0 && info[0].IsObject() && !info[0].IsTypedArray()) {
+    importFromObject(env, job, info[0], importers);
+  }
+
+  if (info.Length() > 0 && (info[0].IsNumber() || info[0].IsTypedArray())) {
+    size_t last = info.Length();
+    if (async && last > 0 && info[last - 1].IsFunction()) last--;
+    importFromArgumentsArray(env, job, info, 0, last, importers);
+  }
+
+  if (symbolTable.variable_count() + symbolTable.vector_count() != importers.size()) {
+    Napi::TypeError::New(env, "wrong number of input arguments").ThrowAsJavaScriptException();
+    return env.Null();
   }
 
   job.main = [this, importers]() {
@@ -156,56 +146,28 @@ ASYNCABLE_DEFINE(Expression::eval) {
     return expression.value();
   };
   job.rval = [env](double r) { return Napi::Number::New(env, r); };
-  return job.run(info, async, 1);
+  return job.run(info, async, info.Length() - 1);
 }
 
 /**
- * Evaluate the expression
+ * Evaluate the expression for every element of a TypedArray
+ * 
+ * Evaluation and traversal happens entirely in C++ so this will be much
+ * faster than calling TypedArray.prototype.map(expr.eval)
  *
  * @param {number} arg
  * @returns {number}
  *
  * @example
- * const r = expr.fn(2, 5);
+ * // r will be a TypedArray of the same type
+ * const r = expr.map(array, exprArg1, exprArg2);
  *
- * expr.fnAsync(2, 5, (e,r) => console.log(e, r));
+ * expr.mapAsync(array, exprArg1, exprArg2, (e,r) => console.log(e, r));
  */
-ASYNCABLE_DEFINE(Expression::fn) {
+ASYNCABLE_DEFINE(Expression::map) {
   Napi::Env env = info.Env();
 
-  auto argLen = info.Length();
-  if (async && argLen > 0 && info[argLen - 1].IsFunction()) argLen--;
-  if (argLen != symbolTable.variable_count() + symbolTable.vector_count()) {
-    Napi::TypeError::New(env, "The number of arguments must match the number of variables")
-      .ThrowAsJavaScriptException();
-    return env.Null();
-  }
-
-  ExprTkJob<double> job(asyncLock);
-
-  std::vector<std::string> variableList;
-  std::vector<std::string> vectorList;
-  symbolTable.get_variable_list(variableList);
-  symbolTable.get_vector_list(vectorList);
-  variableList.insert(variableList.end(), vectorList.begin(), vectorList.end());
-
-  std::vector<std::function<void()>> importers;
-  for (std::size_t i = 0; i < variableList.size(); i++) {
-    try {
-      auto f = importValue(env, job, variableList[i], info[i]);
-      importers.push_back(f);
-    } catch (const Napi::Error &err) {
-      err.ThrowAsJavaScriptException();
-      return env.Null();
-    }
-  }
-
-  job.main = [this, importers]() { 
-    for (auto const &f : importers) f();
-    return expression.value();
-  };
-  job.rval = [env](double r) { return Napi::Number::New(env, r); };
-  return job.run(info, async, info.Length() - 1);
+  return env.Null();
 }
 
 Napi::Function Expression::GetClass(Napi::Env env) {
@@ -213,7 +175,7 @@ Napi::Function Expression::GetClass(Napi::Env env) {
   return DefineClass(
     env,
     "Expression",
-    {ASYNCABLE_INSTANCE_METHOD(Expression, eval, props), ASYNCABLE_INSTANCE_METHOD(Expression, fn, props)});
+    {ASYNCABLE_INSTANCE_METHOD(Expression, eval, props)});
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
