@@ -23,10 +23,10 @@ const expr = require("exprtk.js").Expression;
 
 const mean = new expr('(a + b) / 2', ['a', 'b']);
 
-// fn form
-const r = mean.fn(5, 10);
+// arguments as a list
+const r = mean.eval(5, 10);
 
-// eval form
+// arguments as an object
 const r = mean.eval({ a: 5, b: 10 });
 ```
 
@@ -44,7 +44,7 @@ const mean = new expr(
     'r / x[];',
     [], { 'x': 6 });
 
-const r = mean.fn(new Float64Array([ 1, 2, 3, 4, 5, 6 ])});
+const r = mean.eval(new Float64Array([ 1, 2, 3, 4, 5, 6 ])});
 ```
 
 ## Using asynchronously
@@ -61,5 +61,5 @@ const mean = new expr(
     'r / x[];',
     [], { 'x': 6 });
 
-const r = await mean.fnAsync(new Float64Array([ 1, 2, 3, 4, 5, 6 ])});
+const r = await mean.evalAsync(new Float64Array([ 1, 2, 3, 4, 5, 6 ])});
 ```
