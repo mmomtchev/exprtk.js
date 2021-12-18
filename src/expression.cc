@@ -9,7 +9,15 @@ using namespace exprtk_js;
  * @returns {Expression}
  *
  * @example
+ * // arithmetic mean of 2 variables
  * const mean = new Expression('(a+b)/2', ['a', 'b']);
+ * 
+ * // stddev of an array of 1024 elements
+ * const stddev = new Expression(
+ *  'var sum := 0; var sumsq := 0; ' + 
+ *  'for (var i := 0; i < x[]; i += 1) { sum += x[i]; sumsq += x[i] * x[i] }; ' +
+ *  '(sumsq - (sum*sum) / x[]) / (n - 1);',
+ *  [], {x: 1024})
  */
 Expression::Expression(const Napi::CallbackInfo &info) : ObjectWrap(info) {
   Napi::Env env = info.Env();
@@ -121,6 +129,10 @@ ASYNCABLE_DEFINE(Expression::eval) {
 
     Napi::Object args = info[0].As<Napi::Object>();
     Napi::Array argNames = args.GetPropertyNames();
+    if (symbolTable.variable_count() + symbolTable.vector_count() != argNames.Length()) {
+      Napi::TypeError::New(env, "wrong number of input arguments").ThrowAsJavaScriptException();
+      return env.Null();
+    }
     for (std::size_t i = 0; i < argNames.Length(); i++) {
       const std::string name = argNames.Get(i).As<Napi::String>().Utf8Value();
       Napi::Value value = args.Get(name);
@@ -131,6 +143,11 @@ ASYNCABLE_DEFINE(Expression::eval) {
         err.ThrowAsJavaScriptException();
         return env.Null();
       }
+    }
+  } else {
+    if (symbolTable.variable_count() + symbolTable.vector_count() > 0) {
+      Napi::TypeError::New(env, "expression has mandatory arguments").ThrowAsJavaScriptException();
+      return env.Null();
     }
   }
 

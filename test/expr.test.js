@@ -48,13 +48,14 @@ describe('Expression', () => {
     })
 
     describe('compute', () => {
-        let mean, vectorMean;
+        let mean, vectorMean, pi;
         let vector = new Float64Array([1, 2, 3, 4, 5, 6]);
         before(() => {
             mean = new expr('(a + b) / 2', ['a', 'b']);
             vectorMean = new expr(
                 'var r := 0; for (var i := 0; i < x[]; i += 1) { r += x[i]; }; r / x[];',
                 [], { 'x': 6 });
+            pi = new expr('22 / 7', []);
         })
 
         describe('eval()', () => {
@@ -66,11 +67,28 @@ describe('Expression', () => {
                 const r = vectorMean.eval({ x: vector });
                 assert.closeTo(r, 3.5, 10e-9);
             })
+            it('should throw if not all arguments are given', () => {
+                assert.throws(() => {
+                    const r = vectorMean.eval();
+                }, /mandatory arguments/)
+            })
+            it('should support expression without arguments', () => {
+                assert.closeTo(pi.eval(), 3.14, 0.01);
+            })
         })
 
         describe('evalAsync()', () => {
             it('should accept variables', () => {
                 return assert.eventually.closeTo(mean.evalAsync({ a: 5, b: 10 }), (5 + 10) / 2, 10e-9);
+            })
+            it('should accept vectors', () => {
+                return assert.eventually.closeTo(vectorMean.evalAsync({ x: vector }), 3.5, 10e-9);
+            })
+            it('should reject if not all arguments are given', () => {
+                return assert.isRejected(vectorMean.evalAsync({}), /wrong number of input arguments/);
+            })
+            it('should support expression without arguments', () => {
+                return assert.eventually.closeTo(pi.evalAsync({}), 3.14, 0.01);
             })
         })
 
