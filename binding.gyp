@@ -1,4 +1,7 @@
 {
+  'variables': {
+    'enable_asan%': 'false'
+  },
   'targets': [
     {
       'target_name': 'exprtk.js-native',
@@ -7,13 +10,14 @@
         'src/expression.cc'
       ],
       'include_dirs': [
-        "deps/exprtk",
-        "<!@(node -p \"require('node-addon-api').include\")"
+        'deps/exprtk',
+        '<!@(node -p \'require("node-addon-api").include\')'
       ],
       'defines': [
-        #'exprtk_disable_string_capabilities'
+        'exprtk_disable_string_capabilities',
+        'exprtk_disable_enhanced_features'
       ],
-      'dependencies': ["<!(node -p \"require('node-addon-api').gyp\")"],
+      'dependencies': ['<!(node -p \'require("node-addon-api").gyp\')'],
       'cflags!': [ '-fno-exceptions', '-fno-rtti' ],
       'cflags_cc!': [ '-fno-exceptions', '-fno-rtti' ],
       'xcode_settings': {
@@ -23,7 +27,16 @@
       },
       'msvs_settings': {
         'VCCLCompilerTool': { 'ExceptionHandling': 1 },
-      }
+      },
+      'conditions': [
+        ['enable_asan == "true"', {
+          'variables': {
+            'asan': 1
+          },
+          'cflags_cc': [ '-fsanitize=address' ],
+          'ldflags' : [ '-fsanitize=address' ]
+        }]
+      ]
     }
   ]
 }

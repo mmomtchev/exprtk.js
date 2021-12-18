@@ -32,7 +32,7 @@ const r = mean.eval({ a: 5, b: 10 });
 
 ## With a `TypedArray`
 
-Only `Float64` is currently supported. When using with a `TypedArray`, the expression must be recompiled when using with a new `TypedArray` as `ExprTk` supports only fixed-size arrays. The data in the `TypedArray` may be modified between evaluations.
+Only `Float64` is currently supported. As `ExprTk` supports only fixed-size arrays the size must be known when compiling the expression.
 
 ```js
 const expr = require("exprtk.js").Expression;
@@ -42,9 +42,9 @@ const mean = new expr(
     'for (var i := 0; i < x[]; i += 1)' +
     '{ r += x[i]; };' +
     'r / x[];',
-    [], {'x': new Float64Array([ 1, 2, 3, 4, 5, 6 ])});
+    [], { 'x': 6 });
 
-const r = mean.fn();
+const r = mean.fn(new Float64Array([ 1, 2, 3, 4, 5, 6 ])});
 ```
 
 ## Using asynchronously
@@ -57,7 +57,7 @@ const mean = new expr(
     'for (var i := 0; i < x[]; i += 1)' +
     '{ r += x[i]; };' +
     'r / x[];',
-    [], {'x': new Float64Array([ 1, 2, 3, 4, 5, 6 ])});
+    [], { 'x': 6 });
 
-const r = await mean.fnAsync();
+const r = await mean.fnAsync(new Float64Array([ 1, 2, 3, 4, 5, 6 ])});
 ```

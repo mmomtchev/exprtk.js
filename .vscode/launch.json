@@ -11,7 +11,9 @@
             "program": "/usr/bin/node",
             "args": [
                 "--expose-gc",
-                "${workspaceFolder}/node_modules/mocha/lib/cli/cli.js"
+                "${workspaceFolder}/node_modules/mocha/lib/cli/cli.js",
+                "--timeout",
+                "0"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
