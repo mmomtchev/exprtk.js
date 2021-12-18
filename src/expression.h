@@ -3,7 +3,11 @@
 #include "async.h"
 #include "exprtk_instance.h"
 #include <map>
+#include <mutex>
+#include <functional>
 #include <napi.h>
+
+namespace exprtk_js {
 
 class Expression : public Napi::ObjectWrap<Expression> {
     public:
@@ -24,9 +28,14 @@ class Expression : public Napi::ObjectWrap<Expression> {
   // Read "SECTION 14" of the ExprTk manual for more information on this
   std::map<std::string, exprtk::vector_view<double> *> vectorViews;
 
+  std::mutex asyncLock;
+
   // Helpers
+
+  // Check a user supplied argument and return a function that imports it into the symbol table
+  // Actual importing is deferred to right before the evaluation which might be waiting on an async lock
   template <typename T>
-  inline void
+  inline std::function<void()>
   importValue(const Napi::Env &env, ExprTkJob<T> &job, const std::string &name, const Napi::Value &value) const {
     if (value.IsTypedArray()) {
       if (vectorViews.count(name) == 0) {
@@ -46,15 +55,19 @@ class Expression : public Napi::ObjectWrap<Expression> {
       }
 
       double *raw = reinterpret_cast<double *>(data.ArrayBuffer().Data());
-      v->rebase(raw);
-
       job.persist(data);
-    } else if (value.IsNumber()) {
+      return [v, raw]() { v->rebase(raw); };
+    } 
+
+    if (value.IsNumber()) {
       auto v = symbolTable.get_variable(name);
       if (v == nullptr) { throw Napi::TypeError::New(env, name + " is not a declared variable"); }
-      v->ref() = value.As<Napi::Number>().DoubleValue();
-    } else {
-      throw Napi::TypeError::New(env, name + " is not a number or a TypedArray");
+      double raw = value.As<Napi::Number>().DoubleValue();
+      return [v, raw]() { v->ref() = raw; };
     }
+
+    throw Napi::TypeError::New(env, name + " is not a number or a TypedArray");
   }
 };
+
+}; // namespace exprtk_js

@@ -1,5 +1,7 @@
 #include "expression.h"
 
+using namespace exprtk_js;
+
 /**
  * @param {string} expression function
  * @param {string[]} variables An array containing all the scalar variables' names
@@ -108,8 +110,9 @@ Expression::~Expression() {
 ASYNCABLE_DEFINE(Expression::eval) {
   Napi::Env env = info.Env();
 
-  ExprTkJob<double> job;
+  ExprTkJob<double> job(asyncLock);
 
+  std::vector<std::function<void()>> importers;
   if (info.Length() > 0) {
     if (!info[0].IsObject()) {
       Napi::TypeError::New(env, "arguments must be an object").ThrowAsJavaScriptException();
@@ -122,7 +125,8 @@ ASYNCABLE_DEFINE(Expression::eval) {
       const std::string name = argNames.Get(i).As<Napi::String>().Utf8Value();
       Napi::Value value = args.Get(name);
       try {
-        importValue(env, job, name, value);
+        auto f = importValue(env, job, name, value);
+        importers.push_back(f);
       } catch (const Napi::Error &err) {
         err.ThrowAsJavaScriptException();
         return env.Null();
@@ -130,7 +134,10 @@ ASYNCABLE_DEFINE(Expression::eval) {
     }
   }
 
-  job.main = [this]() { return expression.value(); };
+  job.main = [this, importers]() {
+    for (auto const &f : importers) f();
+    return expression.value();
+  };
   job.rval = [env](double r) { return Napi::Number::New(env, r); };
   return job.run(info, async, 1);
 }
@@ -157,7 +164,7 @@ ASYNCABLE_DEFINE(Expression::fn) {
     return env.Null();
   }
 
-  ExprTkJob<double> job;
+  ExprTkJob<double> job(asyncLock);
 
   std::vector<std::string> variableList;
   std::vector<std::string> vectorList;
@@ -165,16 +172,21 @@ ASYNCABLE_DEFINE(Expression::fn) {
   symbolTable.get_vector_list(vectorList);
   variableList.insert(variableList.end(), vectorList.begin(), vectorList.end());
 
+  std::vector<std::function<void()>> importers;
   for (std::size_t i = 0; i < variableList.size(); i++) {
     try {
-      importValue(env, job, variableList[i], info[i]);
+      auto f = importValue(env, job, variableList[i], info[i]);
+      importers.push_back(f);
     } catch (const Napi::Error &err) {
       err.ThrowAsJavaScriptException();
       return env.Null();
     }
   }
 
-  job.main = [this]() { return expression.value(); };
+  job.main = [this, importers]() { 
+    for (auto const &f : importers) f();
+    return expression.value();
+  };
   job.rval = [env](double r) { return Napi::Number::New(env, r); };
   return job.run(info, async, info.Length() - 1);
 }

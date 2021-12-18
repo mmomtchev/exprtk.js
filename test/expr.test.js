@@ -109,6 +109,22 @@ describe('Expression', () => {
             it('should reject w/ vector that is not the right size', () => {
                 return assert.isRejected(vectorMean.fnAsync(new Float64Array(4)), /size 4 does not match declared size 6/);
             })
+            it('should work with concurrent invocations', () => {
+                const big = 128*1024;
+                const vectorMean = new expr(
+                    'var r := 0; for (var i := 0; i < x[]; i += 1) { r += x[i]; }; r / x[];',
+                    [], { 'x': big });
+                const a1 = new Float64Array(big);
+                a1.fill(12);
+                const a2 = new Float64Array(big);
+                a2.fill(15);
+                return assert.isFulfilled(Promise.all([
+                    vectorMean.fnAsync(a1), vectorMean.fnAsync(a2)
+                ]).then(([m1, m2]) => {
+                    assert.closeTo(m1, 12, 10e-9);
+                    assert.closeTo(m2, 15, 10e-9);
+                }))
+            })
         })
     })
 })

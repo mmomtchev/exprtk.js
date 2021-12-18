@@ -2,7 +2,7 @@
 
 This is a Node.js binding for [ExprTk](http://www.partow.net/programming/exprtk/index.html) [(Github)](https://github.com/ArashPartow/exprtk) by @ArashPartow
 
-It supports both synchronous and asynchronous background execution of thunks precompiled from a string
+It supports both synchronous and asynchronous background execution of thunks precompiled from a string (*including asynchronous and multithreaded versions of `TypedArray.prototype.map` and `TypedArray.prototype.reduce`* WIP)
 
 # Installation
 
@@ -48,6 +48,8 @@ const r = mean.fn(new Float64Array([ 1, 2, 3, 4, 5, 6 ])});
 ```
 
 ## Using asynchronously
+
+An `Expression` is not reentrant so multiple concurrent evaluations of the same object will wait on one another. Multiple evaluations on multiple objects will run in parallel up to the limit set by the Node.js environment variable `UV_THREADPOOL_SIZE`. Mixing synchronous and asynchronous evaluations is supported, but a synchronous evaluation will block the event loop until all asynchronous evaluations on that same object are finished.
 
 ```js
 const expr = require("exprtk.js").Expression;
