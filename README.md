@@ -2,7 +2,7 @@
 
 This is a Node.js binding for [ExprTk](http://www.partow.net/programming/exprtk/index.html) [(Github)](https://github.com/ArashPartow/exprtk) by @ArashPartow
 
-It supports both synchronous and asynchronous background execution of thunks precompiled from a string (*including asynchronous and multithreaded versions of `TypedArray.prototype.map` and `TypedArray.prototype.reduce`* WIP)
+It supports both synchronous and asynchronous background execution of thunks precompiled from a string including asynchronous and multithreaded versions of `TypedArray.prototype.map` and `TypedArray.prototype.reduce`
 
 # Installation
 
@@ -21,13 +21,21 @@ It can also serve as a provider of thunks for `gdal-async` and `scijs` allowing 
 ```js
 const expr = require("exprtk.js").Expression;
 
-const mean = new expr('(a + b) / 2', ['a', 'b']);
+// arithmetic mean
+const mean = new expr('(a + b) / 2');
+// clamp to a range
+const clamp = new expr('clamp(minv, x, maxv)', ['minv', 'x', 'maxv']);
 
 // arguments as a list
-const r = mean.eval(5, 10);
+const m = mean.eval(2, 4);
+const r = clamp.eval(5, 12, 10);
 
 // arguments as an object
-const r = mean.eval({ a: 5, b: 10 });
+const r = clamp.eval({ a: 5, b: 10, x: 12 });
+
+// map with C++ traversal
+const inputArray = new Float64Array(n);
+const resultingArray = clamp.map(inputArray, 'x', 5, 10);
 ```
 
 ## With a `TypedArray`
@@ -54,6 +62,7 @@ An `Expression` is not reentrant so multiple concurrent evaluations of the same 
 ```js
 const expr = require("exprtk.js").Expression;
 
+// Explicit traversal
 const mean = new expr(
     'var r := 0;' + 
     'for (var i := 0; i < x[]; i += 1)' +
@@ -62,4 +71,9 @@ const mean = new expr(
     [], { 'x': 6 });
 
 const r = await mean.evalAsync(new Float64Array([ 1, 2, 3, 4, 5, 6 ])});
+
+// Implicit traversal
+const clamp = new expr('clamp(minv, x, maxv)', ['minv', 'x', 'maxv']);
+const resultingArray = await clamp.mapAsync(inputArray, 'x', 5, 10);
+clamp.mapAsync(inputArray, 'x', 5, 10, (e,r) => console.log(e, r));
 ```

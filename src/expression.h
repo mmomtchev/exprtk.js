@@ -28,6 +28,9 @@ class Expression : public Napi::ObjectWrap<Expression> {
   // Read "SECTION 14" of the ExprTk manual for more information on this
   std::map<std::string, exprtk::vector_view<double> *> vectorViews;
 
+  // get_variable_list / get_vector_list do not conserve the initial order
+  std::vector<std::string> variableNames;
+
   std::mutex asyncLock;
 
   // Helpers
@@ -66,7 +69,7 @@ class Expression : public Napi::ObjectWrap<Expression> {
 
     if (value.IsNumber()) {
       auto v = symbolTable.get_variable(name);
-      if (v == nullptr) { throw Napi::TypeError::New(env, name + " is not a declared variable"); }
+      if (v == nullptr) { throw Napi::TypeError::New(env, name + " is not a declared scalar variable"); }
       double raw = value.As<Napi::Number>().DoubleValue();
       importers.push_back([v, raw]() { v->ref() = raw; });
       return;
@@ -99,20 +102,12 @@ class Expression : public Napi::ObjectWrap<Expression> {
     const Napi::CallbackInfo &info,
     size_t firstArg,
     size_t lastArg,
-    std::vector<std::function<void()>> &importers) const {
-
-    std::vector<std::string> variableList;
-    std::vector<std::string> vectorList;
-    symbolTable.get_variable_list(variableList);
-    symbolTable.get_vector_list(vectorList);
+    std::vector<std::function<void()>> &importers,
+    const std::string &skip = "") const {
 
     size_t i = firstArg;
-    for (auto const &v : variableList) {
-      importValue(env, job, v, info[i], importers);
-      i++;
-      if (i == lastArg) return;
-    }
-    for (auto const &v : vectorList) {
+    for (auto const &v : variableNames) {
+      if (v == skip) continue;
       importValue(env, job, v, info[i], importers);
       i++;
       if (i == lastArg) return;

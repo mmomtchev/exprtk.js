@@ -48,7 +48,7 @@ describe('Expression', () => {
     })
 
     describe('compute', () => {
-        let mean, vectorMean, pi;
+        let mean, vectorMean, pi, clamp;
         let vector = new Float64Array([1, 2, 3, 4, 5, 6]);
         before(() => {
             mean = new expr('(a + b) / 2', ['a', 'b']);
@@ -56,6 +56,7 @@ describe('Expression', () => {
                 'var r := 0; for (var i := 0; i < x[]; i += 1) { r += x[i]; }; r / x[];',
                 [], { 'x': 6 });
             pi = new expr('22 / 7', []);
+            clamp = new expr('clamp(minv, x, maxv)', ['minv', 'x', 'maxv'])
         })
 
         describe('eval() object form', () => {
@@ -142,6 +143,53 @@ describe('Expression', () => {
                     assert.closeTo(m1, 12, 10e-9);
                     assert.closeTo(m2, 15, 10e-9);
                 }))
+            })
+        })
+
+        describe('map()', () => {
+
+            it('should evaluate an expression over all values of an array', () => {
+                const r = clamp.map(vector, 'x', 2, 4);
+                assert.instanceOf(r, Float64Array);
+                assert.deepEqual(r, new Float64Array([2, 2, 3, 4, 4, 4]));
+            })
+
+            it('should throw w/o iterator', () => {
+                assert.throws(() => {
+                    clamp.map(vector, 2, 4);
+                }, /second argument must be the iterator variable name/)
+            })
+
+            it('should throw w/ invalid iterator', () => {
+                assert.throws(() => {
+                    clamp.map(vector, 'c', 2, 4);
+                }, /c is not a declared scalar variable/)
+            })
+
+            it('should throw w/ invalid variables', () => {
+                assert.throws(() => {
+                    clamp.map(vector, 'x', 4);
+                }, /wrong number of input arguments/)
+            })
+        })
+
+        describe('mapAsync()', () => {
+
+            it('should evaluate an expression over all values of an array', () => {
+                const r = clamp.mapAsync(vector, 'x', 2, 4);
+                return assert.eventually.deepEqual(r, new Float64Array([2, 2, 3, 4, 4, 4]));
+            })
+
+            it('should reject w/o iterator', () => {
+                return assert.isRejected(clamp.mapAsync(vector, 2, 4), /second argument must be the iterator variable name/)
+            })
+
+            it('should reject w/ invalid iterator', () => {
+                return assert.isRejected(clamp.mapAsync(vector, 'c', 2, 4), /c is not a declared scalar variable/)
+            })
+
+            it('should reject w/ invalid variables', () => {
+                return assert.isRejected(clamp.mapAsync(vector, 'x', 4), /wrong number of input arguments/)
             })
         })
     })
