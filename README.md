@@ -25,6 +25,8 @@ const expr = require("exprtk.js").Expression;
 const mean = new expr('(a + b) / 2');
 // clamp to a range
 const clamp = new expr('clamp(minv, x, maxv)', ['minv', 'x', 'maxv']);
+// sum n-powers
+const sumPow = new expr('a + pow(x, n)', ['a', 'x', 'n']);
 
 // arguments as a list
 const m = mean.eval(2, 4);
@@ -36,6 +38,7 @@ const r = clamp.eval({ a: 5, b: 10, x: 12 });
 // map with C++ traversal
 const inputArray = new Float64Array(n);
 const resultingArray = clamp.map(inputArray, 'x', 5, 10);
+const sumSquares = sumPow.reduce(inputArray, 'x', 'a', 0, 2);
 ```
 
 ## With a `TypedArray`
@@ -74,6 +77,10 @@ const r = await mean.evalAsync(new Float64Array([ 1, 2, 3, 4, 5, 6 ])});
 
 // Implicit traversal
 const clamp = new expr('clamp(minv, x, maxv)', ['minv', 'x', 'maxv']);
+
 const resultingArray = await clamp.mapAsync(inputArray, 'x', 5, 10);
+
 clamp.mapAsync(inputArray, 'x', 5, 10, (e,r) => console.log(e, r));
+
+const sumSquares = await sumPow.reduceAsync(inputArray, 'x', 'a', 0, 2);
 ```

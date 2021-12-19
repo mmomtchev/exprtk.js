@@ -205,13 +205,13 @@ ASYNCABLE_DEFINE(Expression::map) {
   }
 
   if (info.Length() > 2 && info[2].IsObject() && !info[2].IsTypedArray()) {
-    importFromObject(env, job, info[0], importers);
+    importFromObject(env, job, info[2], importers);
   }
 
   if (info.Length() > 2 && (info[2].IsNumber() || info[2].IsTypedArray())) {
     size_t last = info.Length();
     if (async && last > 2 && info[last - 1].IsFunction()) last--;
-    importFromArgumentsArray(env, job, info, 2, last, importers, iteratorName);
+    importFromArgumentsArray(env, job, info, 2, last, importers, {iteratorName});
   }
 
   if (symbolTable.variable_count() + symbolTable.vector_count() != importers.size() + 1) {
@@ -239,12 +239,111 @@ ASYNCABLE_DEFINE(Expression::map) {
   return job.run(info, async, info.Length() - 1);
 }
 
+/**
+ * Evaluate the expression for every element of a TypedArray
+ * passing a scalar accumulator to every evaluation
+ * 
+ * Evaluation and traversal happens entirely in C++ so this will be much
+ * faster than calling array.reduce(expr.eval)
+ *
+ * @param {number} arg
+ * @returns {number}
+ *
+ * @example
+ * // n-power sum of an array
+ * const sum = new Expression('a + pow(x, p)', ['a', 'x', 'p']);
+ * 
+ * // sumSq will be a scalar number
+ * 
+ * // These are equivalent
+ * const sumSq = sum.reduce(array, 'x', 'a', 0, {'p': 2});
+ * const sumSq = sum.reduce(array, 'x', 'a', 0, 2);
+ *
+ * sum.reduceAsync(array, 'x', {'a' : 0}, (e,r) => console.log(e, r));
+ * const sumSq = await sum.reduceAsync(array, 'x', {'a' : 0}, (e,r) => console.log(e, r));
+ */
+ASYNCABLE_DEFINE(Expression::reduce) {
+  Napi::Env env = info.Env();
+
+  ExprTkJob<double> job(asyncLock);
+
+  std::vector<std::function<void()>> importers;
+
+  if (
+    info.Length() < 1 || !info[0].IsTypedArray() ||
+    info[0].As<Napi::TypedArray>().TypedArrayType() != napi_float64_array) {
+
+    Napi::TypeError::New(env, "first argument must by a Float64Array").ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  Napi::TypedArray array = info[0].As<Napi::TypedArray>();
+  double *input = reinterpret_cast<double *>(array.ArrayBuffer().Data());
+  size_t len = array.ElementLength();
+
+  if (info.Length() < 2 || !info[1].IsString()) {
+    Napi::TypeError::New(env, "second argument must be the iterator variable name").ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  const std::string iteratorName = info[1].As<Napi::String>().Utf8Value();
+  auto iterator = symbolTable.get_variable(iteratorName);
+  if (iterator == nullptr) {
+    Napi::TypeError::New(env, iteratorName + " is not a declared scalar variable").ThrowAsJavaScriptException();
+    return env.Null();
+  }
+
+  if (info.Length() < 3 || !info[2].IsString()) {
+    Napi::TypeError::New(env, "third argument must be the accumulator variable name").ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  const std::string accuName = info[2].As<Napi::String>().Utf8Value();
+  auto accu = symbolTable.get_variable(accuName);
+  if (accu == nullptr) {
+    Napi::TypeError::New(env, accuName + " is not a declared scalar variable").ThrowAsJavaScriptException();
+    return env.Null();
+  }
+
+  if (info.Length() < 4 || !info[3].IsNumber()) {
+    Napi::TypeError::New(env, "fourth argument must be a number for the accumulator initial value").ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  double accuInit = info[3].As<Napi::Number>().DoubleValue();
+
+  if (info.Length() > 4 && info[4].IsObject() && !info[4].IsTypedArray()) {
+    importFromObject(env, job, info[4], importers);
+  }
+
+  if (info.Length() > 4 && (info[4].IsNumber() || info[4].IsTypedArray())) {
+    size_t last = info.Length();
+    if (async && last > 4 && info[last - 1].IsFunction()) last--;
+    importFromArgumentsArray(env, job, info, 4, last, importers, {iteratorName, accuName});
+  }
+
+  if (symbolTable.variable_count() + symbolTable.vector_count() != importers.size() + 2) {
+    Napi::TypeError::New(env, "wrong number of input arguments").ThrowAsJavaScriptException();
+    return env.Null();
+  }
+
+  job.main = [this, importers, iterator, accu, accuInit, input, len]() {
+    for (auto const &f : importers) f();
+    accu->ref() = accuInit;
+    for (size_t i = 0; i < len; i++) {
+      iterator->ref() = input[i];
+      accu->ref() = expression.value();
+    }
+    return accu->value();
+  };
+  job.rval = [env](double r) { return Napi::Number::New(env, r); };
+  return job.run(info, async, info.Length() - 1);
+}
+
 Napi::Function Expression::GetClass(Napi::Env env) {
   napi_property_attributes props = static_cast<napi_property_attributes>(napi_writable | napi_configurable);
   return DefineClass(
     env,
     "Expression",
-    {ASYNCABLE_INSTANCE_METHOD(Expression, eval, props), ASYNCABLE_INSTANCE_METHOD(Expression, map, props)});
+    {ASYNCABLE_INSTANCE_METHOD(Expression, eval, props),
+     ASYNCABLE_INSTANCE_METHOD(Expression, map, props),
+     ASYNCABLE_INSTANCE_METHOD(Expression, reduce, props)});
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {

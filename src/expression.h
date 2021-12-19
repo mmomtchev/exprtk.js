@@ -16,6 +16,7 @@ class Expression : public Napi::ObjectWrap<Expression> {
 
   ASYNCABLE_DECLARE(eval);
   ASYNCABLE_DECLARE(map);
+  ASYNCABLE_DECLARE(reduce);
 
   static Napi::Function GetClass(Napi::Env);
 
@@ -103,11 +104,11 @@ class Expression : public Napi::ObjectWrap<Expression> {
     size_t firstArg,
     size_t lastArg,
     std::vector<std::function<void()>> &importers,
-    const std::string &skip = "") const {
+    const std::set<std::string> &skip = {}) const {
 
     size_t i = firstArg;
     for (auto const &v : variableNames) {
-      if (v == skip) continue;
+      if (skip.count(v) > 0) continue;
       importValue(env, job, v, info[i], importers);
       i++;
       if (i == lastArg) return;

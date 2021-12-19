@@ -48,7 +48,7 @@ describe('Expression', () => {
     })
 
     describe('compute', () => {
-        let mean, vectorMean, pi, clamp;
+        let mean, vectorMean, pi, clamp, sumPow;
         let vector = new Float64Array([1, 2, 3, 4, 5, 6]);
         before(() => {
             mean = new expr('(a + b) / 2', ['a', 'b']);
@@ -56,7 +56,8 @@ describe('Expression', () => {
                 'var r := 0; for (var i := 0; i < x[]; i += 1) { r += x[i]; }; r / x[];',
                 [], { 'x': 6 });
             pi = new expr('22 / 7', []);
-            clamp = new expr('clamp(minv, x, maxv)', ['minv', 'x', 'maxv'])
+            clamp = new expr('clamp(minv, x, maxv)', ['minv', 'x', 'maxv']);
+            sumPow = new expr('a + pow(x, p)', ['a', 'x', 'p']);
         })
 
         describe('eval() object form', () => {
@@ -129,7 +130,7 @@ describe('Expression', () => {
                 return assert.isRejected(vectorMean.evalAsync(new Float64Array(4)), /size 4 does not match declared size 6/);
             })
             it('should work with concurrent invocations', () => {
-                const big = 128*1024;
+                const big = 128 * 1024;
                 const vectorMean = new expr(
                     'var r := 0; for (var i := 0; i < x[]; i += 1) { r += x[i]; }; r / x[];',
                     [], { 'x': big });
@@ -190,6 +191,93 @@ describe('Expression', () => {
 
             it('should reject w/ invalid variables', () => {
                 return assert.isRejected(clamp.mapAsync(vector, 'x', 4), /wrong number of input arguments/)
+            })
+        })
+
+        describe('reduce()', () => {
+
+            it('should evaluate an expression over all values of an array', () => {
+                const r = sumPow.reduce(vector, 'x', 'a', 0, 2);
+                assert.isNumber(r);
+                assert.equal(r, 91);
+            })
+
+            it('should throw w/o iterator', () => {
+                assert.throws(() => {
+                    sumPow.reduce(vector, 2, 4);
+                }, /second argument must be the iterator variable name/);
+            })
+
+            it('should throw w/ invalid iterator', () => {
+                assert.throws(() => {
+                    sumPow.reduce(vector, 'c', 'a', 4);
+                }, /c is not a declared scalar variable/);
+            })
+
+            it('should throw w/o accumulator', () => {
+                assert.throws(() => {
+                    sumPow.reduce(vector, 'x');
+                }, /third argument must be the accumulator variable name/);
+            })
+
+            it('should throw w/ invalid accumulator', () => {
+                assert.throws(() => {
+                    sumPow.reduce(vector, 'x', 'b', 4);
+                }, /b is not a declared scalar variable/);
+            })
+
+            it('should throw w/o accumulator initial value', () => {
+                assert.throws(() => {
+                    sumPow.reduce(vector, 'x', 'a');
+                }, /fourth argument must be a number for the accumulator initial value/);
+            })
+
+            it('should throw w/ invalid accumulator initial value', () => {
+                assert.throws(() => {
+                    sumPow.reduce(vector, 'x', 'a', 'd');
+                }, /fourth argument must be a number for the accumulator initial value/);
+            })
+
+            it('should throw w/ invalid variables', () => {
+                assert.throws(() => {
+                    sumPow.reduce(vector, 'x', 'a', 0);
+                }, /wrong number of input arguments/);
+            })
+        })
+
+        describe('reduceAsync()', () => {
+
+            it('should evaluate an expression over all values of an array', () => {
+                r = sumPow.reduceAsync(vector, 'x', 'a', 0, 2);
+                return assert.eventually.equal(r, 91);
+            })
+
+            it('should throw w/o iterator', () => {
+                return assert.isRejected(sumPow.reduceAsync(vector, 2, 4), /second argument must be the iterator variable name/);
+            })
+
+            it('should throw w/ invalid iterator', () => {
+                return assert.isRejected(sumPow.reduceAsync(vector, 'c', 'a', 4), /c is not a declared scalar variable/);
+            })
+
+            it('should throw w/o accumulator', () => {
+                return assert.isRejected(sumPow.reduceAsync(vector, 'x'), /third argument must be the accumulator variable name/);
+            })
+
+            it('should throw w/ invalid accumulator', () => {
+                return assert.isRejected(sumPow.reduceAsync(vector, 'x', 'b', 4), /b is not a declared scalar variable/);
+            })
+
+            it('should throw w/o accumulator initial value', () => {
+                return assert.isRejected(sumPow.reduceAsync(vector, 'x', 'a'), /fourth argument must be a number for the accumulator initial value/);
+            })
+
+            it('should throw w/ invalid accumulator initial value', () => {
+                return assert.isRejected(sumPow.reduceAsync(vector, 'x', 'a', 'd'), /fourth argument must be a number for the accumulator initial value/);
+            })
+
+            it('should throw w/ invalid variables', () => {
+                return assert.isRejected(sumPow.reduceAsync(vector, 'x', 'a', 0), /wrong number of input arguments/);
             })
         })
     })
