@@ -4,7 +4,9 @@
 
 using namespace exprtk_js;
 
-/**
+template <typename T> exprtk::parser<T> Expression<T>::parser;
+
+  /**
  * @param {string} expression function
  * @param {string[]} variables An array containing all the scalar variables' names
  * @param {Record<string,number>[]} [vectors] An object containing all the vector variables' names and their sizes
@@ -18,10 +20,11 @@ using namespace exprtk_js;
  * const stddev = new Expression(
  *  'var sum := 0; var sumsq := 0; ' + 
  *  'for (var i := 0; i < x[]; i += 1) { sum += x[i]; sumsq += x[i] * x[i] }; ' +
- *  '(sumsq - (sum*sum) / x[]) / (n - 1);',
+ *  '(sumsq - (sum*sum) / x[]) / (x[] - 1);',
  *  [], {x: 1024})
  */
-Expression::Expression(const Napi::CallbackInfo &info) : ObjectWrap(info) {
+  template <typename T>
+  Expression<T>::Expression(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Expression<T>>::ObjectWrap(info) {
   Napi::Env env = info.Env();
 
   if (info.Length() < 1) {
@@ -74,8 +77,8 @@ Expression::Expression(const Napi::CallbackInfo &info) : ObjectWrap(info) {
       // or ExprTk will display some puzzling behaviour (it will allocate it and forget to free it)
       // However it will happily swallow an invalid pointer
       size_t size = value.ToNumber().Int64Value();
-      double *dummy = (double *)&size;
-      auto *v = new exprtk::vector_view<double>(dummy, size);
+      T *dummy = (T *)&size;
+      auto *v = new exprtk::vector_view<T>(dummy, size);
       vectorViews[name] = v;
 
       if (!symbolTable.add_vector(name, *v)) {
@@ -101,9 +104,9 @@ Expression::Expression(const Napi::CallbackInfo &info) : ObjectWrap(info) {
   }
 }
 
-Expression::~Expression() {
+template <typename T> Expression<T>::~Expression() {
   for (auto const &v : vectorViews) {
-    v.second->rebase((double *)nullptr);
+    v.second->rebase((T *)nullptr);
     delete v.second;
   }
   vectorViews.clear();
@@ -124,10 +127,10 @@ Expression::~Expression() {
  * expr.evalAsync({a: 2, b: 5}, (e,r) => console.log(e, r));
  * expr.evalAsync(2, 5, (e,r) => console.log(e, r));
  */
-ASYNCABLE_DEFINE(Expression::eval) {
+ASYNCABLE_DEFINE(template <typename T>, Expression<T>::eval) {
   Napi::Env env = info.Env();
 
-  ExprTkJob<double> job(asyncLock);
+  ExprTkJob<T> job(asyncLock);
 
   std::vector<std::function<void()>> importers;
 
@@ -150,7 +153,7 @@ ASYNCABLE_DEFINE(Expression::eval) {
     for (auto const &f : importers) f();
     return expression.value();
   };
-  job.rval = [env](double r) { return Napi::Number::New(env, r); };
+  job.rval = [env](T r) { return Napi::Number::New(env, r); };
   return job.run(info, async, info.Length() - 1);
 }
 
@@ -175,22 +178,22 @@ ASYNCABLE_DEFINE(Expression::eval) {
  * expr.mapAsync(array, 'x', 0, 1000, (e,r) => console.log(e, r));
  * expr.mapAsync(array, 'x', {f: 0, c: 0}, (e,r) => console.log(e, r));
  */
-ASYNCABLE_DEFINE(Expression::map) {
+ASYNCABLE_DEFINE(template <typename T>, Expression<T>::map) {
   Napi::Env env = info.Env();
 
-  ExprTkJob<double> job(asyncLock);
+  ExprTkJob<T> job(asyncLock);
 
   std::vector<std::function<void()>> importers;
 
   if (
     info.Length() < 1 || !info[0].IsTypedArray() ||
-    info[0].As<Napi::TypedArray>().TypedArrayType() != napi_float64_array) {
+    info[0].As<Napi::TypedArray>().TypedArrayType() != NapiArrayType<T>::type) {
 
     Napi::TypeError::New(env, "first argument must by a Float64Array").ThrowAsJavaScriptException();
     return env.Null();
   }
   Napi::TypedArray array = info[0].As<Napi::TypedArray>();
-  double *input = reinterpret_cast<double *>(array.ArrayBuffer().Data());
+  T *input = reinterpret_cast<T *>(array.ArrayBuffer().Data());
   size_t len = array.ElementLength();
 
   if (info.Length() < 2 || !info[1].IsString()) {
@@ -219,8 +222,8 @@ ASYNCABLE_DEFINE(Expression::map) {
     return env.Null();
   }
 
-  Napi::TypedArray result = Napi::Float64Array::New(env, len);
-  double *output = reinterpret_cast<double *>(result.ArrayBuffer().Data());
+  Napi::TypedArray result = NapiArrayType<T>::New(env, len);
+  T *output = reinterpret_cast<T *>(result.ArrayBuffer().Data());
 
   // this should have been an unique_ptr
   // but std::function is not compatible with move semantics
@@ -235,7 +238,7 @@ ASYNCABLE_DEFINE(Expression::map) {
     }
     return 0;
   };
-  job.rval = [env, persistent](double r) { return persistent->Value(); };
+  job.rval = [env, persistent](T r) { return persistent->Value(); };
   return job.run(info, async, info.Length() - 1);
 }
 
@@ -262,10 +265,10 @@ ASYNCABLE_DEFINE(Expression::map) {
  * sum.reduceAsync(array, 'x', {'a' : 0}, (e,r) => console.log(e, r));
  * const sumSq = await sum.reduceAsync(array, 'x', {'a' : 0}, (e,r) => console.log(e, r));
  */
-ASYNCABLE_DEFINE(Expression::reduce) {
+ASYNCABLE_DEFINE(template <typename T>, Expression<T>::reduce) {
   Napi::Env env = info.Env();
 
-  ExprTkJob<double> job(asyncLock);
+  ExprTkJob<T> job(asyncLock);
 
   std::vector<std::function<void()>> importers;
 
@@ -277,7 +280,7 @@ ASYNCABLE_DEFINE(Expression::reduce) {
     return env.Null();
   }
   Napi::TypedArray array = info[0].As<Napi::TypedArray>();
-  double *input = reinterpret_cast<double *>(array.ArrayBuffer().Data());
+  T *input = reinterpret_cast<T *>(array.ArrayBuffer().Data());
   size_t len = array.ElementLength();
 
   if (info.Length() < 2 || !info[1].IsString()) {
@@ -303,10 +306,11 @@ ASYNCABLE_DEFINE(Expression::reduce) {
   }
 
   if (info.Length() < 4 || !info[3].IsNumber()) {
-    Napi::TypeError::New(env, "fourth argument must be a number for the accumulator initial value").ThrowAsJavaScriptException();
+    Napi::TypeError::New(env, "fourth argument must be a number for the accumulator initial value")
+      .ThrowAsJavaScriptException();
     return env.Null();
   }
-  double accuInit = info[3].As<Napi::Number>().DoubleValue();
+  T accuInit = static_cast<T>(info[3].As<Napi::Number>().DoubleValue());
 
   if (info.Length() > 4 && info[4].IsObject() && !info[4].IsTypedArray()) {
     importFromObject(env, job, info[4], importers);
@@ -332,13 +336,13 @@ ASYNCABLE_DEFINE(Expression::reduce) {
     }
     return accu->value();
   };
-  job.rval = [env](double r) { return Napi::Number::New(env, r); };
+  job.rval = [env](T r) { return Napi::Number::New(env, r); };
   return job.run(info, async, info.Length() - 1);
 }
 
-Napi::Function Expression::GetClass(Napi::Env env) {
+template <typename T> Napi::Function Expression<T>::GetClass(Napi::Env env) {
   napi_property_attributes props = static_cast<napi_property_attributes>(napi_writable | napi_configurable);
-  return DefineClass(
+  return Napi::ObjectWrap<Expression<T>>::DefineClass(
     env,
     "Expression",
     {ASYNCABLE_INSTANCE_METHOD(Expression, eval, props),
@@ -347,8 +351,8 @@ Napi::Function Expression::GetClass(Napi::Env env) {
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
-  Napi::String name = Napi::String::New(env, "Expression");
-  exports.Set(name, Expression::GetClass(env));
+  exports.Set(Napi::String::New(env, "Float32"), Expression<float>::GetClass(env));
+  exports.Set(Napi::String::New(env, "Float64"), Expression<double>::GetClass(env));
   return exports;
 }
 

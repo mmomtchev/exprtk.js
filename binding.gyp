@@ -6,7 +6,6 @@
     {
       'target_name': 'exprtk.js-native',
       'sources': [ 
-        'src/exprtk_instance.cc',
         'src/expression.cc'
       ],
       'include_dirs': [

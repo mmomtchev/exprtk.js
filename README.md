@@ -1,6 +1,6 @@
 # ExprTk.js
 
-This is a Node.js binding for [ExprTk](http://www.partow.net/programming/exprtk/index.html) [(Github)](https://github.com/ArashPartow/exprtk) by @ArashPartow
+This is a Node.js binding for [ExprTk](http://www.partow.net/programming/exprtk/index.html) [(Github)](https://github.com/ArashPartow/exprtk) by [@ArashPartow](https://github.com/ArashPartow)
 
 It supports both synchronous and asynchronous background execution of thunks precompiled from a string including asynchronous and multithreaded versions of `TypedArray.prototype.map` and `TypedArray.prototype.reduce`
 
@@ -19,7 +19,7 @@ It can also serve as a provider of thunks for `gdal-async` and `scijs` allowing 
 ## Simple synchronous use
 
 ```js
-const expr = require("exprtk.js").Expression;
+const expr = require("exprtk.js").Float64;
 
 // arithmetic mean
 const mean = new expr('(a + b) / 2');
@@ -43,7 +43,7 @@ const sumSquares = sumPow.reduce(inputArray, 'x', 'a', 0, 2);
 
 ## With a `TypedArray`
 
-Only `Float64` is currently supported. As `ExprTk` supports only fixed-size arrays the size must be known when compiling the expression.
+Only `Float64` and `Float32` are supported. As `ExprTk` supports only fixed-size arrays the size must be known when compiling the expression.
 
 ```js
 const expr = require("exprtk.js").Expression;
@@ -82,5 +82,11 @@ const resultingArray = await clamp.mapAsync(inputArray, 'x', 5, 10);
 
 clamp.mapAsync(inputArray, 'x', 5, 10, (e,r) => console.log(e, r));
 
+
+const sumPow = new expr('a + pow(x, n)', ['a', 'x', 'n']);
 const sumSquares = await sumPow.reduceAsync(inputArray, 'x', 'a', 0, 2);
 ```
+
+# Integer types
+
+`ExprTk` currently supports only floating point types. If you can get Mr. [@ArashPartow](https://github.com/ArashPartow) to add support for integer types, releasing a compatible `ExprTk.js` will be a matter of a few hours of work. Adding integer support to `ExprTk` is definitely not a trivial task and I have no need for it - but I will gladly accept funding to implement it.

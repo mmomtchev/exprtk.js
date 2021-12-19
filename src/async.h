@@ -11,14 +11,14 @@ namespace exprtk_js {
 // Shamelessly stolen from the awesome node-gdal-async
 
 // This generates method definitions for 2 methods: sync and async version and a hidden common block
-#define ASYNCABLE_DEFINE(method)                                                                                       \
-  Napi::Value method(const Napi::CallbackInfo &info) {                                                                 \
+#define ASYNCABLE_DEFINE(prefix, method)                                                                               \
+  prefix Napi::Value method(const Napi::CallbackInfo &info) {                                                          \
     return method##_do(info, false);                                                                                   \
   }                                                                                                                    \
-  Napi::Value method##Async(const Napi::CallbackInfo &info) {                                                          \
+  prefix Napi::Value method##Async(const Napi::CallbackInfo &info) {                                                   \
     return method##_do(info, true);                                                                                    \
   }                                                                                                                    \
-  Napi::Value method##_do(const Napi::CallbackInfo &info, bool async)
+  prefix Napi::Value method##_do(const Napi::CallbackInfo &info, bool async)
 
 // This generates method declarations for 2 methods: sync and async version and a hidden common block
 #define ASYNCABLE_DECLARE(method)                                                                                      \

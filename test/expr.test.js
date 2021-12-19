@@ -1,9 +1,10 @@
-const expr = require("../lib/binding.js").Expression;
+const Expression = require("../lib/binding.js");
 
 const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 chai.use(chaiAsPromised)
 const assert = chai.assert;
+const expr = Expression.Float64;
 
 describe('Expression', () => {
     describe('constructor', () => {
@@ -44,6 +45,24 @@ describe('Expression', () => {
         it('should accept an expression w/ vectors', () => {
             const mean = new expr('a', ['a'], { x: 12 });
             assert.instanceOf(mean, expr);
+        })
+    })
+
+    describe('types', () => {
+        it('Float32', () => {
+            const id32 = new Expression.Float32('(a + b) / 2', ['a', 'b']);
+            const a32 = new Float32Array([ 1, 2, 3, 4]);
+            const r32 = id32.map(a32, 'a', 1);
+            assert.instanceOf(r32, Float32Array);
+            assert.deepEqual(r32, new Float32Array([1, 1.5, 2, 2.5]));
+        })
+
+        it('Float64', () => {
+            const id64 = new Expression.Float64('(a + b) / 2', ['a', 'b']);
+            const a64 = new Float64Array([1, 2, 3, 4]);
+            const r64 = id64.map(a64, 'a', 1);
+            assert.instanceOf(r64, Float64Array);
+            assert.deepEqual(r64, new Float64Array([1, 1.5, 2, 2.5]));
         })
     })
 

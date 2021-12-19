@@ -1,7 +1,7 @@
 #pragma once
 
 #include "async.h"
-#include "exprtk_instance.h"
+#include "exprtk.hpp"
 #include <map>
 #include <mutex>
 #include <functional>
@@ -9,7 +9,23 @@
 
 namespace exprtk_js {
 
-class Expression : public Napi::ObjectWrap<Expression> {
+template <typename T> struct NapiArrayType {  };
+
+template <> struct NapiArrayType<double> { 
+  static const napi_typedarray_type type = napi_float64_array;
+  static inline Napi::TypedArray New(napi_env env, size_t elementLength) {
+    return Napi::Float64Array::New(env, elementLength);
+  }
+};
+
+template <> struct NapiArrayType<float> { 
+  static const napi_typedarray_type type = napi_float32_array;
+  static inline Napi::TypedArray New(napi_env env, size_t elementLength) {
+    return Napi::Float32Array::New(env, elementLength);
+  }
+};
+
+template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> {
     public:
   Expression(const Napi::CallbackInfo &);
   ~Expression();
@@ -23,11 +39,14 @@ class Expression : public Napi::ObjectWrap<Expression> {
     private:
   // ExprTk stuff
   std::string expressionText;
-  exprtk::symbol_table<double> symbolTable;
-  exprtk::expression<double> expression;
+  exprtk::symbol_table<T> symbolTable;
+  exprtk::expression<T> expression;
   // These are the vectorViews needed for rebasing the vectors when evaluating
   // Read "SECTION 14" of the ExprTk manual for more information on this
-  std::map<std::string, exprtk::vector_view<double> *> vectorViews;
+  std::map<std::string, exprtk::vector_view<T> *> vectorViews;
+  
+  // shared across all instances of the same type
+  static exprtk::parser<T> parser;
 
   // get_variable_list / get_vector_list do not conserve the initial order
   std::vector<std::string> variableNames;
@@ -38,7 +57,6 @@ class Expression : public Napi::ObjectWrap<Expression> {
 
   // Check a user supplied argument and return a function that imports it into the symbol table
   // Actual importing is deferred to right before the evaluation which might be waiting on an async lock
-  template <typename T>
   void importValue(
     const Napi::Env &env,
     ExprTkJob<T> &job,
@@ -50,7 +68,7 @@ class Expression : public Napi::ObjectWrap<Expression> {
         throw Napi::TypeError::New(env, name + " is not a declared vector variable");
       }
       auto v = vectorViews.at(name);
-      if (value.As<Napi::TypedArray>().TypedArrayType() != napi_float64_array) {
+      if (value.As<Napi::TypedArray>().TypedArrayType() != NapiArrayType<T>::type) {
         throw Napi::TypeError::New(env, "vector data must be a Float64Array");
       }
       Napi::TypedArray data = value.As<Napi::TypedArray>();
@@ -62,7 +80,7 @@ class Expression : public Napi::ObjectWrap<Expression> {
             std::to_string(v->size()));
       }
 
-      double *raw = reinterpret_cast<double *>(data.ArrayBuffer().Data());
+      T *raw = reinterpret_cast<T *>(data.ArrayBuffer().Data());
       job.persist(data);
       importers.push_back([v, raw]() { v->rebase(raw); });
       return;
@@ -71,7 +89,7 @@ class Expression : public Napi::ObjectWrap<Expression> {
     if (value.IsNumber()) {
       auto v = symbolTable.get_variable(name);
       if (v == nullptr) { throw Napi::TypeError::New(env, name + " is not a declared scalar variable"); }
-      double raw = value.As<Napi::Number>().DoubleValue();
+      T raw = static_cast<T>(value.As<Napi::Number>().DoubleValue());
       importers.push_back([v, raw]() { v->ref() = raw; });
       return;
     }
@@ -79,7 +97,6 @@ class Expression : public Napi::ObjectWrap<Expression> {
     throw Napi::TypeError::New(env, name + " is not a number or a TypedArray");
   }
 
-  template <typename T>
   inline void importFromObject(
     const Napi::Env &env,
     ExprTkJob<T> &job,
@@ -96,7 +113,6 @@ class Expression : public Napi::ObjectWrap<Expression> {
     }
   }
 
-  template <typename T>
   inline void importFromArgumentsArray(
     const Napi::Env &env,
     ExprTkJob<T> &job,
