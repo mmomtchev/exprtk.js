@@ -2,9 +2,45 @@
   'variables': {
     'enable_asan%': 'false'
   },
+  'configurations': {
+    'Debug': {
+      'cflags_cc!': [ '-O3', '-Os' ],
+      'defines': [ 
+        'DEBUG',
+        'exprtk_disable_string_capabilities',
+        'exprtk_disable_enhanced_features'
+      ],
+      'defines!': [ 'NDEBUG' ],
+      'xcode_settings': {
+        'GCC_OPTIMIZATION_LEVEL': '0',
+        'GCC_GENERATE_DEBUGGING_SYMBOLS': 'YES',
+      }
+    },
+    'Release': {
+      'defines': [ 'NDEBUG' ],
+      'defines!': [ 'DEBUG' ],
+      'xcode_settings': {
+        'GCC_OPTIMIZATION_LEVEL': 's',
+        'GCC_GENERATE_DEBUGGING_SYMBOLS': 'NO',
+        'DEAD_CODE_STRIPPING': 'YES',
+        'GCC_INLINES_ARE_PRIVATE_EXTERN': 'YES'
+      },
+      'ldflags': [
+        '-Wl,-s'
+      ],
+      'msvs_settings': {
+        'VCCLCompilerTool': {
+          'DebugInformationFormat': '0',
+        },
+        'VCLinkerTool': {
+          'GenerateDebugInformation': 'false',
+        }
+      }
+    }
+  },
   'targets': [
     {
-      'target_name': 'exprtk.js-native',
+      'target_name': 'exprtk.js',
       'sources': [
         'src/expression.cc'
       ],
@@ -12,13 +48,10 @@
         'deps/exprtk',
         '<!@(node -p \'require("node-addon-api").include\')'
       ],
-      'defines': [
-        'exprtk_disable_string_capabilities',
-        'exprtk_disable_enhanced_features'
-      ],
       'dependencies': ['<!(node -p \'require("node-addon-api").gyp\')'],
       'cflags!': [ '-fno-exceptions', '-fno-rtti' ],
       'cflags_cc!': [ '-fno-exceptions', '-fno-rtti' ],
+      'ldflags': [ '-Wl,-z,now' ],
       'xcode_settings': {
         'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',
         'CLANG_CXX_LIBRARY': 'libc++',
@@ -35,6 +68,19 @@
           'cflags_cc': [ '-fsanitize=address' ],
           'ldflags' : [ '-fsanitize=address' ]
         }]
+      ]
+    },
+    {
+      'target_name': 'action_after_build',
+      'type': 'none',
+      'dependencies': [ '<(module_name)' ],
+      'copies': [
+        {
+          'files': [
+            '<(PRODUCT_DIR)/exprtk.js.node'
+          ],
+          'destination': '<(module_path)'
+        }
       ]
     }
   ]

@@ -1,6 +1,7 @@
 {
   "main": "lib/binding.js",
   "dependencies": {
+    "@mapbox/node-pre-gyp": "^1.0.8",
     "node-addon-api": "^1.1.0"
   },
   "scripts": {
@@ -25,10 +26,20 @@
     "url": "https://github.com/mmomtchev/exprtk.js/issues"
   },
   "homepage": "https://github.com/mmomtchev/exprtk.js#readme",
+  "binary": {
+    "module_name": "exprtk.js",
+    "module_path": "./lib/binding/{platform}-{arch}",
+    "remote_path": "v{version}",
+    "host": "https://github.com/mmomtchev/exprtk.js/releases/download/",
+    "package_name": "{platform}-{arch}.tar.gz",
+    "hosting": {
+      "provider": "github",
+      "repo": "mmomtchev/exprtk.js"
+    }
+  },
   "devDependencies": {
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
-    "mocha": "^9.1.3",
-    "node-gyp": "^8.4.1"
+    "mocha": "^9.1.3"
   }
 }
