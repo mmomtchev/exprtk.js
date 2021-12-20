@@ -96,6 +96,53 @@ const sumPow = new expr('a + pow(x, n)', ['a', 'x', 'n']);
 const sumSquares = await sumPow.reduceAsync(inputArray, 'x', 'a', 0, 2);
 ```
 
+# Generic complex operations with `cwise()`/`cwiseAsync()`
+
+`cwise()` and `cwiseAsync()` allow for generic coefficient-wise operations on multiple vectors with implicit array traversal.
+
+These are the only methods that support type conversions and writing into preexisting arrays.
+
+```js
+// Air density of humid air from relative humidity (fi), temperature (T) and pressure (P)
+// r = ( Pd * Md + Pv * Mv ) / ( R * T )      // density (Avogadro's law)
+// Pv = fi * Ps                               // vapor pressure of water
+// Ps = 6.1078 * 10 ^ (7.5 * T / (T + 237.3)) // saturation vapor pressure (Tetens' equation)
+// Pd = P - Pv                                // partial pressure of dry air
+// R = 0.0831446                              // universal gas constant
+// Md = 0.0289652                             // molar mass of water vapor
+// Mv = 0.018016                              // molar mass of dry air
+// ( this is the weather science form of the equation and not the hard physics one
+//   with T in C° and pressure in hPa )
+// fi, T and P are arbitrary TypedArrays of the same size
+
+// Calculation uses Float64 internally
+const expr = require("exprtk.js").Float64;
+
+const density = new expr(
+    // compute Pv and store it
+    'var Pv := ( fi * 6.1078 * pow(10, (7.5 * T / (T + 237.3))) ); ' +
+    // main formula (and return expression)
+    '( (P - Pv) * Md + Pv * Mv ) / ( R * (T + 273.15) )',
+    ['P', 'T', 'fi', 'R', 'Md', 'Mv']
+);
+const R = 0.0831446;
+const Md = 0.0289652;
+const Mv = 0.018016;
+// Mixing array types
+const fi = new Float32Array([0, 0.2, 0.5, 0.9, 0.5]);
+const P = new Uint16Array([1013, 1013, 1013, 1013, 995]);
+const T = new Uint16Array([25, 25, 25, 25, 25]);
+
+// Preexisting array, type conversion is automatic
+const result = new Float32Array(5);
+
+// sync
+const r = density.cwise({ P, T, fi, R, Mv, Md }, result);
+
+// async
+const r = await density.cwiseAsync({ P, T, fi, R, Mv, Md }, result);
+```
+
 # Integer types
 
 Originally, `ExprTk` supports only floating point types. The version bundled with `ExprTk.js` has working integer support, but one should be extra careful as it internally uses `NaN` values and most built-in mathematical functions - like `sin`, `cos`, `pow` or `exp` - won't work correctly with integer types. Always check the result of your function when using anything but basic arithmetic.

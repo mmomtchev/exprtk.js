@@ -312,7 +312,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::reduce) {
       .ThrowAsJavaScriptException();
     return env.Null();
   }
-  T accuInit = static_cast<T>(info[3].As<Napi::Number>().DoubleValue());
+  T accuInit = NapiArrayType<T>::CastFrom(info[3]);
 
   if (info.Length() > 4 && info[4].IsObject() && !info[4].IsTypedArray()) {
     importFromObject(env, job, info[4], importers);
@@ -342,6 +342,208 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::reduce) {
   return job.run(info, async, info.Length() - 1);
 }
 
+/**
+ * Generic vector operation with implicit traversal
+ * 
+ * Supports automatic type conversions, multiple inputs and writing into a pre-existing array
+ *
+ * @param {Record<string, number | TypedArray>} arguments
+ * @param {TypedArray} [output] output array, a new array of the expression type is automatically allocated if none is specified
+ * @returns {TypedArray}
+ *
+ * @example
+ * // Air density of humid air from relative humidity (fi), temperature (T) and pressure (P)
+ * // r = ( Pd * Md + Pv * Mv ) / ( R * (T + 273.15) // density (Avogadro's law)
+ * // Pv = fi * Ps                                   // vapor pressure of water
+ * // Ps = 6.1078 * 10 ^ (7.5 * T / (T + 237.3))     // saturation vapor pressure (Tetens' equation)
+ * // Pd = P - Pv                                    // partial pressure of dry air
+ * // R = 0.0831446                                  // universal gas constant
+ * // Md = 0.0289652                                 // molar mass of water vapor
+ * // Mv = 0.018016                                  // molar mass of dry air
+ * // ( this is the weather science form of the equation and not the hard physics one with T in C° )
+ * // fi, T and P are arbitrary TypedArrays of the same size
+ * //
+ * // Calculation uses Float64 internally
+ * // Result is stored in Float32
+ *
+ * const R = 0.0831446;
+ * const Md = 0.0289652;
+ * const Mv = 0.018016;
+ * const fi = new Float32Array([0, 0.2, 0.5, 0.9, 0.5]);
+ * const P = new Uint16Array([1013, 1013, 1013, 1013, 995]);
+ * const T = new Uint16Array([25, 25, 25, 25, 25]);
+ * 
+ * const density = new Float64Expression(
+ *   'Pv := ( fi * 6.1078 * pow(10, (7.5 * T / (T + 237.3))) ); ' +  // compute Pv and store it
+ *   '( (P - Pv) * Md + Pv * Mv ) / ( R * (T + 273.13) )',           // return expression
+ *    ['P', 'T', 'fi', 'R', 'Md', 'Mv']
+ * );
+ * const result = new Float32Array(P.length);
+ * 
+ * // sync
+ * density.cwise({fi, T, P, R, Md, Mv}, result);
+ * 
+ * // async
+ * await density.cwiseAsync({fi, T, P, R, Md, Mv}, result);
+ */
+ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
+  Napi::Env env = info.Env();
+
+  ExprTkJob<T> job(asyncLock);
+
+  typedef std::function<T(uint8_t *)> NapiFromCaster_t;
+  typedef std::function<void(uint8_t *, T)> NapiToCaster_t;
+  // Order is
+  // napi_int8_array
+  // napi_uint8_array
+  // napi_uint8_clamped_array
+  // napi_int16_array
+  // napi_uint16_array
+  // napi_int32_array
+  // napi_uint32_array
+  // napi_float32_array
+  // napi_float64_array
+  // napi_bigint64_array
+  // napi_biguint64_array
+  static const NapiFromCaster_t NapiFromCasters[] = {
+    [](uint8_t *data) { return static_cast<T>(*(reinterpret_cast<int8_t *>(data))); },
+    [](uint8_t *data) { return static_cast<T>(*(reinterpret_cast<uint8_t *>(data))); },
+    [](uint8_t *data) -> T { throw "unsupported type"; },
+    [](uint8_t *data) { return static_cast<T>(*(reinterpret_cast<int16_t *>(data))); },
+    [](uint8_t *data) { return static_cast<T>(*(reinterpret_cast<uint16_t *>(data))); },
+    [](uint8_t *data) { return static_cast<T>(*(reinterpret_cast<int32_t *>(data))); },
+    [](uint8_t *data) { return static_cast<T>(*(reinterpret_cast<uint32_t *>(data))); },
+    [](uint8_t *data) { return static_cast<T>(*(reinterpret_cast<float *>(data))); },
+    [](uint8_t *data) { return static_cast<T>(*(reinterpret_cast<double *>(data))); },
+    [](uint8_t *data) -> T { throw "unsupported type"; },
+    [](uint8_t *data) -> T { throw "unsupported type"; }};
+
+  static const NapiToCaster_t NapiToCasters[] = {
+    [](uint8_t *dst, T value) { *(reinterpret_cast<int8_t *>(dst)) = static_cast<int8_t>(value); },
+    [](uint8_t *dst, T value) { *dst = value; },
+    [](uint8_t *dst, T value) { throw "unsupported type"; },
+    [](uint8_t *dst, T value) { *(reinterpret_cast<int16_t *>(dst)) = static_cast<int16_t>(value); },
+    [](uint8_t *dst, T value) { *(reinterpret_cast<uint16_t *>(dst)) = static_cast<uint16_t>(value); },
+    [](uint8_t *dst, T value) { *(reinterpret_cast<int32_t *>(dst)) = static_cast<int32_t>(value); },
+    [](uint8_t *dst, T value) { *(reinterpret_cast<uint32_t *>(dst)) = static_cast<uint32_t>(value); },
+    [](uint8_t *dst, T value) { *(reinterpret_cast<float *>(dst)) = static_cast<float>(value); },
+    [](uint8_t *dst, T value) { *(reinterpret_cast<double *>(dst)) = static_cast<double>(value); },
+    [](uint8_t *dst, T value) { throw "unsupported type"; },
+    [](uint8_t *dst, T value) { throw "unsupported type"; }};
+
+  if (info.Length() < 1 || !info[0].IsObject()) {
+
+    Napi::TypeError::New(env, "first argument must be a an object containing the input values")
+      .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+
+  if (symbolTable.vector_count() > 0) {
+    Napi::TypeError::New(env, "cwise()/cwiseAsync() are not compatible with vector arguments")
+      .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+
+  if (info.Length() > 1 && !info[1].IsTypedArray() && (!async || !info[1].IsFunction())) {
+    Napi::TypeError::New(env, "second argument must be a TypedArray or undefined").ThrowAsJavaScriptException();
+    return env.Null();
+  }
+
+  struct symbolDesc {
+    std::string name;
+    napi_typedarray_type type;
+    uint8_t *data;
+    uint8_t storage[8];
+    size_t elementSize;
+    typename exprtk::symbol_table<T>::variable_ptr exprtk_var;
+  };
+
+  size_t len = 0;
+  Napi::Object args = info[0].As<Napi::Object>();
+  Napi::Array argNames = args.GetPropertyNames();
+  std::vector<symbolDesc> scalars, vectors;
+  for (std::size_t i = 0; i < argNames.Length(); i++) {
+    const std::string name = argNames.Get(i).As<Napi::String>().Utf8Value();
+    Napi::Value value = args.Get(name);
+    auto exprtk_var = symbolTable.get_variable(name);
+    if (exprtk_var == nullptr) {
+      Napi::TypeError::New(env, name + " is not a declared scalar variable").ThrowAsJavaScriptException();
+      return env.Null();
+    }
+    symbolDesc current;
+    current.exprtk_var = exprtk_var;
+
+    if (value.IsNumber()) {
+      current.name = name;
+      current.type = NapiArrayType<T>::type;
+      current.data = current.storage;
+      *(reinterpret_cast<T *>(current.data)) = NapiArrayType<T>::CastFrom(value);
+      scalars.push_back(current);
+    } else if (value.IsTypedArray()) {
+      Napi::TypedArray array = value.As<Napi::TypedArray>();
+      if (len == 0)
+        len = array.ElementLength();
+      else if (len != array.ElementLength()) {
+        Napi::TypeError::New(env, "all vectors must have the same number of elements").ThrowAsJavaScriptException();
+        return env.Null();
+      }
+      current.name = name;
+      current.type = array.TypedArrayType();
+      current.data = reinterpret_cast<uint8_t *>(array.ArrayBuffer().Data());
+      current.elementSize = array.ElementSize();
+      vectors.push_back(current);
+    } else {
+      variableNames.push_back(name);
+      Napi::TypeError::New(env, name + " is not a number or a TypedArray").ThrowAsJavaScriptException();
+      return env.Null();
+    }
+  }
+
+  if (symbolTable.variable_count() != scalars.size() + vectors.size()) {
+    Napi::TypeError::New(env, "wrong number of input arguments").ThrowAsJavaScriptException();
+    return env.Null();
+  }
+
+  if (len == 0) {
+    Napi::TypeError::New(env, "at least one argument must be a non-zero length vector").ThrowAsJavaScriptException();
+    return env.Null();
+  }
+
+  Napi::TypedArray result;
+  if (info.Length() > 1 && info[1].IsTypedArray()) {
+    result = info[1].As<Napi::TypedArray>();
+  } else {
+    result = NapiArrayType<T>::New(env, len);
+  }
+
+  uint8_t *output = reinterpret_cast<uint8_t *>(result.ArrayBuffer().Data());
+  size_t elementSize = result.ElementSize();
+  napi_typedarray_type outputType = result.TypedArrayType();
+
+  std::shared_ptr<Napi::ObjectReference> persistent =
+    std::make_shared<Napi::ObjectReference>(Napi::ObjectReference::New(result));
+
+  job.main = [this, scalars, vectors, output, outputType, elementSize, len]() mutable {
+    for (auto const &v : scalars) { v.exprtk_var->ref() = *(reinterpret_cast<const T *>(v.storage)); }
+
+    uint8_t *output_ptr = output;
+
+    for (size_t i = 0; i < len; i++) {
+      for (auto &v : vectors) {
+        auto value = NapiFromCasters[v.type](v.data);
+        v.exprtk_var->ref() = value;
+        v.data += v.elementSize;
+      }
+      auto result = expression.value();
+      NapiToCasters[outputType](output_ptr, result);
+      output_ptr += elementSize;
+    }
+    return 0;
+  };
+  job.rval = [env, persistent](T r) { return persistent->Value(); };
+  return job.run(info, async, info.Length() - 1);
+}
+
 template <typename T> Napi::Function Expression<T>::GetClass(Napi::Env env) {
   napi_property_attributes props = static_cast<napi_property_attributes>(napi_writable | napi_configurable);
   return Napi::ObjectWrap<Expression<T>>::DefineClass(
@@ -349,7 +551,8 @@ template <typename T> Napi::Function Expression<T>::GetClass(Napi::Env env) {
     NapiArrayType<T>::name,
     {ASYNCABLE_INSTANCE_METHOD(Expression, eval, props),
      ASYNCABLE_INSTANCE_METHOD(Expression, map, props),
-     ASYNCABLE_INSTANCE_METHOD(Expression, reduce, props)});
+     ASYNCABLE_INSTANCE_METHOD(Expression, reduce, props),
+     ASYNCABLE_INSTANCE_METHOD(Expression, cwise, props)});
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {

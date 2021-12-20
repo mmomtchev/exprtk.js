@@ -1,5 +1,5 @@
 --- exprtk/exprtk.hpp.orig	2021-12-19 21:15:10.168970664 +0100
-+++ exprtk/exprtk.hpp	2021-12-20 11:49:47.673758209 +0100
++++ exprtk/exprtk.hpp	2021-12-20 16:28:28.254173512 +0100
 @@ -809,6 +809,8 @@
              exprtk_register_complex_type_tag(long double)
              exprtk_register_complex_type_tag(float      )
@@ -153,7 +153,27 @@
        template <typename T>
        inline bool is_true(const std::complex<T>& v)
        {
-@@ -25831,7 +25928,7 @@
+@@ -17300,6 +17397,9 @@
+       typedef T (*ff14_functor)(T, T, T, T, T, T, T, T, T, T, T, T, T, T);
+       typedef T (*ff15_functor)(T, T, T, T, T, T, T, T, T, T, T, T, T, T, T);
+ 
++      typedef typename details::variable_node<T>  variable_t;
++      typedef variable_t*                         variable_ptr;
++
+    protected:
+ 
+        struct freefunc00 : public exprtk::ifunction<T>
+@@ -17862,9 +17962,7 @@
+       };
+ 
+       typedef details::expression_node<T>*        expression_ptr;
+-      typedef typename details::variable_node<T>  variable_t;
+       typedef typename details::vector_holder<T>  vector_holder_t;
+-      typedef variable_t*                         variable_ptr;
+       #ifndef exprtk_disable_string_capabilities
+       typedef typename details::stringvar_node<T> stringvar_t;
+       typedef stringvar_t*                        stringvar_ptr;
+@@ -25831,7 +25929,7 @@
                 }
              }
  

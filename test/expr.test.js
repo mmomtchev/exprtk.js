@@ -99,7 +99,7 @@ describe('Expression', () => {
 
         it('Float32', () => {
             const id32 = new Expression.Float32('(a + b) / 2', ['a', 'b']);
-            const a32 = new Float32Array([ 1, 2, 3, 4]);
+            const a32 = new Float32Array([1, 2, 3, 4]);
             const r32 = id32.map(a32, 'a', 1);
             assert.instanceOf(r32, Float32Array);
             assert.deepEqual(r32, new Float32Array([1, 1.5, 2, 2.5]));
@@ -117,6 +117,23 @@ describe('Expression', () => {
     describe('compute', () => {
         let mean, vectorMean, pi, clamp, sumPow;
         let vector = new Float64Array([1, 2, 3, 4, 5, 6]);
+
+        let density;
+        const R = 0.0831446;
+        const Md = 0.0289652;
+        const Mv = 0.018016;
+        const fi = new Float32Array([0, 0.2, 0.5, 0.9, 0.5]);
+        const P = new Uint16Array([1013, 1013, 1013, 1013, 995]);
+        const T = new Uint16Array([25, 25, 25, 25, 25]);
+
+        const expected = [
+            1.1836,
+            1.1808,
+            1.1766,
+            1.1710,
+            1.1556,
+        ];
+
         before(() => {
             mean = new expr('(a + b) / 2', ['a', 'b']);
             vectorMean = new expr(
@@ -125,6 +142,28 @@ describe('Expression', () => {
             pi = new expr('22 / 7', []);
             clamp = new expr('clamp(minv, x, maxv)', ['minv', 'x', 'maxv']);
             sumPow = new expr('a + pow(x, p)', ['a', 'x', 'p']);
+
+
+            // Air density of humid air from relative humidity (fi), temperature (T) and pressure (P)
+            // r = ( Pd * Md + Pv * Mv ) / ( R * T )       // density (Avogadro's law)
+            // Pv = fi * Ps                                // vapor pressure of water
+            // Ps = 6.1078 * 10 ^ (7.5 * T / (T + 237.3))  // saturation vapor pressure at the given temperature (Tetens' equation)
+            // Pd = P - Pv                                 // partial pressure of dry air
+            // R = 0.0831446                               // universal gas constant
+            // Md = 0.0289652                              // molar mass of water vapor
+            // Mv = 0.018016                               // molar mass of dry air
+            // ( this is the weather science form of the equation and not the hard physics one with T in C° and pressure in hPa )
+            // fi, T and P are arbitrary TypedArrays of the same size
+            //
+            // Calculation uses Float64 internally
+            // Result is stored in Float32
+            //
+            density = new expr(
+                'var Pv := ( fi * 6.1078 * pow(10, (7.5 * T / (T + 237.3))) ); ' +  // compute Pv and store it
+                '( (P - Pv) * Md + Pv * Mv ) / ( R * (T + 273.15) )',               // main formula (return expression)
+                ['P', 'T', 'fi', 'R', 'Md', 'Mv']
+            );
+
         })
 
         describe('eval() object form', () => {
@@ -347,5 +386,86 @@ describe('Expression', () => {
                 return assert.isRejected(sumPow.reduceAsync(vector, 'x', 'a', 0), /wrong number of input arguments/);
             })
         })
+
+        describe('cwise()', () => {
+
+            it('should accept a pre-existing array', () => {
+                const result = new Float32Array(5);
+                const r = density.cwise({ P, T, fi, R, Mv, Md }, result);
+                assert.strictEqual(result, r);
+                for (const i in result) assert.closeTo(result[i], expected[i], 10e-3);
+            })
+
+            it('should create a new array', () => {
+                const result = density.cwise({ P, T, fi, R, Mv, Md });
+                assert.instanceOf(result, Float64Array);
+                for (const i in result) assert.closeTo(result[i], expected[i], 10e-3);
+            })
+
+            it('should throw on missing arguments', () => {
+                assert.throws(() => {
+                    density.cwise({ P, T, R, Mv, Md });
+                }, /wrong number of input arguments/);
+            })
+
+            it('should throw on invalid arguments', () => {
+                assert.throws(() => {
+                    density.cwise({ P: 'abc', T, R, Mv, Md });
+                }, /P is not a number or a TypedArray/);
+            })
+
+            it('should throw on vector arguments', () => {
+                assert.throws(() => {
+                    vectorMean.cwise({});
+                }, /are not compatible with vector arguments/);
+            })
+
+            it('should throw if all the arguments are scalar', () => {
+                assert.throws(() => {
+                    density.cwise({ P: 1, T: 2, fi: 3, R, Mv, Md });
+                }, /at least one argument must be a non-zero length vector/);
+            })
+        })
+
+        describe('cwiseAsync()', () => {
+
+            it('should accept a pre-existing array', () => {
+                const result = new Float32Array(5);
+                const q = density.cwiseAsync({ P, T, fi, R, Mv, Md }, result);
+                return assert.isFulfilled(q.then((r) => {
+                    assert.strictEqual(result, r);
+                    for (const i in result) assert.closeTo(result[i], expected[i], 10e-3);
+                }));
+            })
+
+            it('should create a new array', () => {
+                const q = density.cwiseAsync({ P, T, fi, R, Mv, Md }).then((r) => {
+                    assert.instanceOf(r, Float64Array);
+                    for (const i in r) assert.closeTo(r[i], expected[i], 10e-3);
+                });
+                return assert.isFulfilled(q);
+            })
+
+            it('should reject on missing arguments', () => {
+                return assert.isRejected(density.cwiseAsync({ P, T, R, Mv, Md }),
+                    /wrong number of input arguments/);
+            })
+
+            it('should reject on invalid arguments', () => {
+                return assert.isRejected(density.cwiseAsync({ P: 'abc', T, R, Mv, Md }),
+                    /P is not a number or a TypedArray/);
+            })
+
+            it('should reject on vector arguments', () => {
+                return assert.isRejected(vectorMean.cwiseAsync({}),
+                    /are not compatible with vector arguments/);
+            })
+
+            it('should reject if all the arguments are scalar', () => {
+                return assert.isRejected(density.cwiseAsync({ P: 1, T: 2, fi: 3, R, Mv, Md }),
+                    /at least one argument must be a non-zero length vector/);
+            })
+        })
+
     })
 })

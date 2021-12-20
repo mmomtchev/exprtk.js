@@ -17,6 +17,9 @@ template <> struct NapiArrayType<int8_t> {
   static inline Napi::TypedArray New(napi_env env, size_t elementLength) {
     return Napi::Int8Array::New(env, elementLength);
   }
+  static inline int8_t CastFrom(const Napi::Value &value) {
+    return static_cast<int8_t>(value.As<Napi::Number>().Int32Value());
+  }
 };
 
 template <> struct NapiArrayType<uint8_t> {
@@ -24,6 +27,9 @@ template <> struct NapiArrayType<uint8_t> {
   static constexpr const char *name = "Uint8";
   static inline Napi::TypedArray New(napi_env env, size_t elementLength) {
     return Napi::Uint8Array::New(env, elementLength);
+  }
+  static inline uint8_t CastFrom(const Napi::Value &value) {
+    return static_cast<uint8_t>(value.As<Napi::Number>().Uint32Value());
   }
 };
 
@@ -33,6 +39,9 @@ template <> struct NapiArrayType<int16_t> {
   static inline Napi::TypedArray New(napi_env env, size_t elementLength) {
     return Napi::Int16Array::New(env, elementLength);
   }
+  static inline int16_t CastFrom(const Napi::Value &value) {
+    return static_cast<int16_t>(value.As<Napi::Number>().Int32Value());
+  }
 };
 
 template <> struct NapiArrayType<uint16_t> {
@@ -40,6 +49,9 @@ template <> struct NapiArrayType<uint16_t> {
   static constexpr const char *name = "Uint16";
   static inline Napi::TypedArray New(napi_env env, size_t elementLength) {
     return Napi::Uint16Array::New(env, elementLength);
+  }
+  static inline uint16_t CastFrom(const Napi::Value &value) {
+    return static_cast<uint16_t>(value.As<Napi::Number>().Uint32Value());
   }
 };
 
@@ -49,6 +61,9 @@ template <> struct NapiArrayType<int32_t> {
   static inline Napi::TypedArray New(napi_env env, size_t elementLength) {
     return Napi::Int32Array::New(env, elementLength);
   }
+  static inline int32_t CastFrom(const Napi::Value &value) {
+    return value.As<Napi::Number>().Int32Value();
+  }
 };
 
 template <> struct NapiArrayType<uint32_t> {
@@ -57,13 +72,18 @@ template <> struct NapiArrayType<uint32_t> {
   static inline Napi::TypedArray New(napi_env env, size_t elementLength) {
     return Napi::Uint32Array::New(env, elementLength);
   }
+  static inline uint32_t CastFrom(const Napi::Value &value) {
+    return value.As<Napi::Number>().Uint32Value();
+  }
 };
-
 template <> struct NapiArrayType<double> { 
   static const napi_typedarray_type type = napi_float64_array;
   static constexpr const char *name = "Float64";
   static inline Napi::TypedArray New(napi_env env, size_t elementLength) {
     return Napi::Float64Array::New(env, elementLength);
+  }
+  static inline double CastFrom(const Napi::Value &value) {
+    return value.As<Napi::Number>().DoubleValue();
   }
 };
 
@@ -72,6 +92,9 @@ template <> struct NapiArrayType<float> {
   static constexpr const char *name = "Float32";
   static inline Napi::TypedArray New(napi_env env, size_t elementLength) {
     return Napi::Float32Array::New(env, elementLength);
+  }
+  static inline float CastFrom(const Napi::Value &value) {
+    return value.As<Napi::Number>().FloatValue();
   }
 };
 
@@ -83,6 +106,7 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
   ASYNCABLE_DECLARE(eval);
   ASYNCABLE_DECLARE(map);
   ASYNCABLE_DECLARE(reduce);
+  ASYNCABLE_DECLARE(cwise);
 
   static Napi::Function GetClass(Napi::Env);
 
@@ -139,7 +163,7 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
     if (value.IsNumber()) {
       auto v = symbolTable.get_variable(name);
       if (v == nullptr) { throw Napi::TypeError::New(env, name + " is not a declared scalar variable"); }
-      T raw = static_cast<T>(value.As<Napi::Number>().DoubleValue());
+      T raw = NapiArrayType<T>::CastFrom(value);
       importers.push_back([v, raw]() { v->ref() = raw; });
       return;
     }
