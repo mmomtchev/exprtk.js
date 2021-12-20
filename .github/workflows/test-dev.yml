@@ -26,9 +26,9 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
     - run: npm install --ignore-scripts
-    - run: npx node-gyp configure --debug
+    - run: npx node-pre-gyp configure
     - name: Build from sources
-      run: npx node-gyp build -j max
+      run: npx node-pre-gyp build -j max
     - name: Run unit tests
       run: npm test
 
