@@ -49,6 +49,54 @@ describe('Expression', () => {
     })
 
     describe('types', () => {
+        it('Int8', () => {
+            const idi8 = new Expression.Int8('(a + b) / 2', ['a', 'b']);
+            const ai8 = new Int8Array([1, 2, 3, 4]);
+            const ri8 = idi8.map(ai8, 'a', 1);
+            assert.instanceOf(ri8, Int8Array);
+            assert.deepEqual(ri8, new Int8Array([1, 1, 2, 2]));
+        })
+
+        it('Uint8', () => {
+            const idui8 = new Expression.Uint8('(a + b) / 2', ['a', 'b']);
+            const aui8 = new Uint8Array([1, 2, 3, 4]);
+            const rui8 = idui8.map(aui8, 'a', 1);
+            assert.instanceOf(rui8, Uint8Array);
+            assert.deepEqual(rui8, new Uint8Array([1, 1, 2, 2]));
+        })
+
+        it('Int16', () => {
+            const idi16 = new Expression.Int16('(a + b) / 2', ['a', 'b']);
+            const ai16 = new Int16Array([1, 2, 3, 4]);
+            const ri16 = idi16.map(ai16, 'a', 1);
+            assert.instanceOf(ri16, Int16Array);
+            assert.deepEqual(ri16, new Int16Array([1, 1, 2, 2]));
+        })
+
+        it('Uint16', () => {
+            const idui16 = new Expression.Uint16('(a + b) / 2', ['a', 'b']);
+            const aui16 = new Uint16Array([1, 2, 3, 4]);
+            const rui16 = idui16.map(aui16, 'a', 1);
+            assert.instanceOf(rui16, Uint16Array);
+            assert.deepEqual(rui16, new Uint16Array([1, 1, 2, 2]));
+        })
+
+        it('Int32', () => {
+            const idi32 = new Expression.Int32('(a + b) / 2', ['a', 'b']);
+            const ai32 = new Int32Array([1, 2, 3, 4]);
+            const ri32 = idi32.map(ai32, 'a', 1);
+            assert.instanceOf(ri32, Int32Array);
+            assert.deepEqual(ri32, new Int32Array([1, 1, 2, 2]));
+        })
+
+        it('Uint32', () => {
+            const idui32 = new Expression.Uint32('(a + b) / 2', ['a', 'b']);
+            const aui32 = new Uint32Array([1, 2, 3, 4]);
+            const rui32 = idui32.map(aui32, 'a', 1);
+            assert.instanceOf(rui32, Uint32Array);
+            assert.deepEqual(rui32, new Uint32Array([1, 1, 2, 2]));
+        })
+
         it('Float32', () => {
             const id32 = new Expression.Float32('(a + b) / 2', ['a', 'b']);
             const a32 = new Float32Array([ 1, 2, 3, 4]);

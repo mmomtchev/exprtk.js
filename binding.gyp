@@ -5,7 +5,7 @@
   'targets': [
     {
       'target_name': 'exprtk.js-native',
-      'sources': [ 
+      'sources': [
         'src/expression.cc'
       ],
       'include_dirs': [

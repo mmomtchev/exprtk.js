@@ -1,0 +1,164 @@
+--- exprtk/exprtk.hpp.orig	2021-12-19 21:15:10.168970664 +0100
++++ exprtk/exprtk.hpp	2021-12-20 11:49:47.673758209 +0100
+@@ -809,6 +809,8 @@
+             exprtk_register_complex_type_tag(long double)
+             exprtk_register_complex_type_tag(float      )
+ 
++            exprtk_register_int_type_tag(signed char   )
++            exprtk_register_int_type_tag(unsigned char )
+             exprtk_register_int_type_tag(short         )
+             exprtk_register_int_type_tag(int           )
+             exprtk_register_int_type_tag(_int64_t      )
+@@ -845,18 +847,36 @@
+             }
+ 
+             template <typename T>
++            inline bool is_nan_impl(const T, int_type_tag)
++            {
++               return false;
++            }
++
++            template <typename T>
+             inline int to_int32_impl(const T v, real_type_tag)
+             {
+                return static_cast<int>(v);
+             }
+ 
+             template <typename T>
++            inline int to_int32_impl(const T v, int_type_tag)
++            {
++               return static_cast<int>(v);
++            }
++
++            template <typename T>
+             inline _int64_t to_int64_impl(const T v, real_type_tag)
+             {
+                return static_cast<_int64_t>(v);
+             }
+ 
+             template <typename T>
++            inline _int64_t to_int64_impl(const T v, int_type_tag)
++            {
++               return static_cast<_int64_t>(v);
++            }
++
++            template <typename T>
+             inline bool is_true_impl(const T v)
+             {
+                return std::not_equal_to<T>()(T(0),v);
+@@ -918,7 +938,7 @@
+             template <typename T>
+             inline T expm1_impl(const T v, int_type_tag)
+             {
+-               return T(std::exp<double>(v)) - T(1);
++               return T(std::exp(v)) - T(1);
+             }
+ 
+             template <typename T>
+@@ -1347,6 +1367,10 @@
+             template <typename T> inline T  sqrt_impl(const T v, int_type_tag) { return std::sqrt (v); }
+             template <typename T> inline T  frac_impl(const T  , int_type_tag) { return T(0);          }
+             template <typename T> inline T trunc_impl(const T v, int_type_tag) { return v;             }
++            template <typename T> inline T   d2g_impl(const T  , int_type_tag) { return std::numeric_limits<T>::quiet_NaN(); }
++            template <typename T> inline T   g2d_impl(const T  , int_type_tag) { return std::numeric_limits<T>::quiet_NaN(); }
++            template <typename T> inline T   r2d_impl(const T  , int_type_tag) { return std::numeric_limits<T>::quiet_NaN(); }
++            template <typename T> inline T   d2r_impl(const T  , int_type_tag) { return std::numeric_limits<T>::quiet_NaN(); }
+             template <typename T> inline T  acos_impl(const T  , int_type_tag) { return std::numeric_limits<T>::quiet_NaN(); }
+             template <typename T> inline T acosh_impl(const T  , int_type_tag) { return std::numeric_limits<T>::quiet_NaN(); }
+             template <typename T> inline T  asin_impl(const T  , int_type_tag) { return std::numeric_limits<T>::quiet_NaN(); }
+@@ -2003,6 +2027,59 @@
+          return true;
+       }
+ 
++      template <typename Iterator, typename T>
++      inline bool string_to_real(Iterator& itr_external, const Iterator end, T& t, numeric::details::int_type_tag)
++      {
++         if (end == itr_external) return false;
++
++         Iterator itr = itr_external;
++
++         T d = T(0);
++
++         const bool negative = ('-' == (*itr));
++
++         if (negative || '+' == (*itr))
++         {
++            if (end == ++itr)
++               return false;
++         }
++
++         bool instate = false;
++
++         static const char_t zero = static_cast<uchar_t>('0');
++
++         #define parse_digit_1(d)          \
++         if ((digit = (*itr - zero)) < 10) \
++            { d = d * T(10) + digit; }     \
++         else                              \
++            { break; }                     \
++         if (end == ++itr) break;          \
++
++         #define parse_digit_2(d)          \
++         if ((digit = (*itr - zero)) < 10) \
++            { d = d * T(10) + digit; }     \
++         else                              \
++            { break; }                     \
++            ++itr;                         \
++
++         const Iterator curr = itr;
++
++         while ((end != itr) && (zero == (*itr))) ++itr;
++
++         while (end != itr)
++         {
++            unsigned int digit;
++            parse_digit_1(d)
++            parse_digit_1(d)
++            parse_digit_2(d)
++         }
++
++         if (curr != itr) instate = true;
++
++         t = static_cast<T>((negative) ? -d : d);
++         return instate;
++      }
++
+       template <typename T>
+       inline bool string_to_real(const std::string& s, T& t)
+       {
+@@ -5234,6 +5311,26 @@
+          return std::not_equal_to<float>()(0.0f,v);
+       }
+ 
++      inline bool is_true(const unsigned int v)
++      {
++         return v != 0;
++      }
++
++      inline bool is_true(const int v)
++      {
++         return v != 0;
++      }
++
++      inline bool is_true(const unsigned char v)
++      {
++         return v != 0;
++      }
++
++      inline bool is_true(const char v)
++      {
++         return v != 0;
++      }
++
+       template <typename T>
+       inline bool is_true(const std::complex<T>& v)
+       {
+@@ -25831,7 +25928,7 @@
+                }
+             }
+ 
+-            if (vec_initilizer_list.size() > vector_size)
++            if (vec_initilizer_list.size() > static_cast<std::size_t>(vector_size))
+             {
+                set_error(
+                   make_error(parser_error::e_syntax,

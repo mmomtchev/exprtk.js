@@ -6,7 +6,7 @@ using namespace exprtk_js;
 
 template <typename T> exprtk::parser<T> Expression<T>::parser;
 
-  /**
+/**
  * @param {string} expression function
  * @param {string[]} variables An array containing all the scalar variables' names
  * @param {Record<string,number>[]} [vectors] An object containing all the vector variables' names and their sizes
@@ -23,8 +23,8 @@ template <typename T> exprtk::parser<T> Expression<T>::parser;
  *  '(sumsq - (sum*sum) / x[]) / (x[] - 1);',
  *  [], {x: 1024})
  */
-  template <typename T>
-  Expression<T>::Expression(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Expression<T>>::ObjectWrap(info) {
+template <typename T>
+Expression<T>::Expression(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Expression<T>>::ObjectWrap(info) {
   Napi::Env env = info.Env();
 
   if (info.Length() < 1) {
@@ -189,7 +189,8 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::map) {
     info.Length() < 1 || !info[0].IsTypedArray() ||
     info[0].As<Napi::TypedArray>().TypedArrayType() != NapiArrayType<T>::type) {
 
-    Napi::TypeError::New(env, "first argument must by a Float64Array").ThrowAsJavaScriptException();
+    Napi::TypeError::New(env, "first argument must be a " + std::string(NapiArrayType<T>::name))
+      .ThrowAsJavaScriptException();
     return env.Null();
   }
   Napi::TypedArray array = info[0].As<Napi::TypedArray>();
@@ -274,9 +275,10 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::reduce) {
 
   if (
     info.Length() < 1 || !info[0].IsTypedArray() ||
-    info[0].As<Napi::TypedArray>().TypedArrayType() != napi_float64_array) {
+    info[0].As<Napi::TypedArray>().TypedArrayType() != NapiArrayType<T>::type) {
 
-    Napi::TypeError::New(env, "first argument must by a Float64Array").ThrowAsJavaScriptException();
+    Napi::TypeError::New(env, "first argument must be a " + std::string(NapiArrayType<T>::name))
+      .ThrowAsJavaScriptException();
     return env.Null();
   }
   Napi::TypedArray array = info[0].As<Napi::TypedArray>();
@@ -344,15 +346,21 @@ template <typename T> Napi::Function Expression<T>::GetClass(Napi::Env env) {
   napi_property_attributes props = static_cast<napi_property_attributes>(napi_writable | napi_configurable);
   return Napi::ObjectWrap<Expression<T>>::DefineClass(
     env,
-    "Expression",
+    NapiArrayType<T>::name,
     {ASYNCABLE_INSTANCE_METHOD(Expression, eval, props),
      ASYNCABLE_INSTANCE_METHOD(Expression, map, props),
      ASYNCABLE_INSTANCE_METHOD(Expression, reduce, props)});
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
-  exports.Set(Napi::String::New(env, "Float32"), Expression<float>::GetClass(env));
-  exports.Set(Napi::String::New(env, "Float64"), Expression<double>::GetClass(env));
+  exports.Set(Napi::String::New(env, NapiArrayType<int8_t>::name), Expression<int8_t>::GetClass(env));
+  exports.Set(Napi::String::New(env, NapiArrayType<uint8_t>::name), Expression<uint8_t>::GetClass(env));
+  exports.Set(Napi::String::New(env, NapiArrayType<int16_t>::name), Expression<int16_t>::GetClass(env));
+  exports.Set(Napi::String::New(env, NapiArrayType<uint16_t>::name), Expression<uint16_t>::GetClass(env));
+  exports.Set(Napi::String::New(env, NapiArrayType<int32_t>::name), Expression<int32_t>::GetClass(env));
+  exports.Set(Napi::String::New(env, NapiArrayType<uint32_t>::name), Expression<uint32_t>::GetClass(env));
+  exports.Set(Napi::String::New(env, NapiArrayType<float>::name), Expression<float>::GetClass(env));
+  exports.Set(Napi::String::New(env, NapiArrayType<double>::name), Expression<double>::GetClass(env));
   return exports;
 }
 

@@ -43,10 +43,10 @@ const sumSquares = sumPow.reduce(inputArray, 'x', 'a', 0, 2);
 
 ## With a `TypedArray`
 
-Only `Float64` and `Float32` are supported. As `ExprTk` supports only fixed-size arrays the size must be known when compiling the expression.
+The data type and the array size  must be known when compiling the expression. `ExprTk` supports only fixed-size arrays.
 
 ```js
-const expr = require("exprtk.js").Expression;
+const expr = require("exprtk.js").Float64;
 
 const mean = new expr(
     'var r := 0;' + 
@@ -63,7 +63,7 @@ const r = mean.eval(new Float64Array([ 1, 2, 3, 4, 5, 6 ])});
 An `Expression` is not reentrant so multiple concurrent evaluations of the same object will wait on one another. Multiple evaluations on multiple objects will run in parallel up to the limit set by the Node.js environment variable `UV_THREADPOOL_SIZE`. Mixing synchronous and asynchronous evaluations is supported, but a synchronous evaluation will block the event loop until all asynchronous evaluations on that same object are finished.
 
 ```js
-const expr = require("exprtk.js").Expression;
+const expr = require("exprtk.js").Float64;
 
 // Explicit traversal
 const mean = new expr(
@@ -89,4 +89,4 @@ const sumSquares = await sumPow.reduceAsync(inputArray, 'x', 'a', 0, 2);
 
 # Integer types
 
-`ExprTk` currently supports only floating point types. If you can get Mr. [@ArashPartow](https://github.com/ArashPartow) to add support for integer types, releasing a compatible `ExprTk.js` will be a matter of a few hours of work. Adding integer support to `ExprTk` is definitely not a trivial task and I have no need for it - but I will gladly accept funding to implement it.
+Originally, `ExprTk` supports only floating point types. The version bundled with `ExprTk.js` has working integer support, but one should be extra careful as it internally uses `NaN` values and most built-in mathematical functions won't work correctly with integer types.

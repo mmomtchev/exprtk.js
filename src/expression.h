@@ -11,8 +11,57 @@ namespace exprtk_js {
 
 template <typename T> struct NapiArrayType {  };
 
+template <> struct NapiArrayType<int8_t> {
+  static const napi_typedarray_type type = napi_int8_array;
+  static constexpr const char *name = "Int8";
+  static inline Napi::TypedArray New(napi_env env, size_t elementLength) {
+    return Napi::Int8Array::New(env, elementLength);
+  }
+};
+
+template <> struct NapiArrayType<uint8_t> {
+  static const napi_typedarray_type type = napi_uint8_array;
+  static constexpr const char *name = "Uint8";
+  static inline Napi::TypedArray New(napi_env env, size_t elementLength) {
+    return Napi::Uint8Array::New(env, elementLength);
+  }
+};
+
+template <> struct NapiArrayType<int16_t> {
+  static const napi_typedarray_type type = napi_int16_array;
+  static constexpr const char *name = "Int16";
+  static inline Napi::TypedArray New(napi_env env, size_t elementLength) {
+    return Napi::Int16Array::New(env, elementLength);
+  }
+};
+
+template <> struct NapiArrayType<uint16_t> {
+  static const napi_typedarray_type type = napi_uint16_array;
+  static constexpr const char *name = "Uint16";
+  static inline Napi::TypedArray New(napi_env env, size_t elementLength) {
+    return Napi::Uint16Array::New(env, elementLength);
+  }
+};
+
+template <> struct NapiArrayType<int32_t> {
+  static const napi_typedarray_type type = napi_int32_array;
+  static constexpr const char *name = "Int32";
+  static inline Napi::TypedArray New(napi_env env, size_t elementLength) {
+    return Napi::Int32Array::New(env, elementLength);
+  }
+};
+
+template <> struct NapiArrayType<uint32_t> {
+  static const napi_typedarray_type type = napi_uint32_array;
+  static constexpr const char *name = "Uint32";
+  static inline Napi::TypedArray New(napi_env env, size_t elementLength) {
+    return Napi::Uint32Array::New(env, elementLength);
+  }
+};
+
 template <> struct NapiArrayType<double> { 
   static const napi_typedarray_type type = napi_float64_array;
+  static constexpr const char *name = "Float64";
   static inline Napi::TypedArray New(napi_env env, size_t elementLength) {
     return Napi::Float64Array::New(env, elementLength);
   }
@@ -20,6 +69,7 @@ template <> struct NapiArrayType<double> {
 
 template <> struct NapiArrayType<float> { 
   static const napi_typedarray_type type = napi_float32_array;
+  static constexpr const char *name = "Float32";
   static inline Napi::TypedArray New(napi_env env, size_t elementLength) {
     return Napi::Float32Array::New(env, elementLength);
   }
