@@ -35,10 +35,17 @@ const r = clamp.eval(5, 12, 10);
 // arguments as an object
 const r = clamp.eval({ a: 5, b: 10, x: 12 });
 
-// map with C++ traversal
+
+// map/reduce with C++ traversal
 const inputArray = new Float64Array(n);
+
+// these are equivalent
 const resultingArray = clamp.map(inputArray, 'x', 5, 10);
+const resultingArray = clamp.map(inputArray, 'x', {minv: 5, maxv: 10});
+
+// these are equivalent
 const sumSquares = sumPow.reduce(inputArray, 'x', 'a', 0, 2);
+const sumSquares = sumPow.reduce(inputArray, 'x', 'a', 0, {p: 2});
 ```
 
 ## With a `TypedArray`
@@ -59,6 +66,8 @@ const r = mean.eval(new Float64Array([ 1, 2, 3, 4, 5, 6 ])});
 ```
 
 ## Using asynchronously
+
+When launching an asynchronous operation, the scalar arguments will be copied and any `TypedArray`s will be locked in place and protected from the GC. The whole operation, including traversal and evaluation will happen entirely in a pre-existing background thread from a pool and won't solicit the main thread until completion.
 
 An `Expression` is not reentrant so multiple concurrent evaluations of the same object will wait on one another. Multiple evaluations on multiple objects will run in parallel up to the limit set by the Node.js environment variable `UV_THREADPOOL_SIZE`. Mixing synchronous and asynchronous evaluations is supported, but a synchronous evaluation will block the event loop until all asynchronous evaluations on that same object are finished.
 
@@ -89,4 +98,4 @@ const sumSquares = await sumPow.reduceAsync(inputArray, 'x', 'a', 0, 2);
 
 # Integer types
 
-Originally, `ExprTk` supports only floating point types. The version bundled with `ExprTk.js` has working integer support, but one should be extra careful as it internally uses `NaN` values and most built-in mathematical functions won't work correctly with integer types.
+Originally, `ExprTk` supports only floating point types. The version bundled with `ExprTk.js` has working integer support, but one should be extra careful as it internally uses `NaN` values and most built-in mathematical functions - like `sin`, `cos`, `pow` or `exp` - won't work correctly with integer types. Always check the result of your function when using anything but basic arithmetic.
