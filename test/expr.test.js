@@ -122,7 +122,7 @@ describe('Expression', () => {
         const R = 0.0831446;
         const Md = 0.0289652;
         const Mv = 0.018016;
-        const fi = new Float32Array([0, 0.2, 0.5, 0.9, 0.5]);
+        const phi = new Float32Array([0, 0.2, 0.5, 0.9, 0.5]);
         const P = new Uint16Array([1013, 1013, 1013, 1013, 995]);
         const T = new Uint16Array([25, 25, 25, 25, 25]);
 
@@ -144,24 +144,24 @@ describe('Expression', () => {
             sumPow = new expr('a + pow(x, p)', ['a', 'x', 'p']);
 
 
-            // Air density of humid air from relative humidity (fi), temperature (T) and pressure (P)
-            // r = ( Pd * Md + Pv * Mv ) / ( R * T )       // density (Avogadro's law)
-            // Pv = fi * Ps                                // vapor pressure of water
+            // Air density of humid air from relative humidity (phi), temperature (T) and pressure (P)
+            // rho = ( Pd * Md + Pv * Mv ) / ( R * T )       // density (Avogadro's law)
+            // Pv = phi * Ps                                // vapor pressure of water
             // Ps = 6.1078 * 10 ^ (7.5 * T / (T + 237.3))  // saturation vapor pressure at the given temperature (Tetens' equation)
             // Pd = P - Pv                                 // partial pressure of dry air
             // R = 0.0831446                               // universal gas constant
             // Md = 0.0289652                              // molar mass of water vapor
             // Mv = 0.018016                               // molar mass of dry air
             // ( this is the weather science form of the equation and not the hard physics one with T in C° and pressure in hPa )
-            // fi, T and P are arbitrary TypedArrays of the same size
+            // phi, T and P are arbitrary TypedArrays of the same size
             //
             // Calculation uses Float64 internally
             // Result is stored in Float32
             //
             density = new expr(
-                'var Pv := ( fi * 6.1078 * pow(10, (7.5 * T / (T + 237.3))) ); ' +  // compute Pv and store it
+                'var Pv := ( phi * 6.1078 * pow(10, (7.5 * T / (T + 237.3))) ); ' +  // compute Pv and store it
                 '( (P - Pv) * Md + Pv * Mv ) / ( R * (T + 273.15) )',               // main formula (return expression)
-                ['P', 'T', 'fi', 'R', 'Md', 'Mv']
+                ['P', 'T', 'phi', 'R', 'Md', 'Mv']
             );
 
         })
@@ -391,13 +391,13 @@ describe('Expression', () => {
 
             it('should accept a pre-existing array', () => {
                 const result = new Float32Array(5);
-                const r = density.cwise({ P, T, fi, R, Mv, Md }, result);
+                const r = density.cwise({ P, T, phi, R, Mv, Md }, result);
                 assert.strictEqual(result, r);
                 for (const i in result) assert.closeTo(result[i], expected[i], 10e-3);
             })
 
             it('should create a new array', () => {
-                const result = density.cwise({ P, T, fi, R, Mv, Md });
+                const result = density.cwise({ P, T, phi, R, Mv, Md });
                 assert.instanceOf(result, Float64Array);
                 for (const i in result) assert.closeTo(result[i], expected[i], 10e-3);
             })
@@ -422,7 +422,7 @@ describe('Expression', () => {
 
             it('should throw if all the arguments are scalar', () => {
                 assert.throws(() => {
-                    density.cwise({ P: 1, T: 2, fi: 3, R, Mv, Md });
+                    density.cwise({ P: 1, T: 2, phi: 3, R, Mv, Md });
                 }, /at least one argument must be a non-zero length vector/);
             })
         })
@@ -431,7 +431,7 @@ describe('Expression', () => {
 
             it('should accept a pre-existing array', () => {
                 const result = new Float32Array(5);
-                const q = density.cwiseAsync({ P, T, fi, R, Mv, Md }, result);
+                const q = density.cwiseAsync({ P, T, phi, R, Mv, Md }, result);
                 return assert.isFulfilled(q.then((r) => {
                     assert.strictEqual(result, r);
                     for (const i in result) assert.closeTo(result[i], expected[i], 10e-3);
@@ -439,7 +439,7 @@ describe('Expression', () => {
             })
 
             it('should create a new array', () => {
-                const q = density.cwiseAsync({ P, T, fi, R, Mv, Md }).then((r) => {
+                const q = density.cwiseAsync({ P, T, phi, R, Mv, Md }).then((r) => {
                     assert.instanceOf(r, Float64Array);
                     for (const i in r) assert.closeTo(r[i], expected[i], 10e-3);
                 });
@@ -462,7 +462,7 @@ describe('Expression', () => {
             })
 
             it('should reject if all the arguments are scalar', () => {
-                return assert.isRejected(density.cwiseAsync({ P: 1, T: 2, fi: 3, R, Mv, Md }),
+                return assert.isRejected(density.cwiseAsync({ P: 1, T: 2, phi: 3, R, Mv, Md }),
                     /at least one argument must be a non-zero length vector/);
             })
         })

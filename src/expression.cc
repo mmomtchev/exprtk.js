@@ -352,16 +352,16 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::reduce) {
  * @returns {TypedArray}
  *
  * @example
- * // Air density of humid air from relative humidity (fi), temperature (T) and pressure (P)
- * // r = ( Pd * Md + Pv * Mv ) / ( R * (T + 273.15) // density (Avogadro's law)
- * // Pv = fi * Ps                                   // vapor pressure of water
+ * // Air density of humid air from relative humidity (phi), temperature (T) and pressure (P)
+ * // rho = ( Pd * Md + Pv * Mv ) / ( R * (T + 273.15) // density (Avogadro's law)
+ * // Pv = phi * Ps                                   // vapor pressure of water
  * // Ps = 6.1078 * 10 ^ (7.5 * T / (T + 237.3))     // saturation vapor pressure (Tetens' equation)
  * // Pd = P - Pv                                    // partial pressure of dry air
  * // R = 0.0831446                                  // universal gas constant
  * // Md = 0.0289652                                 // molar mass of water vapor
  * // Mv = 0.018016                                  // molar mass of dry air
  * // ( this is the weather science form of the equation and not the hard physics one with T in C° )
- * // fi, T and P are arbitrary TypedArrays of the same size
+ * // phi, T and P are arbitrary TypedArrays of the same size
  * //
  * // Calculation uses Float64 internally
  * // Result is stored in Float32
@@ -369,22 +369,22 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::reduce) {
  * const R = 0.0831446;
  * const Md = 0.0289652;
  * const Mv = 0.018016;
- * const fi = new Float32Array([0, 0.2, 0.5, 0.9, 0.5]);
+ * const phi = new Float32Array([0, 0.2, 0.5, 0.9, 0.5]);
  * const P = new Uint16Array([1013, 1013, 1013, 1013, 995]);
  * const T = new Uint16Array([25, 25, 25, 25, 25]);
  * 
  * const density = new Float64Expression(
- *   'Pv := ( fi * 6.1078 * pow(10, (7.5 * T / (T + 237.3))) ); ' +  // compute Pv and store it
+ *   'Pv := ( phi * 6.1078 * pow(10, (7.5 * T / (T + 237.3))) ); ' +  // compute Pv and store it
  *   '( (P - Pv) * Md + Pv * Mv ) / ( R * (T + 273.13) )',           // return expression
- *    ['P', 'T', 'fi', 'R', 'Md', 'Mv']
+ *    ['P', 'T', 'phi', 'R', 'Md', 'Mv']
  * );
  * const result = new Float32Array(P.length);
  * 
  * // sync
- * density.cwise({fi, T, P, R, Md, Mv}, result);
+ * density.cwise({phi, T, P, R, Md, Mv}, result);
  * 
  * // async
- * await density.cwiseAsync({fi, T, P, R, Md, Mv}, result);
+ * await density.cwiseAsync({phi, T, P, R, Md, Mv}, result);
  */
 ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
   Napi::Env env = info.Env();

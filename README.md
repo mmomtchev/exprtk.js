@@ -103,9 +103,9 @@ const sumSquares = await sumPow.reduceAsync(inputArray, 'x', 'a', 0, 2);
 These are the only methods that support type conversions and writing into preexisting arrays.
 
 ```js
-// Air density of humid air from relative humidity (fi), temperature (T) and pressure (P)
-// r = ( Pd * Md + Pv * Mv ) / ( R * T )      // density (Avogadro's law)
-// Pv = fi * Ps                               // vapor pressure of water
+// Air density of humid air from relative humidity (φ), temperature (T) and pressure (P)
+// rho = ( Pd * Md + Pv * Mv ) / ( R * T )      // density (Avogadro's law)
+// Pv = φ * Ps                               // vapor pressure of water
 // Ps = 6.1078 * 10 ^ (7.5 * T / (T + 237.3)) // saturation vapor pressure (Tetens' equation)
 // Pd = P - Pv                                // partial pressure of dry air
 // R = 0.0831446                              // universal gas constant
@@ -113,17 +113,17 @@ These are the only methods that support type conversions and writing into preexi
 // Mv = 0.018016                              // molar mass of dry air
 // ( this is the weather science form of the equation and not the hard physics one
 //   with T in C° and pressure in hPa )
-// fi, T and P are arbitrary TypedArrays of the same size
+// phi, T and P are arbitrary TypedArrays of the same size
 
 // Calculation uses Float64 internally
 const expr = require("exprtk.js").Float64;
 
 const density = new expr(
     // compute Pv and store it
-    'var Pv := ( fi * 6.1078 * pow(10, (7.5 * T / (T + 237.3))) ); ' +
+    'var Pv := ( phi * 6.1078 * pow(10, (7.5 * T / (T + 237.3))) ); ' +
     // main formula (and return expression)
     '( (P - Pv) * Md + Pv * Mv ) / ( R * (T + 273.15) )',
-    ['P', 'T', 'fi', 'R', 'Md', 'Mv']
+    ['P', 'T', 'phi', 'R', 'Md', 'Mv']
 );
 const R = 0.0831446;
 const Md = 0.0289652;
