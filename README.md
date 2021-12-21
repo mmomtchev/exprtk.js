@@ -12,7 +12,7 @@ ExprTk.js is a WIP and it is still not published
 
 Its main advantage is that it allows deferring of heavy computation for asynchronous execution in a background thread - something that Node.js/V8 does not allow without the very complex mechanisms of `worker_threads`.
 
-Even in single-threaded synchronous mode `ExprTk.js` outperforms native JS running in V8 by a significant margin for all types and array sizes.
+Even in single-threaded synchronous mode `ExprTk.js` outperforms the native JS `TypedArray.prototype.map` running in V8 by a significant margin for all types and array sizes.
 
 Different methods of traversal work better for different array sizes, you should probably run/adjust the benchmarks - `npm run bench` - to see for yourself.
 

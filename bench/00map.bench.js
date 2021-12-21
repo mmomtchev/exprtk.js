@@ -22,7 +22,24 @@ module.exports = function (type, size) {
   return b.suite(
     `map() ${type} arrays of ${size} elements`,
 
-    b.add('V8 / JS', () => {
+    b.add('V8 / JS w/o function', () => {
+      const r = new allocator(size);
+      let x;
+      for (let i = 0; i < size; i++) {
+        x = a1[i];
+        r[i] = x * x + 2 * x + 1;
+      }
+      assert.instanceOf(r, allocator);
+      assert.equal(r[4], testFn(4));
+    }),
+    b.add('V8 / JS iterative for loop', () => {
+      const r = new allocator(size);
+      for (let i = 0; i < size; i++)
+        r[i] = exprJS(a1[i]);
+      assert.instanceOf(r, allocator);
+      assert.equal(r[4], testFn(4));
+    }),
+    b.add('V8 / JS map()', () => {
       const r = a1.map(exprJS);
       assert.instanceOf(r, allocator);
       assert.equal(r[4], testFn(4));
@@ -35,9 +52,9 @@ module.exports = function (type, size) {
     // This test won't work with Int8/Int16 because of the iterator variable
     // which won't be able to hold the array index
     b.add('ExprTk.js eval() explicit traversal', () => {
-      const a2 = new allocator(size);
-      exprExprTkE.eval(a1, a2);
-      assert.equal(a2[4], testFn(4));
+      const r = new allocator(size);
+      exprExprTkE.eval(a1, r);
+      assert.equal(r[4], testFn(4));
     }),
     b.add('ExprTk.js cwise() traversal', () => {
       const r = exprExprTkI.cwise({ x: a1 });
