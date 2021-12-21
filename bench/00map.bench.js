@@ -6,7 +6,6 @@ module.exports = function (type, size) {
   const allocator = global[type + 'Array'];
 
   const a1 = new allocator(size);
-  const a2 = new allocator(size);
 
   const exprJS = (x) => (x * x + 2 * x + 1);
   const exprExprTkI = new e[type]('x*x + 2*x + 1', ['x']);

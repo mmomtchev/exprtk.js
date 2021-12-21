@@ -407,7 +407,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
   // napi_biguint64_array
   static const NapiFromCaster_t NapiFromCasters[] = {
     [](uint8_t *data) { return static_cast<T>(*(reinterpret_cast<int8_t *>(data))); },
-    [](uint8_t *data) { return static_cast<T>(*(reinterpret_cast<uint8_t *>(data))); },
+    [](uint8_t *data) { return *data; },
     [](uint8_t *data) -> T { throw "unsupported type"; },
     [](uint8_t *data) { return static_cast<T>(*(reinterpret_cast<int16_t *>(data))); },
     [](uint8_t *data) { return static_cast<T>(*(reinterpret_cast<uint16_t *>(data))); },

@@ -177,7 +177,7 @@ describe('Expression', () => {
             })
             it('should throw if not all arguments are given', () => {
                 assert.throws(() => {
-                    const r = vectorMean.eval();
+                    vectorMean.eval();
                 }, /wrong number of input arguments/)
             })
             it('should support expression without arguments', () => {
@@ -354,7 +354,7 @@ describe('Expression', () => {
         describe('reduceAsync()', () => {
 
             it('should evaluate an expression over all values of an array', () => {
-                r = sumPow.reduceAsync(vector, 'x', 'a', 0, 2);
+                const r = sumPow.reduceAsync(vector, 'x', 'a', 0, 2);
                 return assert.eventually.equal(r, 91);
             })
 

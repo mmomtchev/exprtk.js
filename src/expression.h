@@ -9,7 +9,7 @@
 
 namespace exprtk_js {
 
-template <typename T> struct NapiArrayType {  };
+template <typename T> struct NapiArrayType {};
 
 template <> struct NapiArrayType<int8_t> {
   static const napi_typedarray_type type = napi_int8_array;
@@ -76,7 +76,7 @@ template <> struct NapiArrayType<uint32_t> {
     return value.As<Napi::Number>().Uint32Value();
   }
 };
-template <> struct NapiArrayType<double> { 
+template <> struct NapiArrayType<double> {
   static const napi_typedarray_type type = napi_float64_array;
   static constexpr const char *name = "Float64";
   static inline Napi::TypedArray New(napi_env env, size_t elementLength) {
@@ -87,7 +87,7 @@ template <> struct NapiArrayType<double> {
   }
 };
 
-template <> struct NapiArrayType<float> { 
+template <> struct NapiArrayType<float> {
   static const napi_typedarray_type type = napi_float32_array;
   static constexpr const char *name = "Float32";
   static inline Napi::TypedArray New(napi_env env, size_t elementLength) {
@@ -118,7 +118,7 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
   // These are the vectorViews needed for rebasing the vectors when evaluating
   // Read "SECTION 14" of the ExprTk manual for more information on this
   std::map<std::string, exprtk::vector_view<T> *> vectorViews;
-  
+
   // shared across all instances of the same type
   static exprtk::parser<T> parser;
 

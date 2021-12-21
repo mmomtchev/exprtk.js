@@ -1,0 +1,18 @@
+{
+  "env": {
+    "mocha": true,
+    "node": true,
+    "es6": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:array-func/recommended"
+  ],
+  "plugins": [
+    "mocha",
+    "prefer-arrow"
+  ],
+  "parserOptions": {
+    "ecmaVersion": 2017
+  }
+}
