@@ -2,38 +2,40 @@
   'variables': {
     'enable_asan%': 'false'
   },
-  'configurations': {
-    'Debug': {
-      'cflags_cc!': [ '-O3', '-Os' ],
-      'defines': [ 
-        'DEBUG',
-        'exprtk_disable_string_capabilities',
-        'exprtk_disable_enhanced_features'
-      ],
-      'defines!': [ 'NDEBUG' ],
-      'xcode_settings': {
-        'GCC_OPTIMIZATION_LEVEL': '0',
-        'GCC_GENERATE_DEBUGGING_SYMBOLS': 'YES',
-      }
-    },
-    'Release': {
-      'defines': [ 'NDEBUG' ],
-      'defines!': [ 'DEBUG' ],
-      'xcode_settings': {
-        'GCC_OPTIMIZATION_LEVEL': 's',
-        'GCC_GENERATE_DEBUGGING_SYMBOLS': 'NO',
-        'DEAD_CODE_STRIPPING': 'YES',
-        'GCC_INLINES_ARE_PRIVATE_EXTERN': 'YES'
+  'target_defaults': {
+    'configurations': {
+      'Debug': {
+        'cflags_cc!': [ '-O3', '-Os' ],
+        'defines': [ 
+          'DEBUG',
+          'exprtk_disable_string_capabilities',
+          'exprtk_disable_enhanced_features'
+        ],
+        'defines!': [ 'NDEBUG' ],
+        'xcode_settings': {
+          'GCC_OPTIMIZATION_LEVEL': '0',
+          'GCC_GENERATE_DEBUGGING_SYMBOLS': 'YES',
+        }
       },
-      'ldflags': [
-        '-Wl,-s'
-      ],
-      'msvs_settings': {
-        'VCCLCompilerTool': {
-          'DebugInformationFormat': '0',
+      'Release': {
+        'defines': [ 'NDEBUG' ],
+        'defines!': [ 'DEBUG' ],
+        'xcode_settings': {
+          'GCC_OPTIMIZATION_LEVEL': 's',
+          'GCC_GENERATE_DEBUGGING_SYMBOLS': 'NO',
+          'DEAD_CODE_STRIPPING': 'YES',
+          'GCC_INLINES_ARE_PRIVATE_EXTERN': 'YES'
         },
-        'VCLinkerTool': {
-          'GenerateDebugInformation': 'false',
+        'ldflags': [
+          '-Wl,-s'
+        ],
+        'msvs_settings': {
+          'VCCLCompilerTool': {
+            'DebugInformationFormat': '0',
+          },
+          'VCLinkerTool': {
+            'GenerateDebugInformation': 'false',
+          }
         }
       }
     }
