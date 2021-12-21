@@ -191,7 +191,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::map) {
     info.Length() < 1 || !info[0].IsTypedArray() ||
     info[0].As<Napi::TypedArray>().TypedArrayType() != NapiArrayType<T>::type) {
 
-    Napi::TypeError::New(env, "first argument must be a " + std::string(NapiArrayType<T>::name))
+    Napi::TypeError::New(env, "first argument must be a " + std::string(NapiArrayType<T>::name) + "Array")
       .ThrowAsJavaScriptException();
     return env.Null();
   }
