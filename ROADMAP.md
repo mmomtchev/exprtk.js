@@ -1,6 +1,7 @@
 # 1.0
 
 - C-API for using from another native-addon (`gdal-async`)
+- Support returning vectors and/or multiple values from an expression
 
 # 2.0
 
