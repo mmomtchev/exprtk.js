@@ -49,8 +49,9 @@
         '<!@(node -p \'require("node-addon-api").include\')'
       ],
       'dependencies': ['<!(node -p \'require("node-addon-api").gyp\')'],
-      'cflags!': [ '-fno-exceptions', '-fno-rtti' ],
-      'cflags_cc!': [ '-fno-exceptions', '-fno-rtti' ],
+      'cflags!': [ '-fno-exceptions', '-fno-rtti', '-fvisibility=default' ],
+      'cflags_cc!': [ '-fno-exceptions', '-fno-rtti', '-fvisibility=default' ],
+      'cflags_cc': [ '-fvisibility=hidden' ],
       'ldflags': [ '-Wl,-z,now' ],
       'xcode_settings': {
         'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',

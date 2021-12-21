@@ -104,8 +104,8 @@ These are the only methods that support type conversions and writing into preexi
 
 ```js
 // Air density of humid air from relative humidity (φ), temperature (T) and pressure (P)
-// rho = ( Pd * Md + Pv * Mv ) / ( R * T )      // density (Avogadro's law)
-// Pv = φ * Ps                               // vapor pressure of water
+// rho = ( Pd * Md + Pv * Mv ) / ( R * T )    // density (Avogadro's law)
+// Pv = φ * Ps                                // vapor pressure of water
 // Ps = 6.1078 * 10 ^ (7.5 * T / (T + 237.3)) // saturation vapor pressure (Tetens' equation)
 // Pd = P - Pv                                // partial pressure of dry air
 // R = 0.0831446                              // universal gas constant

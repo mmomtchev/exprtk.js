@@ -354,12 +354,12 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::reduce) {
  * @example
  * // Air density of humid air from relative humidity (phi), temperature (T) and pressure (P)
  * // rho = ( Pd * Md + Pv * Mv ) / ( R * (T + 273.15) // density (Avogadro's law)
- * // Pv = phi * Ps                                   // vapor pressure of water
- * // Ps = 6.1078 * 10 ^ (7.5 * T / (T + 237.3))     // saturation vapor pressure (Tetens' equation)
- * // Pd = P - Pv                                    // partial pressure of dry air
- * // R = 0.0831446                                  // universal gas constant
- * // Md = 0.0289652                                 // molar mass of water vapor
- * // Mv = 0.018016                                  // molar mass of dry air
+ * // Pv = phi * Ps                                    // vapor pressure of water
+ * // Ps = 6.1078 * 10 ^ (7.5 * T / (T + 237.3))       // saturation vapor pressure (Tetens' equation)
+ * // Pd = P - Pv                                      // partial pressure of dry air
+ * // R = 0.0831446                                    // universal gas constant
+ * // Md = 0.0289652                                   // molar mass of water vapor
+ * // Mv = 0.018016                                    // molar mass of dry air
  * // ( this is the weather science form of the equation and not the hard physics one with T in C° )
  * // phi, T and P are arbitrary TypedArrays of the same size
  * //
