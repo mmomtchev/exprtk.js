@@ -235,10 +235,14 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::map) {
 
   job.main = [this, importers, iterator, input, output, len]() {
     for (auto const &f : importers) f();
-    for (size_t i = 0; i < len; i++) {
-      iterator->ref() = input[i];
-      output[i] = expression.value();
-      if (expression.results().count()) { throw "explicit return values are not supported"; }
+
+    T *it_ptr = &iterator->ref();
+    T *in_ptr = input;
+    T *out_ptr = output;
+    auto const in_end = in_ptr + len;
+    for (; in_ptr < in_end; in_ptr++, out_ptr++) {
+      *it_ptr = *in_ptr;
+      *out_ptr = expression.value();
     }
     return 0;
   };
@@ -335,10 +339,12 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::reduce) {
   job.main = [this, importers, iterator, accu, accuInit, input, len]() {
     for (auto const &f : importers) f();
     accu->ref() = accuInit;
-    for (size_t i = 0; i < len; i++) {
-      iterator->ref() = input[i];
-      accu->ref() = expression.value();
-      if (expression.results().count()) { throw "explicit return values are not supported"; }
+    T *it_ptr = &iterator->ref();
+    T *accu_ptr = &accu->ref();
+    T *input_end = input + len;
+    for (T *i = input; i < input_end; i++) {
+      *it_ptr = *i;
+      *accu_ptr = expression.value();
     }
     return accu->value();
   };
@@ -453,13 +459,16 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
     return env.Null();
   }
 
+  bool typeConversionRequired = false;
+
   struct symbolDesc {
     std::string name;
     napi_typedarray_type type;
     uint8_t *data;
     uint8_t storage[8];
     size_t elementSize;
-    typename exprtk::symbol_table<T>::variable_ptr exprtk_var;
+    T *exprtk_var;
+    NapiFromCaster_t fromCaster;
   };
 
   size_t len = 0;
@@ -469,13 +478,13 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
   for (std::size_t i = 0; i < argNames.Length(); i++) {
     const std::string name = argNames.Get(i).As<Napi::String>().Utf8Value();
     Napi::Value value = args.Get(name);
-    auto exprtk_var = symbolTable.get_variable(name);
-    if (exprtk_var == nullptr) {
+    auto exprtk_ptr = symbolTable.get_variable(name);
+    if (exprtk_ptr == nullptr) {
       Napi::TypeError::New(env, name + " is not a declared scalar variable").ThrowAsJavaScriptException();
       return env.Null();
     }
     symbolDesc current;
-    current.exprtk_var = exprtk_var;
+    current.exprtk_var = &exprtk_ptr->ref();
 
     if (value.IsNumber()) {
       current.name = name;
@@ -495,6 +504,8 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
       current.type = array.TypedArrayType();
       current.data = reinterpret_cast<uint8_t *>(array.ArrayBuffer().Data());
       current.elementSize = array.ElementSize();
+      current.fromCaster = NapiFromCasters[current.type];
+      if (current.type != NapiArrayType<T>::type) typeConversionRequired = true;
       vectors.push_back(current);
     } else {
       variableNames.push_back(name);
@@ -523,28 +534,42 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
   uint8_t *output = reinterpret_cast<uint8_t *>(result.ArrayBuffer().Data());
   size_t elementSize = result.ElementSize();
   napi_typedarray_type outputType = result.TypedArrayType();
+  const NapiToCaster_t toCaster = NapiToCasters[outputType];
+  if (outputType != NapiArrayType<T>::type) typeConversionRequired = true;
 
   std::shared_ptr<Napi::ObjectReference> persistent =
     std::make_shared<Napi::ObjectReference>(Napi::ObjectReference::New(result));
 
-  job.main = [this, scalars, vectors, output, outputType, elementSize, len]() mutable {
-    for (auto const &v : scalars) { v.exprtk_var->ref() = *(reinterpret_cast<const T *>(v.storage)); }
+  if (typeConversionRequired) {
+    job.main = [this, scalars, vectors, output, elementSize, len, toCaster]() mutable {
+      for (auto const &v : scalars) { *v.exprtk_var = *(reinterpret_cast<const T *>(v.storage)); }
 
-    uint8_t *output_ptr = output;
-
-    for (size_t i = 0; i < len; i++) {
-      for (auto &v : vectors) {
-        auto value = NapiFromCasters[v.type](v.data);
-        v.exprtk_var->ref() = value;
-        v.data += v.elementSize;
+      uint8_t *output_end = output + len * elementSize;
+      for (uint8_t *output_ptr = output; output_ptr < output_end; output_ptr += elementSize) {
+        for (auto &v : vectors) {
+          *v.exprtk_var = v.fromCaster(v.data);
+          v.data += v.elementSize;
+        }
+        toCaster(output_ptr, expression.value());
       }
-      auto result = expression.value();
-      if (expression.results().count()) { throw "explicit return values are not supported"; }
-      NapiToCasters[outputType](output_ptr, result);
-      output_ptr += elementSize;
-    }
-    return 0;
-  };
+      return 0;
+    };
+  } else {
+    job.main = [this, scalars, vectors, output, len]() mutable {
+      for (auto const &v : scalars) { *v.exprtk_var = *(reinterpret_cast<const T *>(v.storage)); }
+
+      T *output_end = reinterpret_cast<T *>(output) + len;
+      for (T *output_ptr = reinterpret_cast<T *>(output); output_ptr < output_end; output_ptr++) {
+        for (auto &v : vectors) {
+          *v.exprtk_var = *(reinterpret_cast<T *>(v.data));
+          v.data += v.elementSize;
+        }
+        *output_ptr = expression.value();
+      }
+      return 0;
+    };
+  }
+
   job.rval = [env, persistent](T r) { return persistent->Value(); };
   return job.run(info, async, info.Length() - 1);
 }
@@ -561,12 +586,14 @@ template <typename T> Napi::Function Expression<T>::GetClass(Napi::Env env) {
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
+#ifndef EXPRTK_DISABLE_INT_TYPES
   exports.Set(Napi::String::New(env, NapiArrayType<int8_t>::name), Expression<int8_t>::GetClass(env));
   exports.Set(Napi::String::New(env, NapiArrayType<uint8_t>::name), Expression<uint8_t>::GetClass(env));
   exports.Set(Napi::String::New(env, NapiArrayType<int16_t>::name), Expression<int16_t>::GetClass(env));
   exports.Set(Napi::String::New(env, NapiArrayType<uint16_t>::name), Expression<uint16_t>::GetClass(env));
   exports.Set(Napi::String::New(env, NapiArrayType<int32_t>::name), Expression<int32_t>::GetClass(env));
   exports.Set(Napi::String::New(env, NapiArrayType<uint32_t>::name), Expression<uint32_t>::GetClass(env));
+#endif
   exports.Set(Napi::String::New(env, NapiArrayType<float>::name), Expression<float>::GetClass(env));
   exports.Set(Napi::String::New(env, NapiArrayType<double>::name), Expression<double>::GetClass(env));
   return exports;

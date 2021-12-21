@@ -1,7 +1,13 @@
 {
   'variables': {
-    'enable_asan%': 'false'
+    'enable_asan%': 'false',
+    'disable_int%': 'false'
   },
+  'conditions': [
+    ['disable_int == "true"', {
+      'defines': [ 'EXPRTK_DISABLE_INT_TYPES' ]
+    }]
+  ],
   'target_defaults': {
     'configurations': {
       'Debug': {
