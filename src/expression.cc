@@ -430,7 +430,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
 
   static const NapiToCaster_t NapiToCasters[] = {
     [](uint8_t *dst, T value) { *(reinterpret_cast<int8_t *>(dst)) = static_cast<int8_t>(value); },
-    [](uint8_t *dst, T value) { *dst = value; },
+    [](uint8_t *dst, T value) { *dst = static_cast<uint8_t>(value); },
     [](uint8_t *dst, T value) { throw "unsupported type"; },
     [](uint8_t *dst, T value) { *(reinterpret_cast<int16_t *>(dst)) = static_cast<int16_t>(value); },
     [](uint8_t *dst, T value) { *(reinterpret_cast<uint16_t *>(dst)) = static_cast<uint16_t>(value); },
