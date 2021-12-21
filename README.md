@@ -10,9 +10,9 @@ ExprTk.js is a WIP and it is still not published
 
 # Usage
 
-ExprTk.js is only marginally faster, if faster at all, than executing the equivalent mathematical expression directly in Node.js/V8. Speedup when using synchronously is possible only for very large arrays.
-
 Its main advantage is that it allows deferring of heavy computation for asynchronous execution in a background thread - something that Node.js/V8 does not allow without the very complex mechanisms of `worker_threads`.
+
+Speedup is possible even when using synchronously if the arrays are sufficiently large. On 1MB arrays, `ExprTk.js` outperforms native JS running in V8 twice for floating point data and three times for integer data.
 
 It can also serve as a provider of thunks for `gdal-async` and `scijs` allowing for easy multi-threaded processing in Node.js.
 
@@ -146,3 +146,9 @@ const r = await density.cwiseAsync({ P, T, fi, R, Mv, Md }, result);
 # Integer types
 
 Originally, `ExprTk` supports only floating point types. The version bundled with `ExprTk.js` has working integer support, but one should be extra careful as it internally uses `NaN` values and most built-in mathematical functions - like `sin`, `cos`, `pow` or `exp` - won't work correctly with integer types. Always check the result of your function when using anything but basic arithmetic.
+
+# Notes
+
+## Build time and binary size
+
+`ExprTk` is a C++ template-based engine and it contains an exceptionally high number of symbols that are multiplied by the number of supported types. The final binary contains more than 250000 symbols which is the reason for the huge binary size and the slow build process. This has no effect on its performance or even its initial loading time as the symbols are not exported through the dynamic linker.

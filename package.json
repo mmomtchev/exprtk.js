@@ -5,7 +5,8 @@
     "node-addon-api": "^1.1.0"
   },
   "scripts": {
-    "test": "mocha"
+    "test": "mocha",
+    "bench": "node bench/bench.js"
   },
   "gypfile": true,
   "name": "exprtk.js",
@@ -38,6 +39,7 @@
     }
   },
   "devDependencies": {
+    "benny": "^3.7.1",
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
     "mocha": "^9.1.3"
