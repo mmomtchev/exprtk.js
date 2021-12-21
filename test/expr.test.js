@@ -115,7 +115,7 @@ describe('Expression', () => {
     });
 
     describe('compute', () => {
-        let mean, vectorMean, pi, clamp, sumPow, vectorReturn, vectorFromScalar;
+        let mean, vectorMean, pi, clamp, sumPow, vectorReturn, vectorFromScalar, vectorFill;
         let vector = new Float64Array([1, 2, 3, 4, 5, 6]);
 
         let density;
@@ -143,11 +143,14 @@ describe('Expression', () => {
             clamp = new expr('clamp(minv, x, maxv)', ['minv', 'x', 'maxv']);
             sumPow = new expr('a + pow(x, p)', ['a', 'x', 'p']);
             vectorReturn = new expr(
-                'var r[6]; for (var i:= 0; i < x[] and i < n; i += 1) { r[i] := x[i] * x[i] + a; }; return [r];',
+                'var r[6]; for (var i := 0; i < x[] and i < n; i += 1) { r[i] := x[i] * x[i] + a; }; return [r];',
                 [ 'n', 'a' ], { 'x': 6 });
             vectorFromScalar = new expr(
-                'var r[6]; for (var i:= 0; i < n; i += 1) { r[i] = n; }; return [r];',
+                'var r[6]; for (var i := 0; i < n; i += 1) { r[i] = n; }; return [r];',
                 [ 'n' ]);
+            vectorFill = new expr(
+                'for (var i := 0; i < 10; i += 1) { x[i] := i; }; x[];',
+                [], { 'x': 10 });
 
             // Air density of humid air from relative humidity (phi), temperature (T) and pressure (P)
             // rho = ( Pd * Md + Pv * Mv ) / ( R * T )     // density (Avogadro's law)
@@ -189,6 +192,11 @@ describe('Expression', () => {
             it('should support expression without arguments', () => {
                 assert.closeTo(pi.eval(), 3.14, 0.01);
             });
+            it('should modify the vector in place', () => {
+                const v = new Float64Array(10);
+                vectorFill.eval(v);
+                for (const i in v) assert.closeTo(v[i], +i, 10e-6);
+            });
         });
 
         describe('evalAsync() object form', () => {
@@ -203,6 +211,12 @@ describe('Expression', () => {
             });
             it('should support expression without arguments', () => {
                 return assert.eventually.closeTo(pi.evalAsync({}), 3.14, 0.01);
+            });
+            it('should modify the vector in place', () => {
+                const v = new Float64Array(10);
+                return assert.isFulfilled(vectorFill.evalAsync(v).then((r) => {
+                    for (const i in r) assert.closeTo(r[i], +i, 10e-6);
+                }));
             });
         });
 
