@@ -6,3 +6,5 @@
 
 - Cache-oblivious traversal of `scijs` strides
 - Reentrant `MPExpression` with OpenMP-style parallelism and sync/async interfaces - supporting multithreading even in synchronous code
+- Support strings
+- Support custom functions

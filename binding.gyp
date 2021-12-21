@@ -8,7 +8,6 @@
         'cflags_cc!': [ '-O3', '-Os' ],
         'defines': [ 
           'DEBUG',
-          'exprtk_disable_string_capabilities',
           'exprtk_disable_enhanced_features'
         ],
         'defines!': [ 'NDEBUG' ],
@@ -49,6 +48,9 @@
       'include_dirs': [
         'deps/exprtk',
         '<!@(node -p \'require("node-addon-api").include\')'
+      ],
+      'defines': [
+        'exprtk_disable_string_capabilities'
       ],
       'dependencies': ['<!(node -p \'require("node-addon-api").gyp\')'],
       'cflags!': [ '-fno-exceptions', '-fno-rtti', '-fvisibility=default' ],
