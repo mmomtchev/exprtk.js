@@ -116,7 +116,7 @@ template <typename T> Expression<T>::~Expression() {
  * Evaluate the expression
  *
  * @param {object} arguments function arguments
- * @returns {number}
+ * @returns {number|TypedArray}
  *
  * @example
  * // These two are equivalent
@@ -151,7 +151,9 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::eval) {
 
   job.main = [this, importers]() {
     for (auto const &f : importers) f();
-    return expression.value();
+    T r = expression.value();
+    if (expression.results().count()) { throw "explicit return values are not supported"; }
+    return r;
   };
   job.rval = [env](T r) { return Napi::Number::New(env, r); };
   return job.run(info, async, info.Length() - 1);
@@ -236,6 +238,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::map) {
     for (size_t i = 0; i < len; i++) {
       iterator->ref() = input[i];
       output[i] = expression.value();
+      if (expression.results().count()) { throw "explicit return values are not supported"; }
     }
     return 0;
   };
@@ -335,6 +338,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::reduce) {
     for (size_t i = 0; i < len; i++) {
       iterator->ref() = input[i];
       accu->ref() = expression.value();
+      if (expression.results().count()) { throw "explicit return values are not supported"; }
     }
     return accu->value();
   };
@@ -535,6 +539,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
         v.data += v.elementSize;
       }
       auto result = expression.value();
+      if (expression.results().count()) { throw "explicit return values are not supported"; }
       NapiToCasters[outputType](output_ptr, result);
       output_ptr += elementSize;
     }

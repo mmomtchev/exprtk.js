@@ -115,7 +115,7 @@ describe('Expression', () => {
     });
 
     describe('compute', () => {
-        let mean, vectorMean, pi, clamp, sumPow;
+        let mean, vectorMean, pi, clamp, sumPow, vectorReturn, vectorFromScalar;
         let vector = new Float64Array([1, 2, 3, 4, 5, 6]);
 
         let density;
@@ -142,6 +142,12 @@ describe('Expression', () => {
             pi = new expr('22 / 7', []);
             clamp = new expr('clamp(minv, x, maxv)', ['minv', 'x', 'maxv']);
             sumPow = new expr('a + pow(x, p)', ['a', 'x', 'p']);
+            vectorReturn = new expr(
+                'var r[6]; for (var i:= 0; i < x[] and i < n; i += 1) { r[i] := x[i] * x[i] + a; }; return [r];',
+                [ 'n', 'a' ], { 'x': 6 });
+            vectorFromScalar = new expr(
+                'var r[6]; for (var i:= 0; i < n; i += 1) { r[i] = n; }; return [r];',
+                [ 'n' ]);
 
             // Air density of humid air from relative humidity (phi), temperature (T) and pressure (P)
             // rho = ( Pd * Md + Pv * Mv ) / ( R * T )     // density (Avogadro's law)
@@ -220,6 +226,11 @@ describe('Expression', () => {
                     vectorMean.eval(new Float64Array(4));
                 }, /size 4 does not match declared size 6/);
             });
+            it('should throw on explicit return values', () => {
+                assert.throws(() => {
+                    vectorReturn.eval(5, 0, vector);
+                }, /not supported/);
+            });
         });
 
         describe('evalAsync() argument list form', () => {
@@ -253,6 +264,9 @@ describe('Expression', () => {
                     assert.closeTo(m2, 15, 10e-9);
                 }));
             });
+            it('should reject on explicit return values', () => {
+                return assert.isRejected(vectorReturn.evalAsync(5, 0, vector), /not supported/);
+            });
         });
 
         describe('map()', () => {
@@ -280,6 +294,12 @@ describe('Expression', () => {
                     clamp.map(vector, 'x', 4);
                 }, /wrong number of input arguments/);
             });
+
+            it('should throw on explicit return values', () => {
+                assert.throws(() => {
+                    vectorReturn.map(vector, 'n', 0, vector);
+                }, /not supported/);
+            });
         });
 
         describe('mapAsync()', () => {
@@ -300,6 +320,10 @@ describe('Expression', () => {
 
             it('should reject w/ invalid variables', () => {
                 return assert.isRejected(clamp.mapAsync(vector, 'x', 4), /wrong number of input arguments/);
+            });
+
+            it('should reject on explicit return values', () => {
+                return assert.isRejected(vectorReturn.mapAsync(vector, 'n', 0, vector), /not supported/);
             });
         });
 
@@ -352,6 +376,12 @@ describe('Expression', () => {
                     sumPow.reduce(vector, 'x', 'a', 0);
                 }, /wrong number of input arguments/);
             });
+
+            it('should throw on explicit return values', () => {
+                assert.throws(() => {
+                    vectorReturn.reduce(vector, 'n', 'a', 0, vector);
+                }, /not supported/);
+            });
         });
 
         describe('reduceAsync()', () => {
@@ -394,6 +424,10 @@ describe('Expression', () => {
             it('should throw w/ invalid variables', () => {
                 return assert.isRejected(sumPow.reduceAsync(vector, 'x', 'a', 0), /wrong number of input arguments/);
             });
+
+            it('should reject on explicit return values', () => {
+                return assert.isRejected(vectorReturn.reduceAsync(vector, 'n', 'a', 0, vector), /not supported/);
+            });
         });
 
         describe('cwise()', () => {
@@ -433,6 +467,12 @@ describe('Expression', () => {
                 assert.throws(() => {
                     density.cwise({ P: 1, T: 2, phi: 3, R, Mv, Md });
                 }, /at least one argument must be a non-zero length vector/);
+            });
+
+            it('should throw on explicit return values', () => {
+                assert.throws(() => {
+                    vectorFromScalar.cwise({n: vector});
+                }, /not supported/);
             });
         });
 
@@ -474,7 +514,10 @@ describe('Expression', () => {
                 return assert.isRejected(density.cwiseAsync({ P: 1, T: 2, phi: 3, R, Mv, Md }),
                     /at least one argument must be a non-zero length vector/);
             });
-        });
 
+            it('should reject on explicit return values', () => {
+                return assert.isRejected(vectorFromScalar.cwiseAsync({n: vector}), /not supported/);
+            });
+        });
     });
 });
