@@ -490,4 +490,25 @@ describe('Expression', () => {
             });
         });
     });
+
+    describe('cwise()/cwiseAsync() type conversions', () => {
+        const vector = [-100, 100, 10e3, 10e6];
+        for (const inp of ['Uint8', 'Int8', 'Uint16', 'Int16', 'Uint32', 'Int32', 'Float32', 'Float64']) {
+            for (const outp of ['Uint8', 'Int8', 'Uint16', 'Int16', 'Uint32', 'Int32', 'Float32', 'Float64']) {
+                it(`converting from ${inp} to ${outp}`, () => {
+                    const id = new Expression.Float64('x', ['x']);
+                    const inArray = new global[inp + 'Array'](vector);
+                    const outArray = new global[outp + 'Array'](vector);
+                    id.cwise({ x: inArray }, outArray);
+                    const size = Math.min(+(inp.match(/[0-9]+/)[0]), +(outp.match(/[0-9]+/)[0]))
+                    for (const i in vector) {
+                        if (vector[i] > 0 && vector[i] < 2**size)
+                            assert.closeTo(vector[i], outArray[i], 10e-6);
+                        if (vector[i] < 0 && !inp.startsWith('U') && !outp.startsWith('U'))
+                            assert.closeTo(vector[i], outArray[i], 10e-6);
+                    }
+                });
+            }
+        }
+    });
 });
