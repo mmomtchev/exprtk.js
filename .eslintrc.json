@@ -14,5 +14,29 @@
   ],
   "parserOptions": {
     "ecmaVersion": 2017
+  },
+  "rules": {
+    "max-len": [
+      1,
+      {
+        "code": 120,
+        "tabWidth": 2
+      }
+    ],
+    "mocha/no-exclusive-tests": "error",
+    "mocha/no-identical-title": "error",
+    "mocha/no-nested-tests": "error",
+    "semi": [
+      2,
+      "always"
+    ],
+    "quotes": [
+      "error",
+      "single",
+      {
+        "avoidEscape": true,
+        "allowTemplateLiterals": true
+      }
+    ]
   }
 }

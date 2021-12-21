@@ -6,7 +6,7 @@
   },
   "scripts": {
     "test": "mocha",
-    "lint": "clang-format -i src/*.cc src/*.h && eslint lib/*.js",
+    "lint": "clang-format -i src/*.cc src/*.h && eslint lib/*.js test/*.js",
     "bench": "node bench/bench.js"
   },
   "gypfile": true,
