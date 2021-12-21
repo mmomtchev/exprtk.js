@@ -41,5 +41,14 @@
             ],
             "program": "${workspaceFolder}/node_modules/.bin/mocha"
         },
+        {
+            "type": "pwa-node",
+            "request": "launch",
+            "name": "Launch benchmarks (JS)",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${workspaceFolder}/bench/bench.js"
+        },
     ]
 }

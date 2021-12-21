@@ -12,7 +12,9 @@ ExprTk.js is a WIP and it is still not published
 
 Its main advantage is that it allows deferring of heavy computation for asynchronous execution in a background thread - something that Node.js/V8 does not allow without the very complex mechanisms of `worker_threads`.
 
-Speedup is possible even when using synchronously if the arrays are sufficiently large. On 1MB arrays, `ExprTk.js` outperforms native JS running in V8 twice for floating point data and three times for integer data.
+Even in single-threaded synchronous mode `ExprTk.js` outperforms native JS running in V8 by a significant margin for all types and array sizes.
+
+Different methods of traversal work better for different array sizes, you should probably run/adjust the benchmarks - `npm run bench` - to see for yourself.
 
 It can also serve as a provider of thunks for `gdal-async` and `scijs` allowing for easy multi-threaded processing in Node.js.
 
