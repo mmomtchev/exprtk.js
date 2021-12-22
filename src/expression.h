@@ -1,11 +1,13 @@
 #pragma once
 
-#include "async.h"
-#include "exprtk.hpp"
+#include <exprtk.hpp>
 #include <map>
 #include <mutex>
 #include <functional>
 #include <napi.h>
+
+#include <exprtkjs.h>
+#include "async.h"
 
 namespace exprtk_js {
 
@@ -108,9 +110,29 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
   ASYNCABLE_DECLARE(reduce);
   ASYNCABLE_DECLARE(cwise);
 
+  void capi_eval(const void *scalars, void **vectors, void *result);
+  void capi_map(
+    const char *iterator_name,
+    const size_t iterator_len,
+    const void *iterator_vector,
+    const void *scalars,
+    void **vectors,
+    void *result);
+  void capi_reduce(
+    const char *iterator_name,
+    const size_t iterator_len,
+    const void *_iterator_vector,
+    const char *accumulator,
+    const void *_scalars,
+    void **_vectors,
+    void *_result);
+  void capi_cwise(const size_t n_args, const exprtk_capi_cwise_arg *args, exprtk_capi_cwise_arg *result);
+
   Napi::Value GetExpression(const Napi::CallbackInfo &info);
+  Napi::Value GetType(const Napi::CallbackInfo &info);
   Napi::Value GetScalars(const Napi::CallbackInfo &info);
   Napi::Value GetVectors(const Napi::CallbackInfo &info);
+  Napi::Value GetCAPI(const Napi::CallbackInfo &info);
 
   static Napi::Function GetClass(Napi::Env);
 

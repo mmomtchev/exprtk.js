@@ -1,7 +1,8 @@
 {
     "env": {
         "projectIncludePaths": [
-            "${workspaceFolder}/deps/exprtk"
+            "${workspaceFolder}/deps/exprtk",
+            "${workspaceFolder}/include"
         ]
     },
     "configurations": [

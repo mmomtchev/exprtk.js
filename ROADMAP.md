@@ -1,8 +1,4 @@
-# 1.0
-
-- C-API for using from another native addon (`gdal-async`)
-
-# 2.0
+# 2.0 or later
 
 - Support returning vectors and/or multiple values from an expression
 - Cache-oblivious traversal of `scijs` strides

@@ -44,6 +44,7 @@ describe('Expression', () => {
             assert.equal(mean.expression, '(a + b) / 2');
             assert.deepEqual(mean.scalars, ['a', 'b']);
             assert.deepEqual(mean.vectors, {});
+            assert.equal(mean.type, 'Float64');
         });
         it('should accept an expression w/ scalars', () => {
             const mean = new expr('(a + b) / 2', ['a', 'b']);
@@ -51,6 +52,7 @@ describe('Expression', () => {
             assert.equal(mean.expression, '(a + b) / 2');
             assert.deepEqual(mean.scalars, ['a', 'b']);
             assert.deepEqual(mean.vectors, {});
+            assert.equal(mean.type, 'Float64');
         });
         it('should accept an expression w/ vectors', () => {
             const mean = new expr('a + x[10]', ['a'], { x: 12 });
@@ -58,6 +60,7 @@ describe('Expression', () => {
             assert.equal(mean.expression, 'a + x[10]');
             assert.deepEqual(mean.scalars, ['a']);
             assert.deepEqual(mean.vectors, {x: 12});
+            assert.equal(mean.type, 'Float64');
         });
     });
 

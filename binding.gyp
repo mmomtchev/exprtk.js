@@ -9,6 +9,18 @@
     }]
   ],
   'target_defaults': {
+    'cflags!': [ '-fno-exceptions', '-fno-rtti', '-fvisibility=default' ],
+    'cflags_cc!': [ '-fno-exceptions', '-fno-rtti', '-fvisibility=default' ],
+    'cflags_cc': [ '-fvisibility=hidden' ],
+    'ldflags': [ '-Wl,-z,now' ],
+    'xcode_settings': {
+      'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',
+      'CLANG_CXX_LIBRARY': 'libc++',
+      'MACOSX_DEPLOYMENT_TARGET': '10.7'
+    },
+    'msvs_settings': {
+      'VCCLCompilerTool': { 'ExceptionHandling': 1 },
+    },
     'configurations': {
       'Debug': {
         'cflags_cc!': [ '-O3', '-Os' ],
@@ -53,24 +65,13 @@
       ],
       'include_dirs': [
         'deps/exprtk',
+        'include',
         '<!@(node -p \'require("node-addon-api").include\')'
       ],
       'defines': [
         'exprtk_disable_string_capabilities'
       ],
       'dependencies': ['<!(node -p \'require("node-addon-api").gyp\')'],
-      'cflags!': [ '-fno-exceptions', '-fno-rtti', '-fvisibility=default' ],
-      'cflags_cc!': [ '-fno-exceptions', '-fno-rtti', '-fvisibility=default' ],
-      'cflags_cc': [ '-fvisibility=hidden' ],
-      'ldflags': [ '-Wl,-z,now' ],
-      'xcode_settings': {
-        'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',
-        'CLANG_CXX_LIBRARY': 'libc++',
-        'MACOSX_DEPLOYMENT_TARGET': '10.7'
-      },
-      'msvs_settings': {
-        'VCCLCompilerTool': { 'ExceptionHandling': 1 },
-      },
       'conditions': [
         ['enable_asan == "true"', {
           'variables': {
@@ -82,13 +83,25 @@
       ]
     },
     {
+      'target_name': 'exprtk.js-test',
+      'sources': [
+        'test/addon.test.cc'
+      ],
+      'include_dirs': [
+        'include',
+        '<!@(node -p \'require("node-addon-api").include\')'
+      ],
+      'dependencies': ['<!(node -p \'require("node-addon-api").gyp\')'],
+    },
+    {
       'target_name': 'action_after_build',
       'type': 'none',
       'dependencies': [ '<(module_name)' ],
       'copies': [
         {
           'files': [
-            '<(PRODUCT_DIR)/exprtk.js.node'
+            '<(PRODUCT_DIR)/exprtk.js.node',
+            '<(PRODUCT_DIR)/exprtk.js-test.node'
           ],
           'destination': '<(module_path)'
         }

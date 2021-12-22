@@ -175,6 +175,13 @@ The input argument list must be given explicitly. `ExprTk` supports only fixed-s
 
 `eval()` simply calls the expression with values corresponding to every input argument.
 
+## Calling expressions from another addon
+
+One of the main feature of `ExprTk.js` is allowing native C++ addons to accept expressions constructed in JS and evaluate them independently of the main V8 context.
+
+You can check `test/addon.test.cc` for different examples of processing an `Expression` object received from JS and evaluating the expression. The calling JS code can be found in `test/capi.test.js`.
+
+Be advised that, while being completely independent of V8, those function can still block if another asynchronous operation is running on that `Expression` object.
 
 # Notes
 
