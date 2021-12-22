@@ -41,14 +41,23 @@ describe('Expression', () => {
         it('should accept an expression w/o explicit arguments', () => {
             const mean = new expr('(a + b) / 2');
             assert.instanceOf(mean, expr);
+            assert.equal(mean.expression, '(a + b) / 2');
+            assert.deepEqual(mean.scalars, ['a', 'b']);
+            assert.deepEqual(mean.vectors, {});
         });
         it('should accept an expression w/ scalars', () => {
             const mean = new expr('(a + b) / 2', ['a', 'b']);
             assert.instanceOf(mean, expr);
+            assert.equal(mean.expression, '(a + b) / 2');
+            assert.deepEqual(mean.scalars, ['a', 'b']);
+            assert.deepEqual(mean.vectors, {});
         });
         it('should accept an expression w/ vectors', () => {
-            const mean = new expr('a', ['a'], { x: 12 });
+            const mean = new expr('a + x[10]', ['a'], { x: 12 });
             assert.instanceOf(mean, expr);
+            assert.equal(mean.expression, 'a + x[10]');
+            assert.deepEqual(mean.scalars, ['a']);
+            assert.deepEqual(mean.vectors, {x: 12});
         });
     });
 
@@ -506,7 +515,7 @@ describe('Expression', () => {
                     id.cwise({ x: inArray }, outArray);
                     const size = Math.min(+(inp.match(/[0-9]+/)[0]), +(outp.match(/[0-9]+/)[0]));
                     for (const i in vector) {
-                        if (vector[i] > 0 && vector[i] < 2**size)
+                        if (vector[i] > 0 && vector[i] < 2 ** size)
                             assert.closeTo(vector[i], outArray[i], 10e-6);
                         if (vector[i] < 0 && !inp.startsWith('U') && !outp.startsWith('U'))
                             assert.closeTo(vector[i], outArray[i], 10e-6);

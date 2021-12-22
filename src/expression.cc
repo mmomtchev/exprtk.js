@@ -122,7 +122,7 @@ template <typename T> Expression<T>::~Expression() {
  * Evaluate the expression
  *
  * @param {object} arguments function arguments
- * @returns {number|TypedArray}
+ * @returns {number}
  *
  * @example
  * // These two are equivalent
@@ -580,15 +580,50 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
   return job.run(info, async, info.Length() - 1);
 }
 
+template <typename T> Napi::Value Expression<T>::GetExpression(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+
+  return Napi::String::New(env, expressionText);
+}
+
+template <typename T> Napi::Value Expression<T>::GetScalars(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+
+  Napi::Array scalars = Napi::Array::New(env);
+
+  size_t i = 0;
+  for (const auto &name : variableNames) {
+    if (symbolTable.get_variable(name)) { scalars.Set(i++, name); }
+  }
+
+  return scalars;
+}
+
+template <typename T> Napi::Value Expression<T>::GetVectors(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+
+  Napi::Object vectors = Napi::Object::New(env);
+
+  for (const auto &name : variableNames) {
+    auto vector = symbolTable.get_vector(name);
+    if (vector != nullptr) { vectors.Set(name, vector->size()); }
+  }
+
+  return vectors;
+}
+
 template <typename T> Napi::Function Expression<T>::GetClass(Napi::Env env) {
   napi_property_attributes props = static_cast<napi_property_attributes>(napi_writable | napi_configurable);
-  return Napi::ObjectWrap<Expression<T>>::DefineClass(
+  return Expression<T>::DefineClass(
     env,
     NapiArrayType<T>::name,
-    {ASYNCABLE_INSTANCE_METHOD(Expression, eval, props),
-     ASYNCABLE_INSTANCE_METHOD(Expression, map, props),
-     ASYNCABLE_INSTANCE_METHOD(Expression, reduce, props),
-     ASYNCABLE_INSTANCE_METHOD(Expression, cwise, props)});
+    {Expression<T>::InstanceAccessor("expression", &Expression<T>::GetExpression, nullptr),
+     Expression<T>::InstanceAccessor("scalars", &Expression<T>::GetScalars, nullptr),
+     Expression<T>::InstanceAccessor("vectors", &Expression<T>::GetVectors, nullptr),
+     ASYNCABLE_INSTANCE_METHOD(Expression<T>, eval, props),
+     ASYNCABLE_INSTANCE_METHOD(Expression<T>, map, props),
+     ASYNCABLE_INSTANCE_METHOD(Expression<T>, reduce, props),
+     ASYNCABLE_INSTANCE_METHOD(Expression<T>, cwise, props)});
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {

@@ -108,6 +108,10 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
   ASYNCABLE_DECLARE(reduce);
   ASYNCABLE_DECLARE(cwise);
 
+  Napi::Value GetExpression(const Napi::CallbackInfo &info);
+  Napi::Value GetScalars(const Napi::CallbackInfo &info);
+  Napi::Value GetVectors(const Napi::CallbackInfo &info);
+
   static Napi::Function GetClass(Napi::Env);
 
     private:
