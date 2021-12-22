@@ -8,7 +8,7 @@ template <typename T> exprtk::parser<T> Expression<T>::parser;
 
 /**
  * @param {string} expression function
- * @param {string[]} variables An array containing all the scalar variables' names
+ * @param {string[]} [variables] An array containing all the scalar variables' names
  * @param {Record<string,number>[]} [vectors] An object containing all the vector variables' names and their sizes
  * @returns {Expression}
  *
@@ -32,29 +32,36 @@ Expression<T>::Expression(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Exp
     return;
   }
 
-  if (info.Length() < 2) {
-    Napi::TypeError::New(env, "arguments is mandatory").ThrowAsJavaScriptException();
-    return;
-  }
-
   if (!info[0].IsString()) {
     Napi::TypeError::New(env, "expresion must be a string").ThrowAsJavaScriptException();
     return;
   }
+  expressionText = info[0].As<Napi::String>().Utf8Value();
 
-  if (!info[1].IsArray()) {
-    Napi::TypeError::New(env, "arguments must be an array").ThrowAsJavaScriptException();
-    return;
-  }
-
-  Napi::Array args = info[1].As<Napi::Array>();
-  for (std::size_t i = 0; i < args.Length(); i++) {
-    const std::string name = args.Get(i).As<Napi::String>().Utf8Value();
-    if (!symbolTable.create_variable(name)) {
-      Napi::TypeError::New(env, name + " is not a valid variable name").ThrowAsJavaScriptException();
+  if (info.Length() > 1) {
+    if (!info[1].IsArray()) {
+      Napi::TypeError::New(env, "arguments must be an array").ThrowAsJavaScriptException();
       return;
     }
-    variableNames.push_back(name);
+    Napi::Array args = info[1].As<Napi::Array>();
+    for (std::size_t i = 0; i < args.Length(); i++) {
+      const std::string name = args.Get(i).As<Napi::String>().Utf8Value();
+      if (!symbolTable.create_variable(name)) {
+        Napi::TypeError::New(env, name + " is not a valid variable name").ThrowAsJavaScriptException();
+        return;
+      }
+      variableNames.push_back(name);
+    }
+  } else {
+    std::vector<std::string> args;
+    exprtk::collect_variables(expressionText, args);
+    for (const auto &name : args) {
+      if (!symbolTable.create_variable(name)) {
+        Napi::TypeError::New(env, name + " is not a valid variable name").ThrowAsJavaScriptException();
+        return;
+      }
+      variableNames.push_back(name);
+    }
   }
 
   if (info.Length() > 2) {
@@ -92,7 +99,6 @@ Expression<T>::Expression(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Exp
 
   expression.register_symbol_table(symbolTable);
 
-  expressionText = info[0].As<Napi::String>().Utf8Value();
   if (!parser.compile(expressionText, expression)) {
     std::string errorText = "failed compiling expression " + expressionText + "\n";
     for (std::size_t i = 0; i < parser.error_count(); i++) {

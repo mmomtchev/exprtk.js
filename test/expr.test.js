@@ -16,7 +16,7 @@ describe('Expression', () => {
         it('should throw w/ invalid arguments 1', () => {
             assert.throws(() => {
                 new expr(12);
-            }, /mandatory/);
+            }, /expresion must be a string/);
         });
         it('should throw w/ invalid arguments 2', () => {
             assert.throws(() => {
@@ -38,7 +38,11 @@ describe('Expression', () => {
                 new expr('a', ['a'], { x: '12' });
             }, /vector size must be a number/);
         });
-        it('should accept an expression w/ variables', () => {
+        it('should accept an expression w/o explicit arguments', () => {
+            const mean = new expr('(a + b) / 2');
+            assert.instanceOf(mean, expr);
+        });
+        it('should accept an expression w/ scalars', () => {
             const mean = new expr('(a + b) / 2', ['a', 'b']);
             assert.instanceOf(mean, expr);
         });
@@ -500,7 +504,7 @@ describe('Expression', () => {
                     const inArray = new global[inp + 'Array'](vector);
                     const outArray = new global[outp + 'Array'](vector);
                     id.cwise({ x: inArray }, outArray);
-                    const size = Math.min(+(inp.match(/[0-9]+/)[0]), +(outp.match(/[0-9]+/)[0]))
+                    const size = Math.min(+(inp.match(/[0-9]+/)[0]), +(outp.match(/[0-9]+/)[0]));
                     for (const i in vector) {
                         if (vector[i] > 0 && vector[i] < 2**size)
                             assert.closeTo(vector[i], outArray[i], 10e-6);
