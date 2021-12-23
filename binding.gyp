@@ -22,8 +22,18 @@
 				"-fexceptions"
 			]
     },
-    'msvs_settings': {
-      'VCCLCompilerTool': { 'ExceptionHandling': 1 },
+    "msvs_settings": {
+      "VCCLCompilerTool": {
+        "AdditionalOptions": [
+          "/MP",
+          "/GR",
+          "/EHsc",
+          "/wd4146",
+          "/wd4723"
+        ],
+        "ExceptionHandling": 1,
+        "RuntimeTypeInfo": "true"
+      }
     },
     'configurations': {
       'Debug': {
@@ -70,13 +80,13 @@
       'include_dirs': [
         'deps/exprtk',
         'include',
-        '<!@(node -p \'require("node-addon-api").include\')'
+        '<!@(node -p "require(\'node-addon-api\').include")'
       ],
       'defines': [
         'exprtk_disable_string_capabilities',
         'exprtk_disable_rtl_io_file'
       ],
-      'dependencies': ['<!(node -p \'require("node-addon-api").gyp\')'],
+      'dependencies': ['<!(node -p "require(\'node-addon-api\').gyp")'],
       'conditions': [
         ['enable_asan == "true"', {
           'variables': {
@@ -94,9 +104,9 @@
       ],
       'include_dirs': [
         'include',
-        '<!@(node -p \'require("node-addon-api").include\')'
+        '<!@(node -p "require(\'node-addon-api\').include")'
       ],
-      'dependencies': ['<!(node -p \'require("node-addon-api").gyp\')'],
+      'dependencies': ['<!(node -p "require(\'node-addon-api\').gyp")'],
     },
     {
       'target_name': 'action_after_build',
