@@ -114,6 +114,7 @@ template <typename T> Expression<T>::~Expression() {
     // exprtk will sometimes try to free this pointer
     // on object destruction even if it never allocated it
     v.second->rebase((T *)nullptr);
+    delete v.second;
   }
   vectorViews.clear();
 }
@@ -868,7 +869,7 @@ exprtk_result entry_capi_cwise(
   exprtk_capi_cwise_arg *result) {
   CALL_TYPED_EXPRESSION_METHOD(expression->type, expression->_descriptor_, capi_cwise, n_args, args, result);
 }
-}
+} // extern "C"
 
 template <typename T> Napi::Value Expression<T>::GetCAPI(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();

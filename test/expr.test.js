@@ -7,6 +7,8 @@ const assert = chai.assert;
 const expr = Expression.Float64;
 
 describe('Expression', () => {
+    afterEach(global.gc);
+
     describe('constructor', () => {
         it('should throw w/o arguments', () => {
             assert.throws(() => {

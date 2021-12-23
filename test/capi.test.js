@@ -12,6 +12,8 @@ describe('Expression C-API', () => {
   let mean_f32, mean_u32, vector;
   let testAddon;
 
+  afterEach(global.gc);
+  
   before(() => {
     mean_u32 = new Expression.Uint32('(a + b) / 2');
     mean_f32 = new Expression.Float32('(a + b) / 2');

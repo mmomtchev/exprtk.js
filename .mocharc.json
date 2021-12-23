@@ -1,0 +1,4 @@
+{
+  "reporter": "tap",
+  "v8-expose-gc": true
+}
