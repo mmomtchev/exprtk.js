@@ -38,5 +38,15 @@
         "allowTemplateLiterals": true
       }
     ]
-  }
+  },
+  "overrides": [
+    {
+      "files": [
+        "scripts/publish-packages.js"
+      ],
+      "parserOptions": {
+        "ecmaVersion": 2018
+      }
+    }
+  ]
 }

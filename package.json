@@ -7,7 +7,7 @@
   "scripts": {
     "install": "node-pre-gyp install --fallback-to-build",
     "test": "mocha",
-    "lint": "clang-format -i src/*.cc src/*.h && eslint lib/*.js test/*.js bench/*.js",
+    "lint": "clang-format -i src/*.cc src/*.h && eslint lib/*.js test/*.js bench/*.js scripts/*.js",
     "bench": "node bench/bench.js",
     "doc": "documentation readme --section=API --config=documentation.yml src/*.cc",
     "gcov": "mkdir -p coverage && cd coverage && gcov -o ../build/Debug/obj.target/exprtk.js/src ../src/*",
@@ -43,6 +43,7 @@
     }
   },
   "devDependencies": {
+    "@octokit/core": "^3.5.1",
     "benny": "^3.7.1",
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
