@@ -157,7 +157,7 @@ const r = await density.cwiseAsync({ P, T, fi, R, Mv, Md }, result);
 
 ### Integer types
 
-Originally, `ExprTk` supports only floating point types. The version bundled with `ExprTk.js` has working integer support, but one should be extra careful as it internally uses `NaN` values and most built-in mathematical functions - like `sin`, `cos`, `pow` or `exp` - won't work correctly with integer types. Always check the result of your function when using anything but basic arithmetic.
+Originally, `ExprTk` supports only floating point types. The version bundled with `ExprTk.js` has working integer support, but one should be extra careful as it internally uses `NaN` values and most built-in mathematical functions - like `sin`, `cos`, `pow` or `exp` - won't work correctly with integer types. Using unsigned types will further aggravate this. Always check the result of your function when using anything but basic arithmetic. Also, do not forget that the internal data type also applies to all eventual index variables - using an `ExprTk` `for` loop in an `eval()` over a large `Int8` array is not possible as the index variable won't be able to hold the index. Implicit `map()`, `reduce()` and `cwise()` loops are not affected by this as they use internal C++ variables that are not affected by the `Expression` type.
 
 ## `Expression` object
 

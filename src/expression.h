@@ -110,15 +110,15 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
   ASYNCABLE_DECLARE(reduce);
   ASYNCABLE_DECLARE(cwise);
 
-  void capi_eval(const void *scalars, void **vectors, void *result);
-  void capi_map(
+  exprtk_result capi_eval(const void *scalars, void **vectors, void *result);
+  exprtk_result capi_map(
     const char *iterator_name,
     const size_t iterator_len,
     const void *iterator_vector,
     const void *scalars,
     void **vectors,
     void *result);
-  void capi_reduce(
+  exprtk_result capi_reduce(
     const char *iterator_name,
     const size_t iterator_len,
     const void *_iterator_vector,
@@ -126,7 +126,7 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
     const void *_scalars,
     void **_vectors,
     void *_result);
-  void capi_cwise(const size_t n_args, const exprtk_capi_cwise_arg *args, exprtk_capi_cwise_arg *result);
+  exprtk_result capi_cwise(const size_t n_args, const exprtk_capi_cwise_arg *args, exprtk_capi_cwise_arg *result);
 
   Napi::Value GetExpression(const Napi::CallbackInfo &info);
   Napi::Value GetType(const Napi::CallbackInfo &info);

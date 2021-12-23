@@ -165,7 +165,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::eval) {
   return job.run(info, async, info.Length() - 1);
 }
 
-template <typename T> void Expression<T>::capi_eval(const void *_scalars, void **_vectors, void *_result) {
+template <typename T> exprtk_result Expression<T>::capi_eval(const void *_scalars, void **_vectors, void *_result) {
   const T *scalars = reinterpret_cast<const T *>(_scalars);
   T **vectors = reinterpret_cast<T **>(_vectors);
   T *result = reinterpret_cast<T *>(_result);
@@ -177,6 +177,7 @@ template <typename T> void Expression<T>::capi_eval(const void *_scalars, void *
   for (size_t i = 0; i < nvars; i++) symbolTable.get_variable(variableNames[i])->ref() = scalars[i];
   for (size_t i = 0; i < nvectors; i++) vectorViews[variableNames[i + nvars]]->rebase(vectors[i]);
   *result = expression.value();
+  return exprtk_ok;
 }
 
 /**
@@ -271,7 +272,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::map) {
 }
 
 template <typename T>
-void Expression<T>::capi_map(
+exprtk_result Expression<T>::capi_map(
   const char *iterator_name,
   const size_t iterator_len,
   const void *_iterator_vector,
@@ -304,6 +305,7 @@ void Expression<T>::capi_map(
     *it_ptr = *in_ptr;
     *out_ptr = expression.value();
   }
+  return exprtk_ok;
 }
 
 /**
@@ -409,7 +411,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::reduce) {
 }
 
 template <typename T>
-void Expression<T>::capi_reduce(
+exprtk_result Expression<T>::capi_reduce(
   const char *iterator_name,
   const size_t iterator_len,
   const void *_iterator_vector,
@@ -447,6 +449,7 @@ void Expression<T>::capi_reduce(
     *accu_ptr = expression.value();
   }
   *out_ptr = *accu_ptr;
+  return exprtk_ok;
 }
 
 template <typename T> using NapiFromCaster_t = std::function<T(uint8_t *)>;
@@ -687,18 +690,19 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
 }
 
 template <typename T>
-void Expression<T>::capi_cwise(const size_t n_args, const exprtk_capi_cwise_arg *args, exprtk_capi_cwise_arg *result) {
+exprtk_result
+Expression<T>::capi_cwise(const size_t n_args, const exprtk_capi_cwise_arg *args, exprtk_capi_cwise_arg *result) {
 
   bool typeConversionRequired = false;
   size_t len = 0;
   std::vector<symbolDesc<T>> scalars, vectors;
 
-  if (vectorViews.size() > 0) throw "cwise is not (yet) compatible with vector arguments";
+  if (vectorViews.size() > 0) return exprtk_invalid_argument; // cwise is not (yet) compatible with vector arguments
 
   for (size_t i = 0; i < n_args; i++) {
     symbolDesc<T> current;
     auto exprtk_ptr = symbolTable.get_variable(args[i].name);
-    if (exprtk_ptr == nullptr) throw "invalid variable name";
+    if (exprtk_ptr == nullptr) return exprtk_invalid_argument; // invalid variable name
     current.exprtk_var = &exprtk_ptr->ref();
 
     current.name = args[i].name;
@@ -712,7 +716,7 @@ void Expression<T>::capi_cwise(const size_t n_args, const exprtk_capi_cwise_arg 
       if (len == 0)
         len = args[i].elements;
       else if (len != args[i].elements)
-        throw "all vectors must have the same number of elements";
+        return exprtk_invalid_argument; // all vectors must have the same number of elements
       current.data = reinterpret_cast<uint8_t *>(args[i].data);
       current.elementSize = NapiElementSize[args[i].type];
       current.fromCaster = NapiFromCasters<T>[current.type];
@@ -721,7 +725,8 @@ void Expression<T>::capi_cwise(const size_t n_args, const exprtk_capi_cwise_arg 
     }
   }
 
-  if (symbolTable.variable_count() != scalars.size() + vectors.size()) { throw "wrong number of input arguments"; }
+  if (symbolTable.variable_count() != scalars.size() + vectors.size())
+    return exprtk_invalid_argument; // wrong number of input arguments
 
   uint8_t *output = reinterpret_cast<uint8_t *>(result->data);
   size_t elementSize = NapiElementSize[result->type];
@@ -752,6 +757,7 @@ void Expression<T>::capi_cwise(const size_t n_args, const exprtk_capi_cwise_arg 
       *output_ptr = expression.value();
     }
   }
+  return exprtk_ok;
 }
 
 template <typename T> Napi::Value Expression<T>::GetExpression(const Napi::CallbackInfo &info) {
@@ -795,24 +801,24 @@ template <typename T> Napi::Value Expression<T>::GetVectors(const Napi::Callback
 #define CALL_TYPED_EXPRESSION_METHOD(type, object, method, ...)                                                        \
   {                                                                                                                    \
     switch (static_cast<napi_typedarray_type>(type)) {                                                                 \
-      case napi_uint8_array: reinterpret_cast<Expression<uint8_t> *>(object)->method(__VA_ARGS__); break;              \
-      case napi_int8_array: reinterpret_cast<Expression<int8_t> *>(object)->method(__VA_ARGS__); break;                \
-      case napi_uint16_array: reinterpret_cast<Expression<uint16_t> *>(object)->method(__VA_ARGS__); break;            \
-      case napi_int16_array: reinterpret_cast<Expression<int16_t> *>(object)->method(__VA_ARGS__); break;              \
-      case napi_uint32_array: reinterpret_cast<Expression<uint32_t> *>(object)->method(__VA_ARGS__); break;            \
-      case napi_int32_array: reinterpret_cast<Expression<int32_t> *>(object)->method(__VA_ARGS__); break;              \
-      case napi_float32_array: reinterpret_cast<Expression<float> *>(object)->method(__VA_ARGS__); break;              \
-      case napi_float64_array: reinterpret_cast<Expression<double> *>(object)->method(__VA_ARGS__); break;             \
-      default: throw "Unsupported type";                                                                               \
+      case napi_uint8_array: return reinterpret_cast<Expression<uint8_t> *>(object)->method(__VA_ARGS__); break;       \
+      case napi_int8_array: return reinterpret_cast<Expression<int8_t> *>(object)->method(__VA_ARGS__); break;         \
+      case napi_uint16_array: return reinterpret_cast<Expression<uint16_t> *>(object)->method(__VA_ARGS__); break;     \
+      case napi_int16_array: return reinterpret_cast<Expression<int16_t> *>(object)->method(__VA_ARGS__); break;       \
+      case napi_uint32_array: return reinterpret_cast<Expression<uint32_t> *>(object)->method(__VA_ARGS__); break;     \
+      case napi_int32_array: return reinterpret_cast<Expression<int32_t> *>(object)->method(__VA_ARGS__); break;       \
+      case napi_float32_array: return reinterpret_cast<Expression<float> *>(object)->method(__VA_ARGS__); break;       \
+      case napi_float64_array: return reinterpret_cast<Expression<double> *>(object)->method(__VA_ARGS__); break;      \
+      default: return exprtk_invalid_argument;                                                                         \
     }                                                                                                                  \
   }
 
 extern "C" {
-void entry_capi_eval(exprtk_expression *expression, const void *scalars, void **vectors, void *result) {
+exprtk_result entry_capi_eval(exprtk_expression *expression, const void *scalars, void **vectors, void *result) {
   CALL_TYPED_EXPRESSION_METHOD(expression->type, expression->_descriptor_, capi_eval, scalars, vectors, result);
 }
 
-void entry_capi_map(
+exprtk_result entry_capi_map(
   exprtk_expression *expression,
   const char *iterator_name,
   const size_t iterator_len,
@@ -833,7 +839,7 @@ void entry_capi_map(
     result);
 }
 
-void entry_capi_reduce(
+exprtk_result entry_capi_reduce(
   exprtk_expression *expression,
   const char *iterator_name,
   const size_t iterator_len,
@@ -855,7 +861,7 @@ void entry_capi_reduce(
     result);
 }
 
-void entry_capi_cwise(
+exprtk_result entry_capi_cwise(
   exprtk_expression *expression,
   const size_t n_args,
   const exprtk_capi_cwise_arg *args,
