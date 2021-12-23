@@ -1,0 +1,26 @@
+shallow: true
+
+plugin:
+  - documentation-polyglot
+
+sortOrder:
+  - kind:
+    - namespace
+    - class
+    - interface
+    - typedef
+    - enum
+    - constant
+    - property
+    - function
+    - member
+  - alpha
+
+documentation-polyglot:
+  extensions: [ .cc, .h ]
+  infer:
+    kind:
+      function: [ ASYNCABLE_DEFINE\(.+\) ]
+      property: [ ASYNCABLE_GETTER_DECLARE\(.+\) ]
+    name:
+      - ASYNCABLE_DEFINE\s*\(.+::([a-zA-Z0-9_]+)\)

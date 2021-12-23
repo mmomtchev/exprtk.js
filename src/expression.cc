@@ -5,16 +5,35 @@
 using namespace exprtk_js;
 
 /**
+ * @class Expression
  * @param {string} expression function
- * @param {string[]} [variables] An array containing all the scalar variables' names
- * @param {Record<string,number>[]} [vectors] An object containing all the vector variables' names and their sizes
+ * @param {string[]} [variables] An array containing all the scalar variables' names, will be determined automatically if omitted, however order won't be guaranteed
+ * @param {Record<string, number>} [vectors] An object containing all the vector variables' names and their sizes, vector size must be known at compilation (object construction)
  * @returns {Expression}
+ * @memberof Expression
+ * 
+ * The `Expression` represents an expression compiled to an AST from a string. Expressions come in different flavors depending on the internal type used.
+ * 
+ * ---------------------------------------
+ * | JS      | C/C++                     |
+ * | ------- | ------------------------- |
+ * | Float64 | double                    |
+ * | Float32 | float                     |
+ * | Uint32  | uint32_t (unsigned long)  |
+ * | Int32   | int32_t (long)            |
+ * | Uint16  | uint16_t (unsigned short) |
+ * | Int16   | int16_t (short)           |
+ * | Uint8   | uint8_t (unsigned char)   |
+ * | Int8    | int8_t (char)             |
  *
  * @example
+ * // This determines the internally used type
+ * const expr = require("exprtk.js").Float64;
+ * 
  * // arithmetic mean of 2 variables
  * const mean = new Expression('(a+b)/2', ['a', 'b']);
  * 
- * // stddev of an array of 1024 elements
+ * // naive stddev of an array of 1024 elements
  * const stddev = new Expression(
  *  'var sum := 0; var sumsq := 0; ' + 
  *  'for (var i := 0; i < x[]; i += 1) { sum += x[i]; sumsq += x[i] * x[i] }; ' +
@@ -122,8 +141,9 @@ template <typename T> Expression<T>::~Expression() {
 /**
  * Evaluate the expression
  *
- * @param {object} arguments function arguments
+ * @param {Record<string, number|TypedArray<T>>|...(number|TypedArray<T>)} arguments of the function
  * @returns {number}
+ * @memberof Expression
  *
  * @example
  * // These two are equivalent
@@ -187,8 +207,11 @@ template <typename T> exprtk_result Expression<T>::capi_eval(const void *_scalar
  * Evaluation and traversal happens entirely in C++ so this will be much
  * faster than calling array.map(expr.eval)
  *
- * @param {number} arg
- * @returns {number}
+ * @param {TypedArray<T>} array for the expression to be iterated over
+ * @param {string} iterator variable name
+ * @param {...(number|TypedArray<T>)|Record<string, number|TypedArray<T>>} arguments of the function, iterator removed
+ * @returns {TypedArray<T>}
+ * @memberof Expression
  *
  * @example
  * // Clamp values in an array to [0..1000]
@@ -315,9 +338,14 @@ exprtk_result Expression<T>::capi_map(
  * 
  * Evaluation and traversal happens entirely in C++ so this will be much
  * faster than calling array.reduce(expr.eval)
- *
- * @param {number} arg
+ * 
+ * @param {TypedArray<T>} array for the expression to be iterated over
+ * @param {string} iterator variable name
+ * @param {string} accumulator variable name
+ * @param {number} initializer for the accumulator
+ * @param {...(number|TypedArray<T>)|Record<string, number|TypedArray<T>>} arguments of the function, iterator removed
  * @returns {number}
+ * @memberof Expression
  *
  * @example
  * // n-power sum of an array
@@ -524,9 +552,10 @@ static const size_t NapiElementSize[] = {
  * 
  * Supports automatic type conversions, multiple inputs and writing into a pre-existing array
  *
- * @param {Record<string, number | TypedArray>} arguments
- * @param {TypedArray} [output] output array, a new array of the expression type is automatically allocated if none is specified
- * @returns {TypedArray}
+ * @param {Record<string, number|TypedArray<T>>} arguments
+ * @param {...(number|TypedArray<T>)|Record<string, number|TypedArray<T>>} arguments of the function, iterator removed
+ * @returns {TypedArray<T>}
+ * @memberof Expression
  *
  * @example
  * // Air density of humid air from relative humidity (phi), temperature (T) and pressure (P)
@@ -552,7 +581,7 @@ static const size_t NapiElementSize[] = {
  * 
  * const density = new Float64Expression(
  *   'Pv := ( phi * 6.1078 * pow(10, (7.5 * T / (T + 237.3))) ); ' +  // compute Pv and store it
- *   '( (P - Pv) * Md + Pv * Mv ) / ( R * (T + 273.13) )',           // return expression
+ *   '( (P - Pv) * Md + Pv * Mv ) / ( R * (T + 273.13) )',            // return expression
  *    ['P', 'T', 'phi', 'R', 'Md', 'Mv']
  * );
  * const result = new Float32Array(P.length);
@@ -761,18 +790,48 @@ Expression<T>::capi_cwise(const size_t n_args, const exprtk_capi_cwise_arg *args
   return exprtk_ok;
 }
 
+/**
+ * Return the expression as a string
+ *
+ * @readonly
+ * @kind member
+ * @name expression
+ * @instance
+ * @memberof Expression
+ * @type {string}
+ */
 template <typename T> Napi::Value Expression<T>::GetExpression(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
 
   return Napi::String::New(env, expressionText);
 }
 
+/**
+ * Return the type as a string
+ *
+ * @readonly
+ * @kind member
+ * @name type
+ * @instance
+ * @memberof Expression
+ * @type {string}
+ */
 template <typename T> Napi::Value Expression<T>::GetType(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
 
   return Napi::String::New(env, NapiArrayType<T>::name);
 }
 
+/**
+ * Return the scalar arguments as an array
+ *
+ * @readonly
+ * @kind member
+ * @name scalars
+ * @instance
+ * @memberof Expression
+ * @type {string[]}
+ */
 template <typename T> Napi::Value Expression<T>::GetScalars(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
 
@@ -786,6 +845,16 @@ template <typename T> Napi::Value Expression<T>::GetScalars(const Napi::Callback
   return scalars;
 }
 
+/**
+ * Return the vector arguments as an object
+ *
+ * @readonly
+ * @kind member
+ * @name vectors
+ * @instance
+ * @memberof Expression
+ * @type {Record<string, number[]>}
+ */
 template <typename T> Napi::Value Expression<T>::GetVectors(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
 
