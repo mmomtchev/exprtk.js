@@ -53,3 +53,5 @@ jobs:
       run: npm run gcov
     - name: Send data to codecov
       run: npm run codecov
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
