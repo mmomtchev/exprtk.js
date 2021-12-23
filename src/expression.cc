@@ -249,7 +249,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::map) {
   // this should have been an unique_ptr
   // but std::function is not compatible with move semantics
   std::shared_ptr<Napi::ObjectReference> persistent =
-    std::make_shared<Napi::ObjectReference>(Napi::ObjectReference::New(result));
+    std::make_shared<Napi::ObjectReference>(Napi::ObjectReference::New(result, 1));
 
   job.main = [this, importers, iterator, input, output, len]() {
     for (auto const &f : importers) f();
