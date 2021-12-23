@@ -305,7 +305,7 @@ exprtk_result Expression<T>::capi_map(
   void *_result) {
   const T *scalars = reinterpret_cast<const T *>(_scalars);
   T **vectors = reinterpret_cast<T **>(_vectors);
-  T *it_ptr;
+  T *it_ptr = nullptr;
 
   std::lock_guard<std::mutex> lock(asyncLock);
 
@@ -321,6 +321,8 @@ exprtk_result Expression<T>::capi_map(
     }
   }
   for (size_t i = 0; i < nvectors; i++) vectorViews[variableNames[i + nvars]]->rebase(vectors[i]);
+
+  if (it_ptr == nullptr) return exprtk_invalid_argument;
 
   const T *in_ptr = reinterpret_cast<const T *>(_iterator_vector);
   T *out_ptr = reinterpret_cast<T *>(_result);
@@ -450,8 +452,8 @@ exprtk_result Expression<T>::capi_reduce(
   void *_result) {
   const T *scalars = reinterpret_cast<const T *>(_scalars);
   T **vectors = reinterpret_cast<T **>(_vectors);
-  T *it_ptr;
-  T *accu_ptr;
+  T *it_ptr = nullptr;
+  T *accu_ptr = nullptr;
 
   size_t nvars = symbolTable.variable_count();
   size_t nvectors = symbolTable.vector_count();
@@ -469,6 +471,8 @@ exprtk_result Expression<T>::capi_reduce(
     }
   }
   for (size_t i = 0; i < nvectors; i++) vectorViews[variableNames[nvars + i]]->rebase(vectors[i]);
+
+  if (it_ptr == nullptr || accu_ptr == nullptr) return exprtk_invalid_argument;
 
   const T *in_ptr = reinterpret_cast<const T *>(_iterator_vector);
   T *out_ptr = reinterpret_cast<T *>(_result);
