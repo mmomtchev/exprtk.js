@@ -37,7 +37,10 @@ Napi::Value TestEval(const Napi::CallbackInfo &info) {
   uint32_t ab[] = {12, 17};
   uint32_t r;
 
-  expr->eval(expr, ab, nullptr, &r);
+  if (expr->eval(expr, ab, nullptr, &r) != exprtk_js::exprtk_ok) {
+    Napi::TypeError::New(env, "Failed to evaluate the expression").ThrowAsJavaScriptException();
+    return env.Null();
+  }
 
   return Napi::Number::New(env, r);
 }
@@ -79,7 +82,10 @@ Napi::Value TestMap(const Napi::CallbackInfo &info) {
 
   Napi::TypedArray r = Napi::Uint32Array::New(env, 6);
 
-  expr->map(expr, "a", 6, &v, b, nullptr, r.ArrayBuffer().Data());
+  if (expr->map(expr, "a", 6, &v, b, nullptr, r.ArrayBuffer().Data()) != exprtk_js::exprtk_ok) {
+    Napi::TypeError::New(env, "Failed to evaluate the expression").ThrowAsJavaScriptException();
+    return env.Null();
+  }
 
   return r;
 }
@@ -119,7 +125,10 @@ Napi::Value TestReduce(const Napi::CallbackInfo &info) {
   uint32_t v[] = {10, 20, 30, 40, 50, 60};
   uint32_t r;
 
-  expr->reduce(expr, "a", 6, v, "b", nullptr, nullptr, &r);
+  if (expr->reduce(expr, "a", 6, v, "b", nullptr, nullptr, &r) != exprtk_js::exprtk_ok) {
+    Napi::TypeError::New(env, "Failed to evaluate the expression").ThrowAsJavaScriptException();
+    return env.Null();
+  }
 
   return Napi::Number::New(env, r);
 }
@@ -167,7 +176,10 @@ Napi::Value TestCwise(const Napi::CallbackInfo &info) {
   static exprtk_js::exprtk_capi_cwise_arg result = {
     "a", exprtk_js::napi_float64_compatible, 5, reinterpret_cast<void *>(r.ArrayBuffer().Data())};
 
-  expr->cwise(expr, 2, args, &result);
+  if (expr->cwise(expr, 2, args, &result) != exprtk_js::exprtk_ok) {
+    Napi::TypeError::New(env, "Failed to evaluate the expression").ThrowAsJavaScriptException();
+    return env.Null();
+  }
 
   return r;
 }

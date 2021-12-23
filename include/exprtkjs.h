@@ -1,11 +1,14 @@
 #ifndef EXPRTKJS_H
 #define EXPRTKJS_H
 
+#ifdef __cplusplus
 namespace exprtk_js {
-
 extern "C" {
+#endif
 
 struct exprtk_expression;
+
+typedef enum { exprtk_ok = 0, exprtk_invalid_argument } exprtk_result;
 
 typedef enum {
   napi_int8_compatible,
@@ -31,8 +34,9 @@ struct exprtk_capi_cwise_arg {
   void *data;
 };
 
-typedef void exprtkjs_capi_eval(exprtk_expression *expression, const void *scalars, void **vectors, void *result);
-typedef void exprtkjs_capi_map(
+typedef exprtk_result
+exprtkjs_capi_eval(exprtk_expression *expression, const void *scalars, void **vectors, void *result);
+typedef exprtk_result exprtkjs_capi_map(
   exprtk_expression *expression,
   const char *iterator_name,
   const size_t iterator_len,
@@ -41,7 +45,7 @@ typedef void exprtkjs_capi_map(
   void **vectors,
   void *result);
 
-typedef void exprtkjs_capi_reduce(
+typedef exprtk_result exprtkjs_capi_reduce(
   exprtk_expression *expression,
   const char *iterator_name,
   const size_t iterator_len,
@@ -51,9 +55,8 @@ typedef void exprtkjs_capi_reduce(
   void **vectors,
   void *result);
 
-typedef void exprtkjs_capi_cwise(
+typedef exprtk_result exprtkjs_capi_cwise(
   exprtk_expression *expression, const size_t n_args, const exprtk_capi_cwise_arg *args, exprtk_capi_cwise_arg *result);
-};
 
 #define EXPRTK_JS_CAPI_MAGIC 0xC0DEDF0F00D
 
@@ -76,6 +79,9 @@ struct exprtk_expression {
   exprtkjs_capi_cwise *cwise;
 };
 
+#ifdef __cplusplus
+} // extern "C"
 } // namespace exprtk_js
+#endif
 
 #endif
