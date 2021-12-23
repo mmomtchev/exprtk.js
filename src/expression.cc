@@ -4,8 +4,6 @@
 
 using namespace exprtk_js;
 
-template <typename T> exprtk::parser<T> Expression<T>::parser;
-
 /**
  * @param {string} expression function
  * @param {string[]} [variables] An array containing all the scalar variables' names
@@ -99,10 +97,10 @@ Expression<T>::Expression(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Exp
 
   expression.register_symbol_table(symbolTable);
 
-  if (!parser.compile(expressionText, expression)) {
+  if (!parser().compile(expressionText, expression)) {
     std::string errorText = "failed compiling expression " + expressionText + "\n";
-    for (std::size_t i = 0; i < parser.error_count(); i++) {
-      exprtk::parser_error::type error = parser.get_error(i);
+    for (std::size_t i = 0; i < parser().error_count(); i++) {
+      exprtk::parser_error::type error = parser().get_error(i);
       errorText += exprtk::parser_error::to_str(error.mode) + " at " + std::to_string(error.token.position) + " : " +
         error.diagnostic + "\n";
     }
@@ -266,7 +264,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::map) {
     }
     return 0;
   };
-  job.rval = [env, persistent](T r) { return persistent->Value(); };
+  job.rval = [persistent](T r) { return persistent->Value(); };
   return job.run(info, async, info.Length() - 1);
 }
 
@@ -682,7 +680,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
     };
   }
 
-  job.rval = [env, persistent](T r) { return persistent->Value(); };
+  job.rval = [persistent](T r) { return persistent->Value(); };
   return job.run(info, async, info.Length() - 1);
 }
 

@@ -145,8 +145,13 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
   // Read "SECTION 14" of the ExprTk manual for more information on this
   std::map<std::string, exprtk::vector_view<T> *> vectorViews;
 
-  // shared across all instances of the same type
-  static exprtk::parser<T> parser;
+  // this one is prone to static initialization fiasco
+  // there is a single shared instance per data type
+  inline exprtk::parser<T> &parser() {
+    static exprtk::parser<T> _parser;
+
+    return _parser;
+  }
 
   // get_variable_list / get_vector_list do not conserve the initial order
   std::vector<std::string> variableNames;
