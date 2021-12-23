@@ -2,6 +2,8 @@ const b = require('benny');
 const { assert } = require('chai');
 const e = require('..');
 
+// You should probably read the notes in `Performance.md`
+
 module.exports = function (type, size) {
   const allocator = global[type + 'Array'];
 
