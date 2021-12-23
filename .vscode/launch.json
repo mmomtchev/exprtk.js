@@ -29,6 +29,23 @@
             ]
         },
         {
+            "name": "Launch unit testing (lldb)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/usr/local/bin/node",
+            "args": [
+                "--expose-gc",
+                "${workspaceFolder}/node_modules/mocha/lib/cli/cli.js",
+                "--timeout",
+                "0"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "lldb",
+        },
+        {
             "type": "pwa-node",
             "request": "launch",
             "name": "Launch unit testing (JS)",

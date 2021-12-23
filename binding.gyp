@@ -15,8 +15,12 @@
     'ldflags': [ '-Wl,-z,now' ],
     'xcode_settings': {
       'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',
+			"GCC_ENABLE_CPP_RTTI": "YES",
       'CLANG_CXX_LIBRARY': 'libc++',
-      'MACOSX_DEPLOYMENT_TARGET': '10.7'
+			"OTHER_CPLUSPLUSFLAGS": [
+				"-frtti",
+				"-fexceptions"
+			]
     },
     'msvs_settings': {
       'VCCLCompilerTool': { 'ExceptionHandling': 1 },
@@ -69,7 +73,8 @@
         '<!@(node -p \'require("node-addon-api").include\')'
       ],
       'defines': [
-        'exprtk_disable_string_capabilities'
+        'exprtk_disable_string_capabilities',
+        'exprtk_disable_rtl_io_file'
       ],
       'dependencies': ['<!(node -p \'require("node-addon-api").gyp\')'],
       'conditions': [
