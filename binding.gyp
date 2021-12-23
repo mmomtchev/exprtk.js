@@ -1,6 +1,7 @@
 {
   'variables': {
     'enable_asan%': 'false',
+    'enable_coverage%': 'false',
     'disable_int%': 'false'
   },
   'conditions': [
@@ -89,11 +90,12 @@
       'dependencies': ['<!(node -p "require(\'node-addon-api\').gyp")'],
       'conditions': [
         ['enable_asan == "true"', {
-          'variables': {
-            'asan': 1
-          },
           'cflags_cc': [ '-fsanitize=address' ],
           'ldflags' : [ '-fsanitize=address' ]
+        }],
+        ["enable_coverage == 'true'", {
+          'cflags_cc': [ '-fprofile-arcs', '-ftest-coverage' ],
+          'ldflags' : [ '-lgcov', '--coverage' ]
         }]
       ]
     },

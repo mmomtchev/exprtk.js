@@ -9,7 +9,9 @@
     "test": "mocha",
     "lint": "clang-format -i src/*.cc src/*.h && eslint lib/*.js test/*.js bench/*.js",
     "bench": "node bench/bench.js",
-    "doc": "documentation readme --section=API --config=documentation.yml src/*.cc"
+    "doc": "documentation readme --section=API --config=documentation.yml src/*.cc",
+    "gcov": "mkdir -p coverage && cd coverage && gcov -o ../build/Debug/obj.target/exprtk.js/src ../src/*",
+    "codecov": "cd coverage && curl -s https://codecov.io/bash | bash"
   },
   "name": "exprtk.js",
   "version": "1.0.0",

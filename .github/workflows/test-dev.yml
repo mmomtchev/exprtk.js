@@ -32,3 +32,24 @@ jobs:
     - name: Run unit tests
       run: npm test
 
+
+  codecov:
+
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js 16.x
+      uses: actions/setup-node@v1
+      with:
+        node-version: 16.x
+    - run: npm install --ignore-scripts
+    - run: npx node-pre-gyp configure --debug --enable_coverage
+    - name: Build from sources
+      run: npx node-pre-gyp build -j max
+    - name: Run unit tests
+      run: npm test
+    - name: Collect coverage data
+      run: npm run gcov
+    - name: Send data to codecov
+      run: npm run codecov
