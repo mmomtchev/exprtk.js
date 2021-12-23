@@ -24,15 +24,13 @@ When launching a large number of parallel operations, unless the expression is v
 
 The original documentation of `ExprTk` and the syntax used for the expressions is available here: <https://github.com/ArashPartow/exprtk>
 
-## Usage
-
 When launching an asynchronous operation, the scalar arguments will be copied and any `TypedArray`s will be locked in place and protected from the GC. The whole operation, including traversal and evaluation will happen entirely in a pre-existing background thread picked from a pool and won't solicit the main thread until completion.
 
 An `Expression` is not reentrant so multiple concurrent evaluations of the same `Expression` object will wait on one another. Multiple evaluations on multiple objects will run in parallel up to the limit set by the Node.js environment variable `UV_THREADPOOL_SIZE`. Mixing synchronous and asynchronous evaluations is supported, but a synchronous evaluation will block the event loop until all asynchronous evaluations on that same object are finished.
 
 Support for a reentrant `MPExpression` that can distribute its array over multiple threads is planned for the next version.
 
-### Simple synchronous example
+## Simple examples
 
 ```js
 // internal type will be Float64 (C++ double)
@@ -92,53 +90,6 @@ const mean = new expr(
 
 const r = mean.eval(inputArray);
 const r = await mean.evalAsync(inputArray);
-```
-
-## Generic vector operations with `cwise()`/`cwiseAsync()`
-
-`cwise()` and `cwiseAsync()` allow for generic coefficient-wise operations on multiple vectors with implicit array traversal.
-
-These are the only methods that support type conversions and writing into preexisting arrays.
-
-```js
-// Air density of humid air from relative humidity (φ), temperature (T) and pressure (P)
-// rho = ( Pd * Md + Pv * Mv ) / ( R * T )    // density (Avogadro's law)
-// Pv = φ * Ps                                // vapor pressure of water
-// Ps = 6.1078 * 10 ^ (7.5 * T / (T + 237.3)) // saturation vapor pressure (Tetens' equation)
-// Pd = P - Pv                                // partial pressure of dry air
-// R = 0.0831446                              // universal gas constant
-// Md = 0.0289652                             // molar mass of water vapor
-// Mv = 0.018016                              // molar mass of dry air
-// ( this is the weather science form of the equation and not the hard physics one
-//   with T in C° and pressure in hPa )
-// phi, T and P are arbitrary TypedArrays of the same size
-
-// Calculation uses Float64 internally
-const expr = require("exprtk.js").Float64;
-
-const density = new expr(
-    // compute Pv and store it
-    'var Pv := ( phi * 6.1078 * pow(10, (7.5 * T / (T + 237.3))) ); ' +
-    // main formula (and return expression)
-    '( (P - Pv) * Md + Pv * Mv ) / ( R * (T + 273.15) )',
-    ['P', 'T', 'phi', 'R', 'Md', 'Mv']
-);
-const R = 0.0831446;
-const Md = 0.0289652;
-const Mv = 0.018016;
-// Mixing array types
-const fi = new Float32Array([0, 0.2, 0.5, 0.9, 0.5]);
-const P = new Uint16Array([1013, 1013, 1013, 1013, 995]);
-const T = new Uint16Array([25, 25, 25, 25, 25]);
-
-// Preexisting array, type conversion is automatic
-const result = new Float32Array(5);
-
-// sync
-const r = density.cwise({ P, T, fi, R, Mv, Md }, result);
-
-// async
-const r = await density.cwiseAsync({ P, T, fi, R, Mv, Md }, result);
 ```
 
 # API
@@ -356,13 +307,13 @@ Returns **[number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/G
 
 Originally, `ExprTk` supports only floating point types. The version bundled with `ExprTk.js` has working integer support, but one should be extra careful as it internally uses `NaN` values and most built-in mathematical functions - like `sin`, `cos`, `pow` or `exp` - won't work correctly with integer types. Using unsigned types will further aggravate this. Always check the result of your function when using anything but basic arithmetic. Also, do not forget that the internal data type also applies to all eventual index variables - using an `ExprTk` `for` loop in an `eval()` over a large `Int8` array is not possible as the index variable won't be able to hold the index. Implicit `map()`, `reduce()` and `cwise()` loops are not affected by this as they use internal C++ variables that are not affected by the `Expression` type.
 
-## Calling expressions from another addon
+## Evaluating expressions from another addon
 
-One of the main feature of `ExprTk.js` is allowing native C++ addons to accept expressions constructed in JS and evaluate them independently of the main V8 context.
+One of the main features of `ExprTk.js` is allowing native C++ addons to accept expressions constructed in JS and then to evaluate them independently of the main V8 context.
 
 You can check `test/addon.test.cc` for different examples of processing an `Expression` object received from JS and evaluating the expression. The calling JS code can be found in `test/capi.test.js`.
 
-Be advised that, while being completely independent of V8, those function can still block if another asynchronous operation is running on that `Expression` object.
+Be advised that, while being completely independent of V8, those function can still block if another asynchronous operation is running on that `Expression` object. At the moment an `Expression` object can not be evaluated multiple times in parallel. A reentrant, but more expensive for single use, version is planned for the next release.
 
 ## Build time and binary size
 
