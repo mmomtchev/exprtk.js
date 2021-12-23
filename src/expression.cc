@@ -22,7 +22,8 @@ using namespace exprtk_js;
  *  [], {x: 1024})
  */
 template <typename T>
-Expression<T>::Expression(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Expression<T>>::ObjectWrap(info) {
+Expression<T>::Expression(const Napi::CallbackInfo &info)
+  : Napi::ObjectWrap<Expression<T>>::ObjectWrap(info), capiDescriptor(nullptr) {
   Napi::Env env = info.Env();
 
   if (info.Length() < 1) {
@@ -110,8 +111,9 @@ Expression<T>::Expression(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Exp
 
 template <typename T> Expression<T>::~Expression() {
   for (auto const &v : vectorViews) {
+    // exprtk will sometimes try to free this pointer
+    // on object destruction even if it never allocated it
     v.second->rebase((T *)nullptr);
-    delete v.second;
   }
   vectorViews.clear();
 }
@@ -426,7 +428,7 @@ void Expression<T>::capi_reduce(
   std::lock_guard<std::mutex> lock(asyncLock);
 
   int scalars_idx = 0;
-  for (size_t i = 0; i < nvars ; i++) {
+  for (size_t i = 0; i < nvars; i++) {
     if (variableNames[i] == iterator_name) {
       it_ptr = &symbolTable.get_variable(variableNames[i])->ref();
     } else if (variableNames[i] == accumulator) {
@@ -648,7 +650,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
   if (outputType != NapiArrayType<T>::type) typeConversionRequired = true;
 
   std::shared_ptr<Napi::ObjectReference> persistent =
-    std::make_shared<Napi::ObjectReference>(Napi::ObjectReference::New(result));
+    std::make_shared<Napi::ObjectReference>(Napi::ObjectReference::New(result, 1));
 
   if (typeConversionRequired) {
     job.main = [this, scalars, vectors, output, elementSize, len, toCaster]() mutable {
@@ -865,10 +867,13 @@ void entry_capi_cwise(
 template <typename T> Napi::Value Expression<T>::GetCAPI(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
 
+  if (capiDescriptor != nullptr) return capiDescriptor->Value();
+
   size_t size = sizeof(exprtk_expression) + symbolTable.variable_count() * sizeof(char *) +
     symbolTable.vector_count() * sizeof(exprtk_capi_vector);
 
   Napi::ArrayBuffer result = Napi::ArrayBuffer::New(env, size);
+  capiDescriptor = std::make_shared<Napi::ObjectReference>(Napi::ObjectReference::New(result, 1));
   exprtk_expression *desc = reinterpret_cast<exprtk_expression *>(result.Data());
 
   desc->magic = EXPRTK_JS_CAPI_MAGIC;

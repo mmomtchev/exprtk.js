@@ -156,7 +156,11 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
   // get_variable_list / get_vector_list do not conserve the initial order
   std::vector<std::string> variableNames;
 
+  // Expression is not reentrant because of the symbol table
   std::mutex asyncLock;
+
+  // This is a persistent reference to the CAPI object of this Expression
+  std::shared_ptr<Napi::ObjectReference> capiDescriptor;
 
   // Helpers
 

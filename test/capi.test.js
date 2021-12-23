@@ -39,6 +39,9 @@ describe('Expression C-API', () => {
     const desc_vector = vector._CAPI_;
     assert.instanceOf(desc_vector, ArrayBuffer);
     assert.equal(desc_vector.byteLength, 120);
+
+    // multiple invocations should return the same object
+    assert.strictEqual(desc_u32, mean_u32._CAPI_);
   });
 
   it('capi_eval()', () => {
