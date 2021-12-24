@@ -1,4 +1,4 @@
-export type TypedArray<T> = Int8Array | Uint8Array | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array;
+export type TypedArray = Int8Array | Uint8Array | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array;
 
 export type TypedArrayType = 'Int8' | 'Uint8' | 'Int16' | 'Uint16' | 'Int32' | 'Uint32' | 'Float32' | 'Float64';
 
@@ -11,30 +11,31 @@ export class Expression<T> {
   readonly vectors: Record<string, number>;
 
 
-  eval(arguments: Record<string, number | TypedArray<T>>): number;
-  eval(...arguments: (number | TypedArray<T>)[]): number;
+  eval(arguments: Record<string, number | T>): number;
+  eval(...arguments: (number | T)[]): number;
 
-  evalAsync(arguments: Record<string, number | TypedArray<T>>): Promise<number>;
-  evalAsync(...arguments: (number | TypedArray<T>)[]): Promise<number>;
-
-
-  map(array: TypedArray<T>, iterator: string, arguments: Record<string, number | TypedArray<T>>): TypedArray<T>;
-  map(array: TypedArray<T>, iterator: string, ...arguments: (number | TypedArray<T>)[]): TypedArray<T>;
-
-  mapAsync(array: TypedArray<T>, iterator: string, arguments: Record<string, number | TypedArray<T>>): Promise<TypedArray<T>>;
-  mapAsync(array: TypedArray<T>, iterator: string, ...arguments: (number | TypedArray<T>)[]): Promise<TypedArray<T>>;
+  evalAsync(arguments: Record<string, number | T>): Promise<number>;
+  evalAsync(...arguments: (number | T)[]): Promise<number>;
 
 
-  reduce(array: TypedArray<T>, iterator: string, accumulator: string, initializer: number, arguments: Record<string, number | TypedArray<T>>): number;
-  reduce(array: TypedArray<T>, iterator: string, accumulator: string, initializer: number, ...arguments: (number | TypedArray<T>)[]): number;
+  map(array: T, iterator: string, arguments: Record<string, number | T>): T;
+  map(array: T, iterator: string, ...arguments: (number | T)[]): T;
 
-  reduceAsync(array: TypedArray<T>, iterator: string, accumulator: string, initializer: number, arguments: Record<string, number | TypedArray<T>>): Promise<number>;
-  reduceAsync(array: TypedArray<T>, iterator: string, accumulator: string, initializer: number, ...arguments: (number | TypedArray<T>)[]): Promise<number>;
+  mapAsync(array: T, iterator: string, arguments: Record<string, number | T>): Promise<T>;
+  mapAsync(array: T, iterator: string, ...arguments: (number | T)[]): Promise<T>;
 
 
-  cwise(arguments: Record<string, number | TypedArray<T>>, result?: TypedArray<T>): TypedArray<T>;
+  reduce(array: T, iterator: string, accumulator: string, initializer: number, arguments: Record<string, number | T>): number;
+  reduce(array: T, iterator: string, accumulator: string, initializer: number, ...arguments: (number | T)[]): number;
 
-  cwiseAsync(arguments: Record<string, number | TypedArray<T>>, result?: TypedArray<T>): Promise<TypedArray<T>>;
+  reduceAsync(array: T, iterator: string, accumulator: string, initializer: number, arguments: Record<string, number | T>): Promise<number>;
+  reduceAsync(array: T, iterator: string, accumulator: string, initializer: number, ...arguments: (number | T)[]): Promise<number>;
+
+  cwise(arguments: Record<string, number | TypedArray>): T;
+  cwise<U extends TypedArray>(arguments: Record<string, number | TypedArray>, result: U): U;
+
+  cwiseAsync(arguments: Record<string, number | TypedArray>): Promise<T>;
+  cwiseAsync<U extends TypedArray>(arguments: Record<string, number | TypedArray>, result: U): Promise<U>;
 }
 
 export const Int8: new (expression: string, scalars?: string[], vectors?: Record<string, number>) => Expression<Int8Array>;

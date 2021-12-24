@@ -257,7 +257,7 @@ describe('Expression', () => {
             });
             it('should throw w/ vector that is not a Float64Array', () => {
                 assert.throws(() => {
-                    vectorMean.eval(new Uint32Array(6));
+                    vectorMean.eval(new Uint32Array(6) as unknown as Float64Array);
                 }, /vector data must be a Float64Array/);
             });
             it('should throw w/ vector that is not the right size', () => {
@@ -275,7 +275,7 @@ describe('Expression', () => {
                 return closeToPromised(vectorMean.evalAsync(vector), 3.5, 10e-9);
             });
             it('should reject w/ vector that is not a Float64Array', () => {
-                return assert.isRejected(vectorMean.evalAsync(new Uint32Array(6)),
+                return assert.isRejected(vectorMean.evalAsync(new Uint32Array(6) as unknown as Float64Array),
                     /vector data must be a Float64Array/);
             });
             it('should reject w/ vector that is not the right size', () => {
