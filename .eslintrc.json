@@ -42,6 +42,23 @@
   "overrides": [
     {
       "files": [
+        "test/*.ts"
+      ],
+      "parser": "@typescript-eslint/parser",
+      "plugins": [
+        "@typescript-eslint"
+      ],
+      "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/eslint-recommended",
+        "plugin:@typescript-eslint/recommended"
+      ],
+      "rules": {
+        "no-extra-parens": "off"
+      }
+    },
+    {
+      "files": [
         "scripts/publish-packages.js"
       ],
       "parserOptions": {

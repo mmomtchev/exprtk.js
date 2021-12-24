@@ -143,7 +143,7 @@ template <typename T> Expression<T>::~Expression() {
  * 
  * All arrays must match the internal data type.
  *
- * @param {Record<string, number|TypedArray<T>>|...(number|TypedArray<T>)} arguments of the function
+ * @param {...(number|TypedArray<T>)[]|Record<string, number|TypedArray<T>>} arguments of the function
  * @returns {number}
  * @memberof Expression
  *
@@ -213,7 +213,7 @@ template <typename T> exprtk_result Expression<T>::capi_eval(const void *_scalar
  *
  * @param {TypedArray<T>} array for the expression to be iterated over
  * @param {string} iterator variable name
- * @param {...(number|TypedArray<T>)|Record<string, number|TypedArray<T>>} arguments of the function, iterator removed
+ * @param {...(number|TypedArray<T>)[]|Record<string, number|TypedArray<T>>} arguments of the function, iterator removed
  * @returns {TypedArray<T>}
  * @memberof Expression
  *
@@ -351,7 +351,7 @@ exprtk_result Expression<T>::capi_map(
  * @param {string} iterator variable name
  * @param {string} accumulator variable name
  * @param {number} initializer for the accumulator
- * @param {...(number|TypedArray<T>)|Record<string, number|TypedArray<T>>} arguments of the function, iterator removed
+ * @param {...(number|TypedArray<T>)[]|Record<string, number|TypedArray<T>>} arguments of the function, iterator removed
  * @returns {number}
  * @memberof Expression
  *
@@ -563,7 +563,7 @@ static const size_t NapiElementSize[] = {
  * Supports automatic type conversions, multiple inputs and writing into a pre-existing array.
  *
  * @param {Record<string, number|TypedArray<T>>} arguments
- * @param {...(number|TypedArray<T>)|Record<string, number|TypedArray<T>>} arguments of the function, iterator removed
+ * @param {...(number|TypedArray<T>)[]|Record<string, number|TypedArray<T>>} arguments of the function, iterator removed
  * @returns {TypedArray<T>}
  * @memberof Expression
  *

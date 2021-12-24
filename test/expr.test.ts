@@ -1,28 +1,35 @@
-const Expression = require('../lib/binding.js');
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import Expression from '..';
+import { Float64 as expr } from '..';
 
-const chai = require('chai');
-const chaiAsPromised = require('chai-as-promised');
+import chai from 'chai';
+import chaiAsPromised from 'chai-as-promised';
 chai.use(chaiAsPromised);
 const assert = chai.assert;
-const expr = Expression.Float64;
+
+// The TS definition of chai.closeToPromised has a wrong signature
+// https://github.com/DefinitelyTyped/DefinitelyTyped/discussions/56990
+function closeToPromised(act: Promise<number>, exp: number, delta: number, msg ?: string): PromiseLike<void> {
+    return assert.eventually.closeTo(act as unknown as number, exp, delta, msg);
+}
 
 describe('Expression', () => {
-    afterEach(global.gc);
+    afterEach((global as any).gc);
 
     describe('constructor', () => {
         it('should throw w/o arguments', () => {
             assert.throws(() => {
-                new expr();
+                new (expr as any)();
             }, /mandatory/);
         });
         it('should throw w/ invalid arguments 1', () => {
             assert.throws(() => {
-                new expr(12);
+                new (expr as any)(12);
             }, /expresion must be a string/);
         });
         it('should throw w/ invalid arguments 2', () => {
             assert.throws(() => {
-                new expr('a', 12);
+                new (expr as any)('a', 12);
             }, /must be an array/);
         });
         it('should throw w/ invalid expression', () => {
@@ -32,12 +39,12 @@ describe('Expression', () => {
         });
         it('should throw w/ invalid vector', () => {
             assert.throws(() => {
-                new expr('a', ['a'], 12);
+                new (expr as any)('a', ['a'], 12);
             }, /vectors must be an object/);
         });
         it('should throw w/ vector that is not a number', () => {
             assert.throws(() => {
-                new expr('a', ['a'], { x: '12' });
+                new (expr as any)('a', ['a'], { x: '12' });
             }, /vector size must be a number/);
         });
         it('should accept an expression w/o explicit arguments', () => {
@@ -46,6 +53,7 @@ describe('Expression', () => {
             assert.equal(mean.expression, '(a + b) / 2');
             assert.deepEqual(mean.scalars, ['a', 'b']);
             assert.deepEqual(mean.vectors, {});
+            
             assert.equal(mean.type, 'Float64');
         });
         it('should accept an expression w/ scalars', () => {
@@ -133,10 +141,15 @@ describe('Expression', () => {
     });
 
     describe('compute', () => {
-        let mean, vectorMean, pi, clamp, sumPow, vectorFill;
-        let vector = new Float64Array([1, 2, 3, 4, 5, 6]);
+        let mean: Expression.Float64;
+        let vectorMean: Expression.Float64;
+        let pi: Expression.Float64;
+        let clamp: Expression.Float64;
+        let sumPow: Expression.Float64;
+        let vectorFill: Expression.Float64;
+        const vector = new Float64Array([1, 2, 3, 4, 5, 6]);
 
-        let density;
+        let density: Expression.Float64;
         const R = 0.0831446;
         const Md = 0.0289652;
         const Mv = 0.018016;
@@ -213,21 +226,21 @@ describe('Expression', () => {
 
         describe('evalAsync() object form', () => {
             it('should accept variables', () => {
-                return assert.eventually.closeTo(mean.evalAsync({ a: 5, b: 10 }), (5 + 10) / 2, 10e-9);
+                return closeToPromised(mean.evalAsync({ a: 5, b: 10 }), (5 + 10) / 2, 10e-9);
             });
             it('should accept vectors', () => {
-                return assert.eventually.closeTo(vectorMean.evalAsync({ x: vector }), 3.5, 10e-9);
+                return closeToPromised(vectorMean.evalAsync({ x: vector }), 3.5, 10e-9);
             });
             it('should reject if not all arguments are given', () => {
                 return assert.isRejected(vectorMean.evalAsync({}), /wrong number of input arguments/);
             });
             it('should support expression without arguments', () => {
-                return assert.eventually.closeTo(pi.evalAsync({}), 3.14, 0.01);
+                return closeToPromised(pi.evalAsync({}), 3.14, 0.01);
             });
             it('should modify the vector in place', () => {
                 const v = new Float64Array(10);
-                return assert.isFulfilled(vectorFill.evalAsync(v).then((r) => {
-                    for (const i in r) assert.closeTo(r[i], +i, 10e-6);
+                return assert.isFulfilled(vectorFill.evalAsync(v).then(() => {
+                    for (const i in v) assert.closeTo(v[i], +i, 10e-6);
                 }));
             });
         });
@@ -256,10 +269,10 @@ describe('Expression', () => {
 
         describe('evalAsync() argument list form', () => {
             it('should accept variables', () => {
-                return assert.eventually.closeTo(mean.evalAsync(5, 10), (5 + 10) / 2, 10e-9);
+                return closeToPromised(mean.evalAsync(5, 10), (5 + 10) / 2, 10e-9);
             });
             it('should accept an TypedArray', () => {
-                return assert.eventually.closeTo(vectorMean.evalAsync(vector), 3.5, 10e-9);
+                return closeToPromised(vectorMean.evalAsync(vector), 3.5, 10e-9);
             });
             it('should reject w/ vector that is not a Float64Array', () => {
                 return assert.isRejected(vectorMean.evalAsync(new Uint32Array(6)),
@@ -297,7 +310,7 @@ describe('Expression', () => {
 
             it('should throw w/o iterator', () => {
                 assert.throws(() => {
-                    clamp.map(vector, 2, 4);
+                        (clamp as any).map(vector, 2, 4);
                 }, /second argument must be the iterator variable name/);
             });
 
@@ -322,7 +335,7 @@ describe('Expression', () => {
             });
 
             it('should reject w/o iterator', () => {
-                return assert.isRejected(clamp.mapAsync(vector, 2, 4),
+                return assert.isRejected((clamp as any).mapAsync(vector, 2, 4),
                     /second argument must be the iterator variable name/);
             });
 
@@ -345,19 +358,19 @@ describe('Expression', () => {
 
             it('should throw w/o iterator', () => {
                 assert.throws(() => {
-                    sumPow.reduce(vector, 2, 4);
+                        (sumPow as any).reduce(vector, 2, 4);
                 }, /second argument must be the iterator variable name/);
             });
 
             it('should throw w/ invalid iterator', () => {
                 assert.throws(() => {
-                    sumPow.reduce(vector, 'c', 'a', 4);
+                        (sumPow as any).reduce(vector, 'c', 'a', 4);
                 }, /c is not a declared scalar variable/);
             });
 
             it('should throw w/o accumulator', () => {
                 assert.throws(() => {
-                    sumPow.reduce(vector, 'x');
+                        (sumPow as any).reduce(vector, 'x');
                 }, /third argument must be the accumulator variable name/);
             });
 
@@ -369,13 +382,13 @@ describe('Expression', () => {
 
             it('should throw w/o accumulator initial value', () => {
                 assert.throws(() => {
-                    sumPow.reduce(vector, 'x', 'a');
+                        (sumPow as any).reduce(vector, 'x', 'a');
                 }, /fourth argument must be a number for the accumulator initial value/);
             });
 
             it('should throw w/ invalid accumulator initial value', () => {
                 assert.throws(() => {
-                    sumPow.reduce(vector, 'x', 'a', 'd');
+                        (sumPow as any).reduce(vector, 'x', 'a', 'd');
                 }, /fourth argument must be a number for the accumulator initial value/);
             });
 
@@ -394,17 +407,17 @@ describe('Expression', () => {
             });
 
             it('should throw w/o iterator', () => {
-                return assert.isRejected(sumPow.reduceAsync(vector, 2, 4),
+                return assert.isRejected((sumPow as any).reduceAsync(vector, 2, 4),
                     /second argument must be the iterator variable name/);
             });
 
             it('should throw w/ invalid iterator', () => {
-                return assert.isRejected(sumPow.reduceAsync(vector, 'c', 'a', 4),
+                return assert.isRejected((sumPow as any).reduceAsync(vector, 'c', 'a', 4),
                     /c is not a declared scalar variable/);
             });
 
             it('should throw w/o accumulator', () => {
-                return assert.isRejected(sumPow.reduceAsync(vector, 'x'),
+                return assert.isRejected((sumPow as any).reduceAsync(vector, 'x'),
                     /third argument must be the accumulator variable name/);
             });
 
@@ -414,12 +427,12 @@ describe('Expression', () => {
             });
 
             it('should throw w/o accumulator initial value', () => {
-                return assert.isRejected(sumPow.reduceAsync(vector, 'x', 'a'),
+                return assert.isRejected((sumPow as any).reduceAsync(vector, 'x', 'a'),
                     /fourth argument must be a number for the accumulator initial value/);
             });
 
             it('should throw w/ invalid accumulator initial value', () => {
-                return assert.isRejected(sumPow.reduceAsync(vector, 'x', 'a', 'd'),
+                return assert.isRejected((sumPow as any).reduceAsync(vector, 'x', 'a', 'd'),
                     /fourth argument must be a number for the accumulator initial value/);
             });
 
@@ -451,7 +464,7 @@ describe('Expression', () => {
 
             it('should throw on invalid arguments', () => {
                 assert.throws(() => {
-                    density.cwise({ P: 'abc', T, R, Mv, Md });
+                        (density as any).cwise({ P: 'abc', T, R, Mv, Md });
                 }, /P is not a number or a TypedArray/);
             });
 
@@ -493,7 +506,7 @@ describe('Expression', () => {
             });
 
             it('should reject on invalid arguments', () => {
-                return assert.isRejected(density.cwiseAsync({ P: 'abc', T, R, Mv, Md }),
+                return assert.isRejected((density as any).cwiseAsync({ P: 'abc', T, R, Mv, Md }),
                     /P is not a number or a TypedArray/);
             });
 
@@ -515,10 +528,10 @@ describe('Expression', () => {
             for (const outp of ['Uint8', 'Int8', 'Uint16', 'Int16', 'Uint32', 'Int32', 'Float32', 'Float64']) {
                 it(`converting from ${inp} to ${outp}`, () => {
                     const id = new Expression.Float64('x', ['x']);
-                    const inArray = new global[inp + 'Array'](vector);
-                    const outArray = new global[outp + 'Array'](vector);
+                    const inArray = new (global as any)[inp + 'Array'](vector);
+                    const outArray = new (global as any)[outp + 'Array'](vector);
                     id.cwise({ x: inArray }, outArray);
-                    const size = Math.min(+(inp.match(/[0-9]+/)[0]), +(outp.match(/[0-9]+/)[0]));
+                    const size = Math.min(+((inp.match(/[0-9]+/) || [])[0]), +((outp.match(/[0-9]+/) || [])[0]));
                     for (const i in vector) {
                         if (vector[i] > 0 && vector[i] < 2 ** size)
                             assert.closeTo(vector[i], outArray[i], 10e-6);

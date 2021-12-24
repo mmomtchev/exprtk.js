@@ -115,12 +115,13 @@ const r = await mean.evalAsync(inputArray);
     *   [Parameters](#parameters-1)
     *   [Examples](#examples-1)
 *   [eval](#eval)
+    *   [Parameters](#parameters-2)
     *   [Examples](#examples-2)
 *   [map](#map)
-    *   [Parameters](#parameters-2)
+    *   [Parameters](#parameters-3)
     *   [Examples](#examples-3)
 *   [reduce](#reduce)
-    *   [Parameters](#parameters-3)
+    *   [Parameters](#parameters-4)
     *   [Examples](#examples-4)
 
 ## Expression
@@ -176,14 +177,14 @@ Type: Record<[string](https://developer.mozilla.org/docs/Web/JavaScript/Referenc
 
 ## cwise
 
-Generic vector operation with implicit traversal
+Generic vector operation with implicit traversal.
 
-Supports automatic type conversions, multiple inputs and writing into a pre-existing array
+Supports automatic type conversions, multiple inputs and writing into a pre-existing array.
 
 ### Parameters
 
 *   `arguments` **Record<[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/String), ([number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Number) | [TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/TypedArray)\<T>)>**&#x20;
-*   `arguments` **...(([number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Number) | [TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/TypedArray)\<T>) | Record<[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/String), ([number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Number) | [TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/TypedArray)\<T>)>)** of the function, iterator removed
+*   `arguments` **...([Array](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Array)<([number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Number) | [TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/TypedArray)\<T>)> | Record<[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/String), ([number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Number) | [TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/TypedArray)\<T>)>)** of the function, iterator removed
 
 ### Examples
 
@@ -205,6 +206,7 @@ Supports automatic type conversions, multiple inputs and writing into a pre-exis
 const R = 0.0831446;
 const Md = 0.0289652;
 const Mv = 0.018016;
+// cwise()/cwiseAsync() accept and automatically convert all data types
 const phi = new Float32Array([0, 0.2, 0.5, 0.9, 0.5]);
 const P = new Uint16Array([1013, 1013, 1013, 1013, 995]);
 const T = new Uint16Array([25, 25, 25, 25, 25]);
@@ -227,7 +229,13 @@ Returns **[TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Referen
 
 ## eval
 
-Evaluate the expression
+Evaluate the expression.
+
+All arrays must match the internal data type.
+
+### Parameters
+
+*   `arguments` **...([Array](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Array)<([number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Number) | [TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/TypedArray)\<T>)> | Record<[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/String), ([number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Number) | [TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/TypedArray)\<T>)>)** of the function
 
 ### Examples
 
@@ -245,16 +253,18 @@ Returns **[number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/G
 
 ## map
 
-Evaluate the expression for every element of a TypedArray
+Evaluate the expression for every element of a TypedArray.
 
 Evaluation and traversal happens entirely in C++ so this will be much
-faster than calling array.map(expr.eval)
+faster than calling `array.map(expr.eval)`.
+
+All arrays must match the internal data type.
 
 ### Parameters
 
 *   `array` **[TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/TypedArray)\<T>** for the expression to be iterated over
 *   `iterator` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/String)** variable name
-*   `arguments` **...(([number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Number) | [TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/TypedArray)\<T>) | Record<[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/String), ([number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Number) | [TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/TypedArray)\<T>)>)** of the function, iterator removed
+*   `arguments` **...([Array](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Array)<([number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Number) | [TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/TypedArray)\<T>)> | Record<[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/String), ([number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Number) | [TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/TypedArray)\<T>)>)** of the function, iterator removed
 
 ### Examples
 
@@ -276,10 +286,12 @@ Returns **[TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Referen
 ## reduce
 
 Evaluate the expression for every element of a TypedArray
-passing a scalar accumulator to every evaluation
+passing a scalar accumulator to every evaluation.
 
 Evaluation and traversal happens entirely in C++ so this will be much
-faster than calling array.reduce(expr.eval)
+faster than calling `array.reduce(expr.eval)`.
+
+All arrays must match the internal data type.
 
 ### Parameters
 
@@ -287,7 +299,7 @@ faster than calling array.reduce(expr.eval)
 *   `iterator` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/String)** variable name
 *   `accumulator` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/String)** variable name
 *   `initializer` **[number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Number)** for the accumulator
-*   `arguments` **...(([number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Number) | [TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/TypedArray)\<T>) | Record<[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/String), ([number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Number) | [TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/TypedArray)\<T>)>)** of the function, iterator removed
+*   `arguments` **...([Array](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Array)<([number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Number) | [TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/TypedArray)\<T>)> | Record<[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/String), ([number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Number) | [TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/TypedArray)\<T>)>)** of the function, iterator removed
 
 ### Examples
 
