@@ -10,6 +10,9 @@
     "lint": "clang-format -i src/*.cc src/*.h && eslint lib/*.js test/*.js bench/*.js scripts/*.js",
     "bench": "node bench/bench.js",
     "doc": "documentation readme --section=API --config=documentation.yml src/*.cc",
+    "preversion": "npm run lint && npm run test && npm run doc",
+    "version": "git add package.json",
+    "postversion": "git push && git push --tags && node ./scripts/publish-packages.js",
     "gcov": "mkdir -p coverage && cd coverage && gcov -o ../build/Debug/obj.target/exprtk.js/src ../src/*",
     "codecov": "cd coverage && curl -s https://codecov.io/bash | bash"
   },
