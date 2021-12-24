@@ -139,7 +139,9 @@ template <typename T> Expression<T>::~Expression() {
 }
 
 /**
- * Evaluate the expression
+ * Evaluate the expression.
+ * 
+ * All arrays must match the internal data type.
  *
  * @param {Record<string, number|TypedArray<T>>|...(number|TypedArray<T>)} arguments of the function
  * @returns {number}
@@ -202,10 +204,12 @@ template <typename T> exprtk_result Expression<T>::capi_eval(const void *_scalar
 }
 
 /**
- * Evaluate the expression for every element of a TypedArray
+ * Evaluate the expression for every element of a TypedArray.
  * 
  * Evaluation and traversal happens entirely in C++ so this will be much
- * faster than calling array.map(expr.eval)
+ * faster than calling `array.map(expr.eval)`.
+ * 
+ * All arrays must match the internal data type.
  *
  * @param {TypedArray<T>} array for the expression to be iterated over
  * @param {string} iterator variable name
@@ -336,10 +340,12 @@ exprtk_result Expression<T>::capi_map(
 
 /**
  * Evaluate the expression for every element of a TypedArray
- * passing a scalar accumulator to every evaluation
+ * passing a scalar accumulator to every evaluation.
  * 
  * Evaluation and traversal happens entirely in C++ so this will be much
- * faster than calling array.reduce(expr.eval)
+ * faster than calling `array.reduce(expr.eval)`.
+ * 
+ * All arrays must match the internal data type.
  * 
  * @param {TypedArray<T>} array for the expression to be iterated over
  * @param {string} iterator variable name
@@ -552,9 +558,9 @@ static const size_t NapiElementSize[] = {
   sizeof(double)};
 
 /**
- * Generic vector operation with implicit traversal
+ * Generic vector operation with implicit traversal.
  * 
- * Supports automatic type conversions, multiple inputs and writing into a pre-existing array
+ * Supports automatic type conversions, multiple inputs and writing into a pre-existing array.
  *
  * @param {Record<string, number|TypedArray<T>>} arguments
  * @param {...(number|TypedArray<T>)|Record<string, number|TypedArray<T>>} arguments of the function, iterator removed
@@ -579,6 +585,7 @@ static const size_t NapiElementSize[] = {
  * const R = 0.0831446;
  * const Md = 0.0289652;
  * const Mv = 0.018016;
+ * // cwise()/cwiseAsync() accept and automatically convert all data types
  * const phi = new Float32Array([0, 0.2, 0.5, 0.9, 0.5]);
  * const P = new Uint16Array([1013, 1013, 1013, 1013, 995]);
  * const T = new Uint16Array([25, 25, 25, 25, 25]);
@@ -986,9 +993,10 @@ template <typename T> Napi::Function Expression<T>::GetClass(Napi::Env env) {
   napi_property_attributes props =
     static_cast<napi_property_attributes>(napi_writable | napi_configurable | napi_enumerable);
   napi_property_attributes hidden = static_cast<napi_property_attributes>(napi_configurable);
+  static const std::string className = std::string(NapiArrayType<T>::name) + "Expression";
   return Expression<T>::DefineClass(
     env,
-    NapiArrayType<T>::name,
+    className.c_str(),
     {Expression<T>::InstanceAccessor("expression", &Expression<T>::GetExpression, nullptr),
      Expression<T>::InstanceAccessor("scalars", &Expression<T>::GetScalars, nullptr),
      Expression<T>::InstanceAccessor("vectors", &Expression<T>::GetVectors, nullptr),
