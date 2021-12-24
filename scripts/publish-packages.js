@@ -14,7 +14,6 @@ const pkg = {
 const version = package_json.version;
 let workflowPublishId;
 const workflowPublishMatch = /publish/;
-const workflowPublish = { ...pkg, workflow_id: workflowPublishId, ref: `v${version}` };
 
 (async () => {
   const branch = (await exec('git branch --show-current')).stdout.trim();
@@ -23,15 +22,16 @@ const workflowPublish = { ...pkg, workflow_id: workflowPublishId, ref: `v${versi
   const workflows = await octokit.request('GET /repos/{owner}/{repo}/actions/workflows', pkg);
   for (const w of workflows.data.workflows) {
     if (w.name.match(workflowPublishMatch)) {
+      process.stdout.write(` found ${w.id}:${w.name}\n`);
       workflowPublishId = w.id;
       break;
     }
   }
-  if (workflowPublishId) process.stdout.write('found ${id}\n');
-  else {
-    process.stdout.write('no publishing workflow found\n');
+  if (!workflowPublishId) {
+    process.stdout.write(' no publishing workflow found\n');
     return;
   }
+  const workflowPublish = { ...pkg, workflow_id: workflowPublishId, ref: `v${version}` };
 
   process.stdout.write(`launching Github actions build on branch ${branch} for ${version}, tag ${workflowPublish.ref}`);
   await octokit.request('POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches', workflowPublish);

@@ -2,6 +2,7 @@
   "main": "lib/binding.js",
   "dependencies": {
     "@mapbox/node-pre-gyp": "^1.0.8",
+    "@mmomtchev/node-pre-gyp-github": "^2.0.3",
     "node-addon-api": "^1.1.0"
   },
   "scripts": {
