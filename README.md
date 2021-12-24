@@ -8,7 +8,7 @@
 
 This is the Node.js bindings for [ExprTk](http://www.partow.net/programming/exprtk/index.html) [(Github)](https://github.com/ArashPartow/exprtk) by [@ArashPartow](https://github.com/ArashPartow)
 
-`Exprtk.js` supports both synchronous and asynchronous background execution of thunks precompiled from a string including asynchronous and multithreaded versions of `TypedArray.prototype.map` and `TypedArray.prototype.reduce`.
+`ExprTk.js` supports both synchronous and asynchronous background execution of thunks precompiled from a string including asynchronous and multithreaded versions of `TypedArray.prototype.map` and `TypedArray.prototype.reduce`.
 
 Its main advantage is that it allows deferring of heavy computation for asynchronous execution in a background thread - something that Node.js/V8 does not allow without the very complex mechanisms of `worker_threads`.
 
@@ -18,7 +18,20 @@ It also supports being directly called from native add-ons, including native thr
 
 # Installation
 
-ExprTk.js is a WIP and it is still not published
+`ExprTk.js` uses `node-pre-gyp` and it comes with pre-built binaries for x86 for Linux (baseline is Ubuntu 18.04), Windows and OS X.
+
+```bash
+npm install exprtk.js
+```
+
+If your platform is not supported, you can rebuild the binaries:
+
+```
+npm install exprtk.js --build-from-source
+```
+
+Rebuilding requires a working C++17 environment. It has been tested with `g++`, `clang` and `MSVS 2019`.
+
 
 # Usage
 
