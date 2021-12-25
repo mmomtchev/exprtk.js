@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Fix missing TS types
  - Minor README.md updates
  - Add `documentation-polyglot` as a dev dependency
+ - Add a console warning if the GC tries to free a locked object
 
 ## [1.0.0-rc1] 2021-12-24
  - First binary release

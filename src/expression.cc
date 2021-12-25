@@ -129,6 +129,16 @@ Expression<T>::Expression(const Napi::CallbackInfo &info)
 }
 
 template <typename T> Expression<T>::~Expression() {
+  if (!asyncLock.try_lock()) {
+    fprintf(
+      stderr,
+      "GC waiting on a background evaluation of an Expression object, event loop blocked. "
+      "If you are using only the JS interface, this is a bug in ExprTk.js. "
+      "If you are using the C/C++ API, you must always protect Expression objects from the GC "
+      "by obtaining a persistent object reference. \n");
+    asyncLock.lock();
+  }
+  asyncLock.unlock();
   for (auto const &v : vectorViews) {
     // exprtk will sometimes try to free this pointer
     // on object destruction even if it never allocated it
