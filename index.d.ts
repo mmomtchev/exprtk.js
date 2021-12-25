@@ -48,4 +48,10 @@ export const Float32: new (expression: string, scalars?: string[], vectors?: Rec
 export const Float64: new (expression: string, scalars?: string[], vectors?: Record<string, number>) => Expression<Float64Array>;
 
 export type Int8 = Expression<Int8Array>;
+export type Uint8 = Expression<Uint8Array>;
+export type Int16 = Expression<Int16Array>;
+export type Uint16 = Expression<Uint16Array>;
+export type Int32 = Expression<Int32Array>;
+export type Uint32 = Expression<Uint32Array>;
+export type Float32 = Expression<Float32Array>;
 export type Float64 = Expression<Float64Array>;
