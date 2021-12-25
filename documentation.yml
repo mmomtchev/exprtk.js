@@ -16,6 +16,8 @@ sortOrder:
     - member
   - alpha
 
+defaultGlobals: false
+
 documentation-polyglot:
   extensions: [ .cc, .h ]
   infer:

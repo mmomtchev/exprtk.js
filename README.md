@@ -26,7 +26,7 @@ npm install exprtk.js
 
 If your platform is not supported, you can rebuild the binaries:
 
-```
+```bash
 npm install exprtk.js --build-from-source
 ```
 
@@ -140,9 +140,9 @@ const r = await mean.evalAsync(inputArray);
 
 ### Parameters
 
-*   `expression` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/String)** function
-*   `variables` **[Array](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Array)<[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/String)>?** An array containing all the scalar variables' names, will be determined automatically if omitted, however order won't be guaranteed
-*   `vectors` **Record<[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/String), [number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Number)>?** An object containing all the vector variables' names and their sizes, vector size must be known at compilation (object construction)
+*   `expression` **string** function
+*   `variables` **Array\<string>?** An array containing all the scalar variables' names, will be determined automatically if omitted, however order won't be guaranteed
+*   `vectors` **Record\<string, number>?** An object containing all the vector variables' names and their sizes, vector size must be known at compilation (object construction)
 
 ### Examples
 
@@ -167,25 +167,25 @@ Returns **[Expression](#expression)**&#x20;
 
 Return the expression as a string
 
-Type: [string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/String)
+Type: string
 
 ## scalars
 
 Return the scalar arguments as an array
 
-Type: [Array](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Array)<[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/String)>
+Type: Array\<string>
 
 ## type
 
 Return the type as a string
 
-Type: [string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/String)
+Type: string
 
 ## vectors
 
 Return the vector arguments as an object
 
-Type: Record<[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/String), [Array](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Array)<[number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Number)>>
+Type: Record\<string, Array\<number>>
 
 ## cwise
 
@@ -195,8 +195,8 @@ Supports automatic type conversions, multiple inputs and writing into a pre-exis
 
 ### Parameters
 
-*   `arguments` **Record<[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/String), ([number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Number) | [TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/TypedArray)\<T>)>**&#x20;
-*   `arguments` **...([Array](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Array)<([number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Number) | [TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/TypedArray)\<T>)> | Record<[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/String), ([number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Number) | [TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/TypedArray)\<T>)>)** of the function, iterator removed
+*   `arguments` **Record\<string, (number | TypedArray\<T>)>**&#x20;
+*   `arguments` **...(Array<(number | TypedArray\<T>)> | Record\<string, (number | TypedArray\<T>)>)** of the function, iterator removed
 
 ### Examples
 
@@ -237,7 +237,7 @@ density.cwise({phi, T, P, R, Md, Mv}, result);
 await density.cwiseAsync({phi, T, P, R, Md, Mv}, result);
 ```
 
-Returns **[TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/TypedArray)\<T>**&#x20;
+Returns **TypedArray\<T>**&#x20;
 
 ## eval
 
@@ -247,7 +247,7 @@ All arrays must match the internal data type.
 
 ### Parameters
 
-*   `arguments` **...([Array](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Array)<([number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Number) | [TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/TypedArray)\<T>)> | Record<[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/String), ([number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Number) | [TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/TypedArray)\<T>)>)** of the function
+*   `arguments` **...(Array<(number | TypedArray\<T>)> | Record\<string, (number | TypedArray\<T>)>)** of the function
 
 ### Examples
 
@@ -261,7 +261,7 @@ expr.evalAsync({a: 2, b: 5}, (e,r) => console.log(e, r));
 expr.evalAsync(2, 5, (e,r) => console.log(e, r));
 ```
 
-Returns **[number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Number)**&#x20;
+Returns **number**&#x20;
 
 ## map
 
@@ -274,9 +274,9 @@ All arrays must match the internal data type.
 
 ### Parameters
 
-*   `array` **[TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/TypedArray)\<T>** for the expression to be iterated over
-*   `iterator` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/String)** variable name
-*   `arguments` **...([Array](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Array)<([number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Number) | [TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/TypedArray)\<T>)> | Record<[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/String), ([number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Number) | [TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/TypedArray)\<T>)>)** of the function, iterator removed
+*   `array` **TypedArray\<T>** for the expression to be iterated over
+*   `iterator` **string** variable name
+*   `arguments` **...(Array<(number | TypedArray\<T>)> | Record\<string, (number | TypedArray\<T>)>)** of the function, iterator removed
 
 ### Examples
 
@@ -293,7 +293,7 @@ expr.mapAsync(array, 'x', 0, 1000, (e,r) => console.log(e, r));
 expr.mapAsync(array, 'x', {f: 0, c: 0}, (e,r) => console.log(e, r));
 ```
 
-Returns **[TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/TypedArray)\<T>**&#x20;
+Returns **TypedArray\<T>**&#x20;
 
 ## reduce
 
@@ -307,11 +307,11 @@ All arrays must match the internal data type.
 
 ### Parameters
 
-*   `array` **[TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/TypedArray)\<T>** for the expression to be iterated over
-*   `iterator` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/String)** variable name
-*   `accumulator` **[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/String)** variable name
-*   `initializer` **[number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Number)** for the accumulator
-*   `arguments` **...([Array](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Array)<([number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Number) | [TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/TypedArray)\<T>)> | Record<[string](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/String), ([number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Number) | [TypedArray](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/TypedArray)\<T>)>)** of the function, iterator removed
+*   `array` **TypedArray\<T>** for the expression to be iterated over
+*   `iterator` **string** variable name
+*   `accumulator` **string** variable name
+*   `initializer` **number** for the accumulator
+*   `arguments` **...(Array<(number | TypedArray\<T>)> | Record\<string, (number | TypedArray\<T>)>)** of the function, iterator removed
 
 ### Examples
 
@@ -329,7 +329,7 @@ sum.reduceAsync(array, 'x', {'a' : 0}, (e,r) => console.log(e, r));
 const sumSq = await sum.reduceAsync(array, 'x', {'a' : 0}, (e,r) => console.log(e, r));
 ```
 
-Returns **[number](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global\_Objects/Number)**&#x20;
+Returns **number**&#x20;
 
 # Notes
 
