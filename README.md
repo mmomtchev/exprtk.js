@@ -18,7 +18,7 @@ It also supports being directly called from native add-ons, including native thr
 
 # Installation
 
-`ExprTk.js` uses `node-pre-gyp` and it comes with pre-built binaries for x86 for Linux (baseline is Ubuntu 18.04), Windows and OS X.
+`ExprTk.js` uses `node-pre-gyp` and it comes with pre-built binaries for x86-64 for Linux (baseline is Ubuntu 18.04), Windows and OS X.
 
 ```bash
 npm install exprtk.js
@@ -32,7 +32,6 @@ npm install exprtk.js --build-from-source
 
 Rebuilding requires a working C++17 environment. It has been tested with `g++`, `clang` and `MSVS 2019`.
 
-
 # Usage
 
 Different methods of traversal work better for different array sizes, you should probably run/adjust the benchmarks - `npm run bench` - to see for yourself.
@@ -45,9 +44,9 @@ The original documentation of `ExprTk` and the syntax used for the expressions i
 
 When launching an asynchronous operation, the scalar arguments will be copied and any `TypedArray`s will be locked in place and protected from the GC. The whole operation, including traversal and evaluation will happen entirely in a pre-existing background thread picked from a pool and won't solicit the main thread until completion.
 
-An `Expression` is not reentrant so multiple concurrent evaluations of the same `Expression` object will wait on one another. Multiple evaluations on multiple objects will run in parallel up to the limit set by the Node.js environment variable `UV_THREADPOOL_SIZE`. Mixing synchronous and asynchronous evaluations is supported, but a synchronous evaluation will block the event loop until all asynchronous evaluations on that same object are finished.
+An `Expression` is not reentrant so multiple concurrent evaluations of the same `Expression` object will wait on one another. This is something that is taken care by the module itself - whether it is called from JS or from C/C++. Multiple evaluations on multiple `Expression` objects will run in parallel up to the limit set by the Node.js environment variable `UV_THREADPOOL_SIZE`. Mixing synchronous and asynchronous evaluations is supported, but a synchronous evaluation will block the event loop until all asynchronous evaluations on that same object are finished. If an evaluation of an `Expression` object has to wait for a previous evaluation of the same object to complete, the two evaluations will use two thread pool slots. This means that starting `UV_THREADPOOL_SIZE` evaluations on a single object can tie down the whole thread pool until the first one is completed.
 
-Support for a reentrant `MPExpression` that can distribute its array over multiple threads is planned for the next version.
+Support for a slightly more expensive reentrant `MPExpression` that can distribute its array over multiple threads and can be evaluated multiple times in parallel is planned for the next version.
 
 ## Simple examples
 
@@ -344,7 +343,13 @@ One of the main features of `ExprTk.js` is allowing native C++ addons to accept 
 
 You can check `test/addon.test.cc` for different examples of processing an `Expression` object received from JS and evaluating the expression. The calling JS code can be found in `test/capi.test.js`.
 
-Be advised that, while being completely independent of V8, those function can still block if another asynchronous operation is running on that `Expression` object. At the moment an `Expression` object can not be evaluated multiple times in parallel. A reentrant, but more expensive for single use, version is planned for the next release.
+You will need `ExprTk.js` as a development dependency and you will need to include `node_modules/exprtk.js/include/exprtkjs.h` in your C/C++ code. You don't need to link against anything and your package won't require `ExprTk.js` as a production dependency. If the package is installed and the JS code sends you an `Expression` object, everything that will be needed to decode it and to evaluate the expression will be contained in it.
+
+You will need to be much more careful when using the C-API which is much less strict on checking its input arguments. Passing dangling pointers or arrays of incorrect sizes or types will result in a Node.js crash.
+
+Be also advised that, while being completely independent of V8, the C-API can still block if another asynchronous operation is running on that `Expression` object. The module is always safe to call and it will take care of waiting for all other operations to complete. Normally, it is not to be called from the main thread - as this will block the event loop until the evaluation completes.
+
+At the moment an `Expression` object can not be evaluated multiple times in parallel. A reentrant, but more expensive for single use, version is planned for the next release.
 
 ## Build time and binary size
 
