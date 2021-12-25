@@ -354,3 +354,7 @@ At the moment an `Expression` object can not be evaluated multiple times in para
 ## Build time and binary size
 
 `ExprTk` is a C++ template-based engine and it contains an exceptionally high number of symbols that are multiplied by the number of supported types. The final binary contains more than 250000 symbols which is the reason for the huge binary size and the slow build process. This has no effect on its performance or even its initial loading time as the symbols are not exported through the dynamic linker.
+
+## Security
+
+`ExprTk` is a Turing-complete evaluator that is not properly sandboxed from a security point of view, so untrusted user input is not to be used in an `Expression`.
