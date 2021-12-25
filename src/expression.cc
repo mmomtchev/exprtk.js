@@ -7,8 +7,8 @@ using namespace exprtk_js;
 /**
  * @class Expression
  * @param {string} expression function
- * @param {string[]} [variables] An array containing all the scalar variables' names, will be determined automatically if omitted, however order won't be guaranteed
- * @param {Record<string, number>} [vectors] An object containing all the vector variables' names and their sizes, vector size must be known at compilation (object construction)
+ * @param {string[]} [variables] An array containing all the scalar variables' names, will be determined automatically if omitted, however order won't be guaranteed, scalars are passed by value
+ * @param {Record<string, number>} [vectors] An object containing all the vector variables' names and their sizes, vector size must be known at compilation (object construction), vectors are passed by reference and can be modified by the ExprTk expression
  * @returns {Expression}
  * @memberof Expression
  * 
