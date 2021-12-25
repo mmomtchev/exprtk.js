@@ -289,8 +289,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::map) {
 
   // this should have been an unique_ptr
   // but std::function is not compatible with move semantics
-  std::shared_ptr<Napi::ObjectReference> persistent =
-    std::make_shared<Napi::ObjectReference>(Napi::ObjectReference::New(result, 1));
+  auto persistent = std::make_shared<Napi::Reference<Napi::TypedArray>>(Napi::Persistent(result));
 
   job.main = [this, importers, iterator, input, output, len]() {
     for (auto const &f : importers) f();
@@ -703,8 +702,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
   const NapiToCaster_t<T> toCaster = NapiToCasters<T>[outputType];
   if (outputType != NapiArrayType<T>::type) typeConversionRequired = true;
 
-  std::shared_ptr<Napi::ObjectReference> persistent =
-    std::make_shared<Napi::ObjectReference>(Napi::ObjectReference::New(result, 1));
+  auto persistent = std::make_shared<Napi::Reference<Napi::TypedArray>>(Napi::Persistent(result));
 
   if (typeConversionRequired) {
     job.main = [this, scalars, vectors, output, elementSize, len, toCaster]() mutable {
@@ -970,7 +968,7 @@ template <typename T> Napi::Value Expression<T>::GetCAPI(const Napi::CallbackInf
     symbolTable.vector_count() * sizeof(exprtk_capi_vector);
 
   Napi::ArrayBuffer result = Napi::ArrayBuffer::New(env, size);
-  capiDescriptor = std::make_shared<Napi::ObjectReference>(Napi::ObjectReference::New(result, 1));
+  capiDescriptor = std::make_shared<Napi::Reference<Napi::ArrayBuffer>>(Napi::Persistent(result));
   exprtk_expression *desc = reinterpret_cast<exprtk_expression *>(result.Data());
 
   desc->magic = EXPRTK_JS_CAPI_MAGIC;

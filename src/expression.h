@@ -160,7 +160,7 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
   std::mutex asyncLock;
 
   // This is a persistent reference to the CAPI object of this Expression
-  std::shared_ptr<Napi::ObjectReference> capiDescriptor;
+  std::shared_ptr<Napi::Reference<Napi::ArrayBuffer>> capiDescriptor;
 
   // Helpers
 
