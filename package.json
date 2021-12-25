@@ -47,6 +47,7 @@
     }
   },
   "devDependencies": {
+    "@mmomtchev/documentation": "^14.0.0",
     "@octokit/core": "^3.5.1",
     "@types/chai": "^4.3.0",
     "@types/chai-as-promised": "^7.1.4",
@@ -57,6 +58,7 @@
     "benny": "^3.7.1",
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
+    "documentation-polyglot": "^1.0.0",
     "eslint": "^8.5.0",
     "eslint-plugin-array-func": "^3.1.7",
     "eslint-plugin-mocha": "^10.0.3",
