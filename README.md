@@ -30,7 +30,7 @@ If your platform is not supported, you can rebuild the binaries:
 npm install exprtk.js --build-from-source
 ```
 
-Rebuilding requires a working C++17 environment. It has been tested with `g++`, `clang` and `MSVS 2019`.
+Rebuilding requires a working C++14 environment. It has been tested with `g++`, `clang` and `MSVS 2019`.
 
 # Usage
 

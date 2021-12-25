@@ -12,25 +12,27 @@
   'target_defaults': {
     'cflags!': [ '-fno-exceptions', '-fno-rtti', '-fvisibility=default' ],
     'cflags_cc!': [ '-fno-exceptions', '-fno-rtti', '-fvisibility=default' ],
-    'cflags_cc': [ '-fvisibility=hidden' ],
+    'cflags_cc': [ '-fvisibility=hidden', '-std=c++14' ],
     'ldflags': [ '-Wl,-z,now' ],
     'xcode_settings': {
       'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',
-			"GCC_ENABLE_CPP_RTTI": "YES",
+			'GCC_ENABLE_CPP_RTTI': 'YES',
       'CLANG_CXX_LIBRARY': 'libc++',
-			"OTHER_CPLUSPLUSFLAGS": [
-				"-frtti",
-				"-fexceptions"
+			'OTHER_CPLUSPLUSFLAGS': [
+				'-frtti',
+				'-fexceptions',
+        '-std=c++14'
 			]
     },
     "msvs_settings": {
       "VCCLCompilerTool": {
         "AdditionalOptions": [
-          "/MP",
-          "/GR",
-          "/EHsc",
-          "/wd4146",
-          "/wd4723"
+          '/MP',
+          '/GR',
+          '/EHsc',
+          '/wd4146',
+          '/wd4723',
+          '/std:c++14'
         ],
         "ExceptionHandling": 1,
         "RuntimeTypeInfo": "true"
