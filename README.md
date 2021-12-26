@@ -141,8 +141,8 @@ const r = await mean.evalAsync(inputArray);
 ### Parameters
 
 *   `expression` **string** function
-*   `variables` **Array\<string>?** An array containing all the scalar variables' names, will be determined automatically if omitted, however order won't be guaranteed
-*   `vectors` **Record\<string, number>?** An object containing all the vector variables' names and their sizes, vector size must be known at compilation (object construction)
+*   `variables` **Array\<string>?** An array containing all the scalar variables' names, will be determined automatically if omitted, however order won't be guaranteed, scalars are passed by value
+*   `vectors` **Record\<string, number>?** An object containing all the vector variables' names and their sizes, vector size must be known at compilation (object construction), vectors are passed by reference and can be modified by the ExprTk expression
 
 ### Examples
 
