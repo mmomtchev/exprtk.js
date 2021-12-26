@@ -178,7 +178,7 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
       }
       auto v = vectorViews.at(name);
       if (value.As<Napi::TypedArray>().TypedArrayType() != NapiArrayType<T>::type) {
-        throw Napi::TypeError::New(env, "vector data must be a Float64Array");
+        throw Napi::TypeError::New(env, "vector data must be a " + std::string(NapiArrayType<T>::name) + "Array");
       }
       Napi::TypedArray data = value.As<Napi::TypedArray>();
 
