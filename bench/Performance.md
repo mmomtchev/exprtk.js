@@ -16,6 +16,8 @@ The performance function chosen for the benchmark is a function that is very wel
 
 Because JS does not have pointers, V8 has a sub-optimal array traversal, computing the array offset - every array offset - from the array start and the index at every iteration. This is further aggravated by the lack of (good) register optimization which means that the array index is stored in memory (usually on the stack) and not in a register. Modern CPU caches partially alleviate this problem. Exception handling is very efficient and it is not a huge factor - optimized code runs almost as fast with bounds checking than without.
 
+You can also check this Medium article which discusses in detail the code produced by V8 for simple array traversal: <https://mmomtchev.medium.com/in-2021-is-there-still-a-huge-performance-difference-between-javascript-and-c-for-cpu-bound-8ff798d999d6>.
+
 ## ExprTk
 
 ExprTk also generates very good machine code for the given function. It comes down to a single master `CALL` from `expression.cc` to the first control block in the template which in turn calls the polynomial evaluator. The problem is that modern CPUs are not as good with two cascading `CALL` instructions in a tight loop as they are with only one. Also, the way the symbol table works - holding a reference and not a pointer - `ExprTk.js` has to generate an extra load instruction which could have been avoided at every access of the iterator array. Both problems could eventually be addressed in the future.
