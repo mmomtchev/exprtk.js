@@ -2,7 +2,7 @@
 
 ## V8 `TypedArray.prototype.map`
 
-V8 has an obvious performance problem with `TypedArray.prototype.map`. I haven't investigated it, but I strongly suspect that the function is megamorphic and its optimization does not work.
+V8 has an obvious performance problem with `TypedArray.prototype.map` which I haven't investigated.
 
 ## V8 function calls
 
