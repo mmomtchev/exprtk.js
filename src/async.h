@@ -30,6 +30,11 @@ const char asyncResourceName[] = "ExprTk.js:async";
   klass::InstanceMethod(#method, &klass::method, props),                                                               \
     klass::InstanceMethod(#method "Async", &klass::method##Async, props)
 
+#define STATE_RUNNING 0
+#define STATE_TSF_FINALIZED 1
+#define STATE_WORK_COMPLETED 2
+#define STATE_FINISHED (STATE_TSF_FINALIZED | STATE_WORK_COMPLETED)
+
 template <class T> class ExprTkAsyncWorker {
     public:
   typedef std::function<T()> MainFunc;
@@ -41,6 +46,7 @@ template <class T> class ExprTkAsyncWorker {
     const RValFunc &rval,
     const std::map<std::string, Napi::Object> &objects,
     std::mutex &lock);
+  ~ExprTkAsyncWorker();
 
   static void OnExecute(napi_env, void *this_pointer);
   static void OnComplete(napi_env, napi_status, void *this_pointer);
@@ -49,6 +55,7 @@ template <class T> class ExprTkAsyncWorker {
   void Queue();
 
     private:
+  uint32_t state;
   const MainFunc doit;
   const RValFunc rval;
   T raw;
@@ -70,7 +77,8 @@ ExprTkAsyncWorker<T>::ExprTkAsyncWorker(
   const std::map<std::string, Napi::Object> &objects,
   std::mutex &lock)
 
-  : doit(doit),
+  : state(STATE_RUNNING),
+    doit(doit),
     rval(rval),
     err(nullptr),
     asyncLock(lock),
@@ -118,12 +126,18 @@ template <class T> void ExprTkAsyncWorker<T>::OnExecute(napi_env, void *this_poi
 }
 
 template <class T> void ExprTkAsyncWorker<T>::OnFinish() {
+  state |= STATE_TSF_FINALIZED;
+  if ((state & STATE_FINISHED) == STATE_FINISHED) delete this;
 }
 
 template <class T> void ExprTkAsyncWorker<T>::OnComplete(napi_env, napi_status, void *this_pointer) {
   ExprTkAsyncWorker *self = static_cast<ExprTkAsyncWorker *>(this_pointer);
-  napi_delete_async_work(self->env, self->uvWorkHandle);
-  delete self;
+  self->state |= STATE_WORK_COMPLETED;
+  if ((self->state & STATE_FINISHED) == STATE_FINISHED) delete self;
+}
+
+template <class T> ExprTkAsyncWorker<T>::~ExprTkAsyncWorker() {
+  napi_delete_async_work(env, uvWorkHandle);
 }
 
 template <class T> void ExprTkAsyncWorker<T>::Queue() {
