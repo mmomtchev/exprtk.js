@@ -43,6 +43,7 @@ template <class T> class ExprTkAsyncWorker {
     std::mutex &lock);
 
   static void OnExecute(napi_env, void *this_pointer);
+  static void OnComplete(napi_env, napi_status, void *this_pointer);
   static void CallJS(napi_env env, napi_value js_callback, void *context, void *data);
   void OnFinish();
   void Queue();
@@ -83,7 +84,7 @@ ExprTkAsyncWorker<T>::ExprTkAsyncWorker(
     env, callback, asyncResource, resource_id, 0, 1, nullptr, nullptr, this, CallJS, &callbackGate);
   if ((status) != napi_ok) throw Napi::Error::New(env);
 
-  status = napi_create_async_work(env, asyncResource, resource_id, OnExecute, nullptr, this, &uvWorkHandle);
+  status = napi_create_async_work(env, asyncResource, resource_id, OnExecute, OnComplete, this, &uvWorkHandle);
   if ((status) != napi_ok) throw Napi::Error::New(env);
 
   for (auto i = objects.begin(); i != objects.end(); i++) persistent[i->first] = Napi::Persistent(i->second);
@@ -117,8 +118,12 @@ template <class T> void ExprTkAsyncWorker<T>::OnExecute(napi_env, void *this_poi
 }
 
 template <class T> void ExprTkAsyncWorker<T>::OnFinish() {
-  napi_delete_async_work(env, uvWorkHandle);
-  delete this;
+}
+
+template <class T> void ExprTkAsyncWorker<T>::OnComplete(napi_env, napi_status, void *this_pointer) {
+  ExprTkAsyncWorker *self = static_cast<ExprTkAsyncWorker *>(this_pointer);
+  napi_delete_async_work(self->env, self->uvWorkHandle);
+  delete self;
 }
 
 template <class T> void ExprTkAsyncWorker<T>::Queue() {

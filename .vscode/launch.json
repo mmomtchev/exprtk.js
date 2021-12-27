@@ -46,6 +46,22 @@
             "MIMode": "lldb",
         },
         {
+            "name": "Launch unit testing (vsdbg)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "node.exe",
+            "args": [
+                "--expose-gc",
+                "${workspaceFolder}/node_modules/mocha/lib/cli/cli.js",
+                "--timeout",
+                "0"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "externalTerminal"
+        },
+        {
             "type": "pwa-node",
             "request": "launch",
             "name": "Launch unit testing (JS)",
