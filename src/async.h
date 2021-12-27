@@ -8,7 +8,7 @@
 
 namespace exprtk_js {
 
-// Shamelessly stolen from the awesome node-gdal-async
+const char asyncResourceName[] = "ExprTk.js:async";
 
 // This generates method definitions for 2 methods: sync and async version and a hidden common block
 #define ASYNCABLE_DEFINE(prefix, method)                                                                               \
@@ -30,7 +30,7 @@ namespace exprtk_js {
   klass::InstanceMethod(#method, &klass::method, props),                                                               \
     klass::InstanceMethod(#method "Async", &klass::method##Async, props)
 
-template <class T> class ExprTkAsyncWorker : public Napi::AsyncWorker {
+template <class T> class ExprTkAsyncWorker {
     public:
   typedef std::function<T()> MainFunc;
   typedef std::function<Napi::Value(const T)> RValFunc;
@@ -42,15 +42,23 @@ template <class T> class ExprTkAsyncWorker : public Napi::AsyncWorker {
     const std::map<std::string, Napi::Object> &objects,
     std::mutex &lock);
 
-  void Execute();
-  void OnOK();
+  static void OnExecute(napi_env, void *this_pointer);
+  static void CallJS(napi_env env, napi_value js_callback, void *context, void *data);
+  void OnFinish();
+  void Queue();
 
     private:
   const MainFunc doit;
   const RValFunc rval;
   T raw;
+  const char *err;
   std::map<std::string, Napi::ObjectReference> persistent;
   std::mutex &asyncLock;
+  Napi::Env env;
+  Napi::Reference<Napi::Function> callbackRef;
+  napi_threadsafe_function callbackGate;
+  napi_async_work uvWorkHandle;
+  Napi::Object asyncResource;
 };
 
 template <class T>
@@ -60,20 +68,62 @@ ExprTkAsyncWorker<T>::ExprTkAsyncWorker(
   const RValFunc &rval,
   const std::map<std::string, Napi::Object> &objects,
   std::mutex &lock)
-  : AsyncWorker(callback, "ExprTk.js:ExprTkAsyncWorker"), doit(doit), rval(rval), asyncLock(lock) {
+
+  : doit(doit),
+    rval(rval),
+    err(nullptr),
+    asyncLock(lock),
+    env(callback.Env()),
+    callbackRef(Napi::Persistent(callback)),
+    asyncResource(Napi::Object::New(env)) {
+
+  Napi::Value resource_id = Napi::String::New(env, asyncResourceName);
+
+  napi_status status = napi_create_threadsafe_function(
+    env, callback, asyncResource, resource_id, 0, 1, nullptr, nullptr, this, CallJS, &callbackGate);
+  if ((status) != napi_ok) throw Napi::Error::New(env);
+
+  status = napi_create_async_work(env, asyncResource, resource_id, OnExecute, nullptr, this, &uvWorkHandle);
+  if ((status) != napi_ok) throw Napi::Error::New(env);
 
   for (auto i = objects.begin(); i != objects.end(); i++) persistent[i->first] = Napi::Persistent(i->second);
 }
 
-template <class T> void ExprTkAsyncWorker<T>::Execute() {
-  try {
-    std::lock_guard<std::mutex> lock(asyncLock);
-    raw = doit();
-  } catch (const char *err) { SetError(err); }
+template <class T>
+void ExprTkAsyncWorker<T>::CallJS(napi_env env, napi_value js_callback, void *context, void *data) {
+  // Here we are back in the main V8 thread, JS is not running
+  ExprTkAsyncWorker *self = static_cast<ExprTkAsyncWorker *>(context);
+  auto cb = Napi::Function(env, js_callback);
+  if (self->err == nullptr) {
+    cb.Call({Napi::Env(env).Null(), self->rval(self->raw)});
+  } else {
+    cb.Call({Napi::Error::New(env, self->err).Value()});
+  }
+  napi_release_threadsafe_function(self->callbackGate, napi_tsfn_release);
+  self->OnFinish();
 }
 
-template <class T> void ExprTkAsyncWorker<T>::OnOK() {
-  Callback().Call({Env().Null(), rval(raw)});
+template <class T> void ExprTkAsyncWorker<T>::OnExecute(napi_env, void *this_pointer) {
+  // Here we are in the aux thread, JS is running
+  ExprTkAsyncWorker *self = static_cast<ExprTkAsyncWorker *>(this_pointer);
+  try {
+    std::lock_guard<std::mutex> lock(self->asyncLock);
+    self->raw = self->doit();
+  } catch (const char *err) {
+    self->err = err;
+  }
+  // This will trigger CallJS in the main thread
+  napi_call_threadsafe_function(self->callbackGate, nullptr, napi_tsfn_nonblocking);
+}
+
+template <class T> void ExprTkAsyncWorker<T>::OnFinish() {
+  napi_delete_async_work(env, uvWorkHandle);
+  delete this;
+}
+
+template <class T> void ExprTkAsyncWorker<T>::Queue() {
+  napi_status status = napi_queue_async_work(env, uvWorkHandle);
+  if (status != napi_ok) throw Napi::Error::New(env);
 }
 
 template <class T> class ExprTkJob {
