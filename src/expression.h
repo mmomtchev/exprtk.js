@@ -146,6 +146,8 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
   Napi::Value GetScalars(const Napi::CallbackInfo &info);
   Napi::Value GetVectors(const Napi::CallbackInfo &info);
   Napi::Value GetCAPI(const Napi::CallbackInfo &info);
+  Napi::Value GetMaxParallel(const Napi::CallbackInfo &info);
+  void SetMaxParallel(const Napi::CallbackInfo &info, const Napi::Value &value);
 
   static Napi::Function GetClass(Napi::Env);
 

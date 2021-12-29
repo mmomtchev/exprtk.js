@@ -137,7 +137,7 @@ Expression<T>::Expression(const Napi::CallbackInfo &info)
     instances[1].isBusy = false;
   }
 
-  maxParallel = 2;
+  maxParallel = std::thread::hardware_concurrency();
 }
 
 template <typename T> Expression<T>::~Expression() {
@@ -1051,6 +1051,42 @@ template <typename T> Napi::Value Expression<T>::GetCAPI(const Napi::CallbackInf
   return result;
 }
 
+/**
+ * Get/set the maximum allowed parallel instances for this Expression
+ *
+ * @readonly
+ * @kind member
+ * @name maxParallel
+ * @instance
+ * @memberof Expression
+ * @type {number}
+ */
+template <typename T> Napi::Value Expression<T>::GetMaxParallel(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+
+  return Napi::Number::New(env, maxParallel);
+}
+
+template <typename T> void Expression<T>::SetMaxParallel(const Napi::CallbackInfo &info, const Napi::Value &value) {
+  Napi::Env env = info.Env();
+
+  if (value.IsEmpty() || !value.IsNumber()) {
+    Napi::TypeError::New(env, "value must be a number").ThrowAsJavaScriptException();
+    return;
+  }
+
+  size_t newMax = value.ToNumber().Uint32Value();
+  if (newMax > std::thread::hardware_concurrency()) {
+    Napi::TypeError::New(
+      env,
+      "maximum instances is currently limited to the number of hardware cores: " +
+        std::to_string(std::thread::hardware_concurrency()))
+      .ThrowAsJavaScriptException();
+    return;
+  }
+  maxParallel = newMax;
+}
+
 template <typename T> Napi::Function Expression<T>::GetClass(Napi::Env env) {
   napi_property_attributes props =
     static_cast<napi_property_attributes>(napi_writable | napi_configurable | napi_enumerable);
@@ -1064,6 +1100,7 @@ template <typename T> Napi::Function Expression<T>::GetClass(Napi::Env env) {
      Expression<T>::InstanceAccessor("vectors", &Expression<T>::GetVectors, nullptr),
      Expression<T>::InstanceAccessor("type", &Expression<T>::GetType, nullptr),
      Expression<T>::InstanceAccessor("_CAPI_", &Expression<T>::GetCAPI, nullptr, hidden),
+     Expression<T>::InstanceAccessor("maxParallel", &Expression<T>::GetMaxParallel, &Expression<T>::SetMaxParallel),
      ASYNCABLE_INSTANCE_METHOD(Expression<T>, eval, props),
      ASYNCABLE_INSTANCE_METHOD(Expression<T>, map, props),
      ASYNCABLE_INSTANCE_METHOD(Expression<T>, reduce, props),

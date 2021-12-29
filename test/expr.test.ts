@@ -7,6 +7,8 @@ import chaiAsPromised from 'chai-as-promised';
 chai.use(chaiAsPromised);
 const assert = chai.assert;
 
+import * as os from 'os';
+
 // The TS definition of chai.closeToPromised has a wrong signature
 // https://github.com/DefinitelyTyped/DefinitelyTyped/discussions/56990
 function closeToPromised(act: Promise<number>, exp: number, delta: number, msg ?: string): PromiseLike<void> {
@@ -71,6 +73,16 @@ describe('Expression', () => {
             assert.deepEqual(mean.scalars, ['a']);
             assert.deepEqual(mean.vectors, {x: 12});
             assert.equal(mean.type, 'Float64');
+            assert.equal(mean.maxParallel, os.cpus().length);
+        });
+        it('should accept setting the max parallel instances', () => {
+            const mean = new expr('a + x[10]', ['a'], { x: 12 });
+            assert.equal(mean.maxParallel, os.cpus().length);
+            mean.maxParallel = 1;
+            assert.equal(mean.maxParallel, 1);
+            assert.throws(() => {
+                mean.maxParallel = 10e3;
+            }, /number of hardware cores/);
         });
     });
 

@@ -9,7 +9,7 @@ export class Expression<T> {
   readonly type: TypedArrayType;
   readonly scalars: string[];
   readonly vectors: Record<string, number>;
-
+  maxParallel: number;
 
   eval(arguments: Record<string, number | T>): number;
   eval(...arguments: (number | T)[]): number;
