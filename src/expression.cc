@@ -222,7 +222,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::eval) {
     return env.Null();
   }
 
-  job.main = [this, importers](const ExpressionInstance<T> &i) {
+  job.main = [importers](const ExpressionInstance<T> &i) {
     for (auto const &f : importers) f(i);
     T r = i.expression.value();
     if (i.expression.results().count()) { throw "explicit return values are not supported"; }
@@ -325,7 +325,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::map) {
   // but std::function is not compatible with move semantics
   auto persistent = std::make_shared<Napi::Reference<Napi::TypedArray>>(Napi::Persistent(result));
 
-  job.main = [this, importers, iteratorName, input, output, len](const ExpressionInstance<T> &i) {
+  job.main = [importers, iteratorName, input, output, len](const ExpressionInstance<T> &i) {
     for (auto const &f : importers) f(i);
     auto iterator = i.symbolTable.get_variable(iteratorName);
 
@@ -476,7 +476,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::reduce) {
     return env.Null();
   }
 
-  job.main = [this, importers, iteratorName, accuName, accuInit, input, len](const ExpressionInstance<T> &i) {
+  job.main = [importers, iteratorName, accuName, accuInit, input, len](const ExpressionInstance<T> &i) {
     auto iterator = i.symbolTable.get_variable(iteratorName);
     auto accu = i.symbolTable.get_variable(accuName);
 
@@ -745,7 +745,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
   auto persistent = std::make_shared<Napi::Reference<Napi::TypedArray>>(Napi::Persistent(result));
 
   if (typeConversionRequired) {
-    job.main = [this, scalars, vectors, output, elementSize, len, toCaster](const ExpressionInstance<T> &i) mutable {
+    job.main = [scalars, vectors, output, elementSize, len, toCaster](const ExpressionInstance<T> &i) mutable {
       for (auto &v : scalars) {
         v.exprtk_var = &i.symbolTable.get_variable(v.name)->ref();
         *v.exprtk_var = *(reinterpret_cast<const T *>(v.storage));
@@ -764,7 +764,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
       return 0;
     };
   } else {
-    job.main = [this, scalars, vectors, output, len](const ExpressionInstance<T> &i) mutable {
+    job.main = [scalars, vectors, output, len](const ExpressionInstance<T> &i) mutable {
       for (auto &v : scalars) {
         v.exprtk_var = &i.symbolTable.get_variable(v.name)->ref();
         *v.exprtk_var = *(reinterpret_cast<const T *>(v.storage));
