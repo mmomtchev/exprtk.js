@@ -78,7 +78,8 @@
     {
       'target_name': 'exprtk.js',
       'sources': [
-        'src/expression.cc'
+        'src/expression.cc',
+        'src/async.cc'
       ],
       'include_dirs': [
         'deps/exprtk',
