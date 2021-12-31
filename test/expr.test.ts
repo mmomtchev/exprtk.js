@@ -316,7 +316,7 @@ describe('Expression', () => {
                     /size 4 does not match declared size 6/);
             });
             it('should work with concurrent invocations', () => {
-                const big = 128 * 1024;
+                const big = 512 * 1024;
                 const vectorMean = new expr(
                     'var r := 0; for (var i := 0; i < x[]; i += 1) { r += x[i]; }; r / x[];',
                     [], { 'x': big });
