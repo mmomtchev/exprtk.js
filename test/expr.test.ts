@@ -90,7 +90,7 @@ describe('Expression', () => {
             assert.equal(Float64.maxParallel, os.cpus().length);
         });
         it('should support setting the number of worker threads', (done) => {
-            const testCode = `"const expr = require('${__dirname}/..').Float64; console.log(expr.maxParallel);"`;
+            const testCode = '"const expr = require(\'.\').Float64; console.log(expr.maxParallel);"';
             let execPath = process.execPath;
             if (process.platform === 'win32') {
                 // quotes to avoid errors like ''C:\Program' is not recognized as an internal or external command'
