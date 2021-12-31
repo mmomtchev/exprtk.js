@@ -86,7 +86,7 @@ describe('Expression', () => {
                 mean.maxParallel = 10e3;
             }, /environment variable EXPRTKJS_THREADS/);
         });
-        it('should have `os.cpus().length` number of worker threads by default', () => {
+        it(`should have \`os.cpus().length=${os.cpus().length}\` number of worker threads by default`, () => {
             assert.equal(Float64.maxParallel, os.cpus().length);
         });
         it('should support setting the number of worker threads', (done) => {
