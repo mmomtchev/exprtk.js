@@ -329,7 +329,7 @@ describe('Expression', () => {
                 ]).then(([m1, m2]) => {
                     assert.closeTo(m1, 12, 10e-9);
                     assert.closeTo(m2, 15, 10e-9);
-                    assert.equal(vectorMean.maxActive, 2);
+                    assert.equal(vectorMean.maxActive, Math.min(2, os.cpus().length));
                 }));
             });
         });
