@@ -148,7 +148,7 @@ template <class T> void ExprTkAsyncWorker<T>::OnExecute() {
 
 template <class T> void ExprTkAsyncWorker<T>::Queue() {
   std::lock_guard<std::mutex> expressionLock(expression->asyncLock);
-  for (int i = 0; i < expression->maxParallel; i++) {
+  for (size_t i = 0; i < expression->maxParallel; i++) {
     if (!expression->instances[i].isBusy) {
       expression->instances[i].isBusy = true;
       if (!expression->instances[i].isInit) expression->compileInstance(i);
@@ -212,6 +212,6 @@ template <class T> class ExprTkJob {
   unsigned autoIndex;
 };
 
-void initAsyncWorkers();
+void initAsyncWorkers(size_t threads);
 
 }; // namespace exprtk_js

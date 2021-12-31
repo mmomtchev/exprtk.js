@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import Expression from '..';
+import Expression, { Float64 } from '..';
 import { Float64 as expr } from '..';
+
+import { exec } from 'child_process';
 
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
@@ -11,7 +13,7 @@ import * as os from 'os';
 
 // The TS definition of chai.closeToPromised has a wrong signature
 // https://github.com/DefinitelyTyped/DefinitelyTyped/discussions/56990
-function closeToPromised(act: Promise<number>, exp: number, delta: number, msg ?: string): PromiseLike<void> {
+function closeToPromised(act: Promise<number>, exp: number, delta: number, msg?: string): PromiseLike<void> {
     return assert.eventually.closeTo(act as unknown as number, exp, delta, msg);
 }
 
@@ -55,7 +57,7 @@ describe('Expression', () => {
             assert.equal(mean.expression, '(a + b) / 2');
             assert.deepEqual(mean.scalars, ['a', 'b']);
             assert.deepEqual(mean.vectors, {});
-            
+
             assert.equal(mean.type, 'Float64');
         });
         it('should accept an expression w/ scalars', () => {
@@ -71,18 +73,37 @@ describe('Expression', () => {
             assert.instanceOf(mean, expr);
             assert.equal(mean.expression, 'a + x[10]');
             assert.deepEqual(mean.scalars, ['a']);
-            assert.deepEqual(mean.vectors, {x: 12});
+            assert.deepEqual(mean.vectors, { x: 12 });
             assert.equal(mean.type, 'Float64');
             assert.equal(mean.maxParallel, os.cpus().length);
         });
-        it('should accept setting the max parallel instances', () => {
-            const mean = new expr('a + x[10]', ['a'], { x: 12 });
+        it('should support setting the max parallel instances', () => {
+            const mean = new Float64('a + x[10]', ['a'], { x: 12 });
             assert.equal(mean.maxParallel, os.cpus().length);
             mean.maxParallel = 1;
             assert.equal(mean.maxParallel, 1);
             assert.throws(() => {
                 mean.maxParallel = 10e3;
-            }, /number of hardware cores/);
+            }, /environment variable EXPRTKJS_THREADS/);
+        });
+        it('should have `os.cpus().length` number of worker threads by default', () => {
+            assert.equal(Float64.maxParallel, os.cpus().length);
+        });
+        it('should support setting the number of worker threads', (done) => {
+            const testCode = `"const expr = require('${__dirname}/..').Float64; console.log(expr.maxParallel);"`;
+            let execPath = process.execPath;
+            if (process.platform === 'win32') {
+                // quotes to avoid errors like ''C:\Program' is not recognized as an internal or external command'
+                execPath = `"${execPath}"`;
+            }
+            exec(
+                `${execPath} ${['-e', testCode].join(' ')}`,
+                { env: { EXPRTKJS_THREADS: '11' } },
+                (err, stdout) => {
+                    if (err) done(err);
+                    assert.equal(stdout.trim(), '11');
+                    done();
+                });
         });
     });
 
@@ -322,7 +343,7 @@ describe('Expression', () => {
 
             it('should throw w/o iterator', () => {
                 assert.throws(() => {
-                        (clamp as any).map(vector, 2, 4);
+                    (clamp as any).map(vector, 2, 4);
                 }, /second argument must be the iterator variable name/);
             });
 
@@ -370,19 +391,19 @@ describe('Expression', () => {
 
             it('should throw w/o iterator', () => {
                 assert.throws(() => {
-                        (sumPow as any).reduce(vector, 2, 4);
+                    (sumPow as any).reduce(vector, 2, 4);
                 }, /second argument must be the iterator variable name/);
             });
 
             it('should throw w/ invalid iterator', () => {
                 assert.throws(() => {
-                        (sumPow as any).reduce(vector, 'c', 'a', 4);
+                    (sumPow as any).reduce(vector, 'c', 'a', 4);
                 }, /c is not a declared scalar variable/);
             });
 
             it('should throw w/o accumulator', () => {
                 assert.throws(() => {
-                        (sumPow as any).reduce(vector, 'x');
+                    (sumPow as any).reduce(vector, 'x');
                 }, /third argument must be the accumulator variable name/);
             });
 
@@ -394,13 +415,13 @@ describe('Expression', () => {
 
             it('should throw w/o accumulator initial value', () => {
                 assert.throws(() => {
-                        (sumPow as any).reduce(vector, 'x', 'a');
+                    (sumPow as any).reduce(vector, 'x', 'a');
                 }, /fourth argument must be a number for the accumulator initial value/);
             });
 
             it('should throw w/ invalid accumulator initial value', () => {
                 assert.throws(() => {
-                        (sumPow as any).reduce(vector, 'x', 'a', 'd');
+                    (sumPow as any).reduce(vector, 'x', 'a', 'd');
                 }, /fourth argument must be a number for the accumulator initial value/);
             });
 
@@ -476,7 +497,7 @@ describe('Expression', () => {
 
             it('should throw on invalid arguments', () => {
                 assert.throws(() => {
-                        (density as any).cwise({ P: 'abc', T, R, Mv, Md });
+                    (density as any).cwise({ P: 'abc', T, R, Mv, Md });
                 }, /P is not a number or a TypedArray/);
             });
 

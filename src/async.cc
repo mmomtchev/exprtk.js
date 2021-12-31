@@ -14,7 +14,7 @@ void threadsDestructor() {
   theEnd = true;
   global_condition.notify_all();
 
-  for (size_t i = 0; i < std::thread::hardware_concurrency(); i++) workers[i].join();
+  for (auto &worker : workers) worker.join();
 }
 
 void workerThread() {
@@ -31,7 +31,7 @@ void workerThread() {
   }
 }
 
-void exprtk_js::initAsyncWorkers() {
+void exprtk_js::initAsyncWorkers(size_t threads) {
   std::atexit(threadsDestructor);
-  for (size_t i = 0; i < std::thread::hardware_concurrency(); i++) workers.push_back(std::thread(workerThread));
+  for (size_t i = 0; i < threads; i++) workers.push_back(std::thread(workerThread));
 }

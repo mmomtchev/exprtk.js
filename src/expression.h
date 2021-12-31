@@ -148,10 +148,12 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
   Napi::Value GetCAPI(const Napi::CallbackInfo &info);
   Napi::Value GetMaxParallel(const Napi::CallbackInfo &info);
   void SetMaxParallel(const Napi::CallbackInfo &info, const Napi::Value &value);
+  Napi::Value GetMaxActive(const Napi::CallbackInfo &info);
 
   static Napi::Function GetClass(Napi::Env);
 
-  int maxParallel;
+  size_t maxParallel;
+  size_t maxActive;
 
   std::mutex asyncLock;
   std::queue<GenericWorker *> work_queue;

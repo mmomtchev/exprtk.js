@@ -1,6 +1,7 @@
 #include "expression.h"
 
 #include <memory>
+#include <cstdlib>
 
 using namespace exprtk_js;
 
@@ -40,10 +41,25 @@ using namespace exprtk_js;
  *  '(sumsq - (sum*sum) / x[]) / (x[] - 1);',
  *  [], {x: 1024})
  */
+
+/**
+ * Get the number of threads available for evaluating expressions.
+ * Set by the `EXPRTKJS_THREADS` environment variable.
+ *
+ * @readonly
+ * @kind member
+ * @name maxParallel
+ * @static
+ * @memberof Expression
+ * @type {number}
+ */
+size_t ExpressionMaxParallel = std::thread::hardware_concurrency();
 template <typename T>
 Expression<T>::Expression(const Napi::CallbackInfo &info)
   : Napi::ObjectWrap<Expression<T>>::ObjectWrap(info),
-    instances(std::thread::hardware_concurrency() + 1),
+    maxParallel(ExpressionMaxParallel),
+    maxActive(1),
+    instances(ExpressionMaxParallel),
     capiDescriptor(nullptr) {
   Napi::Env env = info.Env();
 
@@ -132,12 +148,10 @@ Expression<T>::Expression(const Napi::CallbackInfo &info)
 
   instances[0].isInit = true;
   instances[0].isBusy = false;
-  for (size_t i = 1; i < std::thread::hardware_concurrency() + 1; i++) {
+  for (size_t i = 1; i < ExpressionMaxParallel; i++) {
     instances[1].isInit = false;
     instances[1].isBusy = false;
   }
-
-  maxParallel = std::thread::hardware_concurrency();
 }
 
 template <typename T> Expression<T>::~Expression() {
@@ -1054,7 +1068,6 @@ template <typename T> Napi::Value Expression<T>::GetCAPI(const Napi::CallbackInf
 /**
  * Get/set the maximum allowed parallel instances for this Expression
  *
- * @readonly
  * @kind member
  * @name maxParallel
  * @instance
@@ -1076,15 +1089,31 @@ template <typename T> void Expression<T>::SetMaxParallel(const Napi::CallbackInf
   }
 
   size_t newMax = value.ToNumber().Uint32Value();
-  if (newMax > std::thread::hardware_concurrency()) {
+  if (newMax > maxParallel) {
     Napi::TypeError::New(
       env,
-      "maximum instances is currently limited to the number of hardware cores: " +
-        std::to_string(std::thread::hardware_concurrency()))
+      "maximum instances is limited to the number of threads set by the environment variable EXPRTKJS_THREADS : " +
+        std::to_string(maxParallel))
       .ThrowAsJavaScriptException();
     return;
   }
   maxParallel = newMax;
+}
+
+/**
+ * Get the currently reached peak of simultaneously running instances for this Expression
+ *
+ * @readonly
+ * @kind member
+ * @name maxActive
+ * @instance
+ * @memberof Expression
+ * @type {number}
+ */
+template <typename T> Napi::Value Expression<T>::GetMaxActive(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+
+  return Napi::Number::New(env, maxActive);
 }
 
 template <typename T> Napi::Function Expression<T>::GetClass(Napi::Env env) {
@@ -1092,6 +1121,7 @@ template <typename T> Napi::Function Expression<T>::GetClass(Napi::Env env) {
     static_cast<napi_property_attributes>(napi_writable | napi_configurable | napi_enumerable);
   napi_property_attributes hidden = static_cast<napi_property_attributes>(napi_configurable);
   static const std::string className = std::string(NapiArrayType<T>::name) + "Expression";
+  static const Napi::Value maxParallel = Napi::Number::New(env, ExpressionMaxParallel);
   return Expression<T>::DefineClass(
     env,
     className.c_str(),
@@ -1101,6 +1131,8 @@ template <typename T> Napi::Function Expression<T>::GetClass(Napi::Env env) {
      Expression<T>::InstanceAccessor("type", &Expression<T>::GetType, nullptr),
      Expression<T>::InstanceAccessor("_CAPI_", &Expression<T>::GetCAPI, nullptr, hidden),
      Expression<T>::InstanceAccessor("maxParallel", &Expression<T>::GetMaxParallel, &Expression<T>::SetMaxParallel),
+     Expression<T>::InstanceAccessor("maxActive", &Expression<T>::GetMaxActive, nullptr),
+     Expression<T>::StaticValue("maxParallel", maxParallel),
      ASYNCABLE_INSTANCE_METHOD(Expression<T>, eval, props),
      ASYNCABLE_INSTANCE_METHOD(Expression<T>, map, props),
      ASYNCABLE_INSTANCE_METHOD(Expression<T>, reduce, props),
@@ -1108,7 +1140,10 @@ template <typename T> Napi::Function Expression<T>::GetClass(Napi::Env env) {
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
-  initAsyncWorkers();
+  const char *exprtkjs_threads = std::getenv("EXPRTKJS_THREADS");
+  if (exprtkjs_threads != nullptr)
+    ExpressionMaxParallel = std::stoi(exprtkjs_threads);
+  initAsyncWorkers(ExpressionMaxParallel);
 #ifndef EXPRTK_DISABLE_INT_TYPES
   exports.Set(Napi::String::New(env, NapiArrayType<int8_t>::name), Expression<int8_t>::GetClass(env));
   exports.Set(Napi::String::New(env, NapiArrayType<uint8_t>::name), Expression<uint8_t>::GetClass(env));
