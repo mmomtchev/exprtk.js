@@ -63,6 +63,7 @@ Expression<T>::Expression(const Napi::CallbackInfo &info)
     capiDescriptor(nullptr) {
   Napi::Env env = info.Env();
 
+  instances[0].isInit = false;
   if (info.Length() < 1) {
     Napi::TypeError::New(env, "expression is mandatory").ThrowAsJavaScriptException();
     return;
@@ -147,22 +148,28 @@ Expression<T>::Expression(const Napi::CallbackInfo &info)
   }
 
   instances[0].isInit = true;
-  instances[0].isBusy = false;
+  instancesIdle.push_back(&instances[0]);
   for (size_t i = 1; i < ExpressionMaxParallel; i++) {
-    instances[1].isInit = false;
-    instances[1].isBusy = false;
+    instances[i].isInit = false;
+    instancesIdle.push_back(&instances[i]);
   }
 }
 
 template <typename T> Expression<T>::~Expression() {
-  for (auto &i : instances) {
-    if (i.isBusy)
+  std::lock_guard<std::mutex> lock(asyncLock);
+  if (instances[0].isInit) {
+    size_t free = 0;
+    for (; !instancesIdle.empty(); instancesIdle.pop_front(), free++)
+      ;
+    if (free != instances.size())
       fprintf(
         stderr,
         "GC waiting on a background evaluation of an Expression object, event loop blocked. "
         "If you are using only the JS interface, this is a bug in ExprTk.js. "
         "If you are using the C/C++ API, you must always protect Expression objects from the GC "
         "by obtaining a persistent object reference. \n");
+  }
+  for (auto &i : instances) {
     if (i.isInit) {
       for (auto const &v : i.vectorViews) {
         // exprtk will sometimes try to free this pointer
@@ -175,26 +182,25 @@ template <typename T> Expression<T>::~Expression() {
   }
 }
 
-template <typename T> void Expression<T>::compileInstance(size_t instance) {
-  if (instances[instance].isInit) return;
+template <typename T> void Expression<T>::compileInstance(ExpressionInstance<T> *i) {
+  if (i->isInit) return;
   for (auto const &name : variableNames) {
     if (instances[0].symbolTable.get_variable(name))
-      instances[instance].symbolTable.create_variable(name);
+      i->symbolTable.create_variable(name);
     else {
       auto vector = instances[0].symbolTable.get_vector(name);
       auto size = vector->size();
       T *dummy = (T *)&size;
       auto *v = new exprtk::vector_view<T>(dummy, size);
-      instances[instance].vectorViews[name] = v;
-      instances[instance].symbolTable.add_vector(name, *v);
+      i->vectorViews[name] = v;
+      i->symbolTable.add_vector(name, *v);
     }
   }
-  instances[instance].isInit = true;
-  instances[instance].isBusy = false;
-  instances[instance].expression.register_symbol_table(instances[instance].symbolTable);
+  i->isInit = true;
+  i->expression.register_symbol_table(i->symbolTable);
   std::lock_guard<std::mutex> lock(parserMutex);
   maxActive++;
-  parser().compile(expressionText, instances[instance].expression);
+  parser().compile(expressionText, i->expression);
 }
 
 /**
@@ -1142,8 +1148,7 @@ template <typename T> Napi::Function Expression<T>::GetClass(Napi::Env env) {
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
   const char *exprtkjs_threads = std::getenv("EXPRTKJS_THREADS");
-  if (exprtkjs_threads != nullptr)
-    ExpressionMaxParallel = std::stoi(exprtkjs_threads);
+  if (exprtkjs_threads != nullptr) ExpressionMaxParallel = std::stoi(exprtkjs_threads);
   initAsyncWorkers(ExpressionMaxParallel);
 #ifndef EXPRTK_DISABLE_INT_TYPES
   exports.Set(Napi::String::New(env, NapiArrayType<int8_t>::name), Expression<int8_t>::GetClass(env));

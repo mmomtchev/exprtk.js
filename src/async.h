@@ -38,7 +38,6 @@ template <class T> struct ExpressionInstance;
 class GenericWorker {
     public:
   virtual void OnExecute() = 0;
-  size_t instance;
 };
 
 extern std::queue<GenericWorker *> global_work_queue;
@@ -66,6 +65,7 @@ template <class T> class ExprTkAsyncWorker : public GenericWorker {
 
     private:
   Expression<T> *expression;
+  ExpressionInstance<T> *instance;
   const MainFunc doit;
   const RValFunc rval;
   T raw;
@@ -123,10 +123,8 @@ template <class T> void ExprTkAsyncWorker<T>::CallJS(napi_env env, napi_value js
 template <class T> void ExprTkAsyncWorker<T>::OnExecute() {
   // Here we are in the aux thread, JS is running
   try {
-    raw = doit(expression->instances[this->instance]);
+    raw = doit(*instance);
 
-    std::lock_guard<std::mutex> lock(expression->asyncLock);
-    expression->instances[this->instance].isBusy = false;
     if (!expression->work_queue.empty()) {
       // TODO this requires one iterator of the worker thread
       // which can be avoided -> we can immediately run the next job
@@ -140,25 +138,24 @@ template <class T> void ExprTkAsyncWorker<T>::OnExecute() {
       global_work_queue.push(w);
       globalLock.unlock();
       global_condition.notify_one();
+    } else {
+      expression->releaseIdleInstance(instance);
     }
+
   } catch (const char *err) { this->err = err; }
   // This will trigger CallJS in the main thread
   napi_call_threadsafe_function(callbackGate, nullptr, napi_tsfn_nonblocking);
 }
 
 template <class T> void ExprTkAsyncWorker<T>::Queue() {
-  std::lock_guard<std::mutex> expressionLock(expression->asyncLock);
-  for (size_t i = 0; i < expression->maxParallel; i++) {
-    if (!expression->instances[i].isBusy) {
-      expression->instances[i].isBusy = true;
-      if (!expression->instances[i].isInit) expression->compileInstance(i);
-      this->instance = i;
-      std::unique_lock<std::mutex> globalLock(global_work_mutex);
-      global_work_queue.push(this);
-      globalLock.unlock();
-      global_condition.notify_one();
-      return;
-    }
+  ExpressionInstance<T> *i = expression->getIdleInstance();
+  if (i != nullptr) {
+    this->instance = i;
+    std::unique_lock<std::mutex> globalLock(global_work_mutex);
+    global_work_queue.push(this);
+    globalLock.unlock();
+    global_condition.notify_one();
+    return;
   }
   expression->work_queue.push(this);
 }
@@ -197,8 +194,10 @@ template <class T> class ExprTkJob {
       return info.Env().Undefined();
     }
     try {
-      std::lock_guard<std::mutex> lock(expression->asyncLock);
-      T obj = main(expression->instances[0]);
+      ExpressionInstance<T> *i;
+      do { i = expression->getIdleInstance(); } while (i == nullptr);
+      T obj = main(*i);
+      expression->releaseIdleInstance(i);
       return rval(obj);
     } catch (const char *err) {
       Napi::Error::New(info.Env(), err).ThrowAsJavaScriptException();

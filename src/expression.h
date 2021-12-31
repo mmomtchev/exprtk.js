@@ -4,6 +4,7 @@
 #include <map>
 #include <mutex>
 #include <functional>
+#include <list>
 #include <queue>
 #include <napi.h>
 
@@ -105,7 +106,6 @@ template <> struct NapiArrayType<float> {
 template <class T> struct ExpressionInstance {
   exprtk::symbol_table<T> symbolTable;
   exprtk::expression<T> expression;
-  bool isBusy;
   bool isInit;
   // These are the vectorViews needed for rebasing the vectors when evaluating
   // Read "SECTION 14" of the ExprTk manual for more information on this
@@ -116,7 +116,7 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
     public:
   Expression(const Napi::CallbackInfo &);
   ~Expression();
-  void compileInstance(size_t instance);
+  void compileInstance(ExpressionInstance<T> *instance);
 
   ASYNCABLE_DECLARE(eval);
   ASYNCABLE_DECLARE(map);
@@ -152,17 +152,19 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
 
   static Napi::Function GetClass(Napi::Env);
 
+  std::queue<ExprTkAsyncWorker<T> *> work_queue;
+
+    private:
+  std::string expressionText;
+
   size_t maxParallel;
   size_t maxActive;
 
   std::mutex asyncLock;
-  std::queue<GenericWorker *> work_queue;
 
   // ExprTk stuff in multiple instances to support reentrancy
   std::vector<ExpressionInstance<T>> instances;
-
-    private:
-  std::string expressionText;
+  std::list<ExpressionInstance<T> *> instancesIdle;
 
   // this one is prone to static initialization fiasco
   // there is a single shared instance per data type
@@ -261,6 +263,21 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
       i++;
       if (i == lastArg) return;
     }
+  }
+
+public:
+  inline ExpressionInstance<T> *getIdleInstance() {
+    std::lock_guard<std::mutex> lock(asyncLock);
+    if (instancesIdle.empty()) return nullptr;
+    auto *r = instancesIdle.front();
+    instancesIdle.pop_front();
+    if (!r->isInit) compileInstance(r);
+    return r;
+  }
+
+  inline void releaseIdleInstance(ExpressionInstance<T> *i) {
+    std::lock_guard<std::mutex> lock(asyncLock);
+    instancesIdle.push_front(i);
   }
 };
 
