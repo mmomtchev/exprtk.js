@@ -193,6 +193,7 @@ template <typename T> void Expression<T>::compileInstance(size_t instance) {
   instances[instance].isBusy = false;
   instances[instance].expression.register_symbol_table(instances[instance].symbolTable);
   std::lock_guard<std::mutex> lock(parserMutex);
+  maxActive++;
   parser().compile(expressionText, instances[instance].expression);
 }
 
