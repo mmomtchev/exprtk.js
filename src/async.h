@@ -10,7 +10,7 @@
 
 namespace exprtk_js {
 
-const char asyncResourceName[] = "ExprTk.js:async";
+static constexpr char asyncResourceName[] = "ExprTk.js:async";
 
 // This generates method definitions for 2 methods: sync and async version and a hidden common block
 #define ASYNCABLE_DEFINE(prefix, method)                                                                               \
@@ -75,6 +75,7 @@ template <class T> class ExprTkAsyncWorker : public GenericWorker {
   Napi::Reference<Napi::Function> callbackRef;
   napi_threadsafe_function callbackGate;
   Napi::Object asyncResource;
+  Napi::AsyncContext asyncContext;
 };
 
 template <class T>
@@ -86,37 +87,36 @@ ExprTkAsyncWorker<T>::ExprTkAsyncWorker(
   const std::map<std::string, Napi::Object> &objects)
 
   : expression(e),
+    instance(nullptr),
     doit(doit),
     rval(rval),
     err(nullptr),
     env(callback.Env()),
     callbackRef(Napi::Persistent(callback)),
-    asyncResource(Napi::Object::New(env)) {
+    asyncResource(Napi::Object::New(env)),
+    asyncContext(env, asyncResourceName, asyncResource) {
 
-  Napi::Value resource_id = Napi::String::New(env, asyncResourceName);
-
+  Napi::String asyncResourceNameObject = Napi::String::New(env, asyncResourceName);
   napi_status status = napi_create_threadsafe_function(
-    env, callback, asyncResource, resource_id, 0, 1, nullptr, nullptr, this, CallJS, &callbackGate);
+    env, callback, asyncResource, asyncResourceNameObject, 0, 1, nullptr, nullptr, this, CallJS, &callbackGate);
   if ((status) != napi_ok) throw Napi::Error::New(env);
 
-  for (auto i = objects.begin(); i != objects.end(); i++) persistent[i->first] = Napi::Persistent(i->second);
-  this->instance = 0;
+  for (auto const &i : objects) persistent[i.first] = Napi::Persistent(i.second);
 }
 
 template <class T> ExprTkAsyncWorker<T>::~ExprTkAsyncWorker() {
+  napi_release_threadsafe_function(callbackGate, napi_tsfn_release);
 }
 
 template <class T> void ExprTkAsyncWorker<T>::CallJS(napi_env env, napi_value js_callback, void *context, void *data) {
-  // TODO: Restore the async context
   // Here we are back in the main V8 thread, JS is not running
   auto *self = static_cast<ExprTkAsyncWorker<T> *>(context);
   auto cb = Napi::Function(env, js_callback);
   if (self->err == nullptr) {
-    cb.Call({Napi::Env(env).Null(), self->rval(self->raw)});
+    cb.MakeCallback(self->expression->Value(), {Napi::Env(env).Null(), self->rval(self->raw)}, self->asyncContext);
   } else {
-    cb.Call({Napi::Error::New(env, self->err).Value()});
+    cb.MakeCallback(self->expression->Value(), {Napi::Error::New(env, self->err).Value()}, self->asyncContext);
   }
-  napi_release_threadsafe_function(self->callbackGate, napi_tsfn_release);
   delete self;
 }
 
@@ -150,6 +150,8 @@ template <class T> void ExprTkAsyncWorker<T>::OnExecute() {
 template <class T> void ExprTkAsyncWorker<T>::Queue() {
   ExpressionInstance<T> *i = expression->getIdleInstance();
   if (i != nullptr) {
+    // There is an idle instance in this Expression
+    // -> enqueue on the master queue for immediate execution
     this->instance = i;
     std::unique_lock<std::mutex> globalLock(global_work_mutex);
     global_work_queue.push(this);
@@ -157,6 +159,9 @@ template <class T> void ExprTkAsyncWorker<T>::Queue() {
     global_condition.notify_one();
     return;
   }
+  // There is no idle instance in this Expression
+  // -> enqueue on the local queue
+  // OnExecute will dequeue it
   expression->work_queue.push(this);
 }
 
