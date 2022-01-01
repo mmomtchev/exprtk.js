@@ -320,17 +320,23 @@ describe('Expression', () => {
                 const vectorMean = new expr(
                     'var r := 0; for (var i := 0; i < x[]; i += 1) { r += x[i]; }; r / x[];',
                     [], { 'x': big });
-                const a1 = new Float64Array(big);
-                a1.fill(12);
-                const a2 = new Float64Array(big);
-                a2.fill(15);
-                return assert.isFulfilled(Promise.all([
-                    vectorMean.evalAsync(a1), vectorMean.evalAsync(a2)
-                ]).then(([m1, m2]) => {
-                    assert.closeTo(m1, 12, 10e-9);
-                    assert.closeTo(m2, 15, 10e-9);
+                const a = [];
+                for (let i = 0; i < 16; i++) {
+                    a[i] = new Float64Array(big);
+                    a[i].fill(i);
+                }
+                return assert.isFulfilled(Promise.all(a.map((v) => vectorMean.evalAsync(v))).then((r) => {
+                    for (let i = 0; i < 16; i++)
+                        assert.closeTo(r[i], i, 10e-9);
                     if (process.env.MOCHA_TEST_CONCURRENCY === undefined || +process.env.MOCHA_TEST_CONCURRENCY == 1)
-                        assert.equal(vectorMean.maxActive, Math.min(2, os.cpus().length));
+                        // On real CPUs if we launch 16 128Kb we should always get
+                        // os.cpus().length instances running at the same time
+                        assert.equal(vectorMean.maxActive, os.cpus().length);
+                    else if (os.cpus().length > 1)
+                        // Virtual CPUs (Github Actions) version:
+                        // if we launch 16 128Kb arrays and we have more than 1 vCPU
+                        // we should get at least 2 running at the same time
+                        assert.isAtLeast(vectorMean.maxActive, 2);
                 }));
             });
         });
