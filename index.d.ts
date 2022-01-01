@@ -5,11 +5,14 @@ export type TypedArrayType = 'Int8' | 'Uint8' | 'Int16' | 'Uint16' | 'Int32' | '
 export class Expression<T> {
   constructor(expression: string, scalars?: string[], vectors?: Record<string, number>);
 
+  static readonly maxParallel: number;
+
   readonly expression: string;
   readonly type: TypedArrayType;
   readonly scalars: string[];
   readonly vectors: Record<string, number>;
-
+  maxParallel: number;
+  readonly maxActive: number;
 
   eval(arguments: Record<string, number | T>): number;
   eval(...arguments: (number | T)[]): number;
@@ -38,20 +41,11 @@ export class Expression<T> {
   cwiseAsync<U extends TypedArray>(arguments: Record<string, number | TypedArray>, result: U): Promise<U>;
 }
 
-export const Int8: new (expression: string, scalars?: string[], vectors?: Record<string, number>) => Expression<Int8Array>;
-export const Uint8: new (expression: string, scalars?: string[], vectors?: Record<string, number>) => Expression<Uint8Array>;
-export const Int16: new (expression: string, scalars?: string[], vectors?: Record<string, number>) => Expression<Int16Array>;
-export const Uint16: new (expression: string, scalars?: string[], vectors?: Record<string, number>) => Expression<Uint16Array>;
-export const Int32: new (expression: string, scalars?: string[], vectors?: Record<string, number>) => Expression<Int32Array>;
-export const Uint32: new (expression: string, scalars?: string[], vectors?: Record<string, number>) => Expression<Uint32Array>;
-export const Float32: new (expression: string, scalars?: string[], vectors?: Record<string, number>) => Expression<Float32Array>;
-export const Float64: new (expression: string, scalars?: string[], vectors?: Record<string, number>) => Expression<Float64Array>;
-
-export type Int8 = Expression<Int8Array>;
-export type Uint8 = Expression<Uint8Array>;
-export type Int16 = Expression<Int16Array>;
-export type Uint16 = Expression<Uint16Array>;
-export type Int32 = Expression<Int32Array>;
-export type Uint32 = Expression<Uint32Array>;
-export type Float32 = Expression<Float32Array>;
-export type Float64 = Expression<Float64Array>;
+export class Int8 extends Expression<Int8Array>{ }
+export class Uint8 extends Expression<Uint8Array>{ }
+export class Int16 extends Expression<Int16Array>{ }
+export class Uint16 extends Expression<Uint16Array>{ }
+export class Int32 extends Expression<Int32Array>{ }
+export class Uint32 extends Expression<Uint32Array>{ }
+export class Float32 extends Expression<Float32Array>{ }
+export class Float64 extends Expression<Float64Array>{ }

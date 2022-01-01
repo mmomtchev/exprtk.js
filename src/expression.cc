@@ -1,6 +1,7 @@
 #include "expression.h"
 
 #include <memory>
+#include <cstdlib>
 
 using namespace exprtk_js;
 
@@ -40,11 +41,29 @@ using namespace exprtk_js;
  *  '(sumsq - (sum*sum) / x[]) / (x[] - 1);',
  *  [], {x: 1024})
  */
+
+/**
+ * Get the number of threads available for evaluating expressions.
+ * Set by the `EXPRTKJS_THREADS` environment variable.
+ *
+ * @readonly
+ * @kind member
+ * @name maxParallel
+ * @static
+ * @memberof Expression
+ * @type {number}
+ */
+size_t ExpressionMaxParallel = std::thread::hardware_concurrency();
 template <typename T>
 Expression<T>::Expression(const Napi::CallbackInfo &info)
-  : Napi::ObjectWrap<Expression<T>>::ObjectWrap(info), capiDescriptor(nullptr) {
+  : Napi::ObjectWrap<Expression<T>>::ObjectWrap(info),
+    maxParallel(ExpressionMaxParallel),
+    maxActive(1),
+    instances(ExpressionMaxParallel),
+    capiDescriptor(nullptr) {
   Napi::Env env = info.Env();
 
+  instances[0].isInit = false;
   if (info.Length() < 1) {
     Napi::TypeError::New(env, "expression is mandatory").ThrowAsJavaScriptException();
     return;
@@ -64,7 +83,7 @@ Expression<T>::Expression(const Napi::CallbackInfo &info)
     Napi::Array args = info[1].As<Napi::Array>();
     for (std::size_t i = 0; i < args.Length(); i++) {
       const std::string name = args.Get(i).As<Napi::String>().Utf8Value();
-      if (!symbolTable.create_variable(name)) {
+      if (!instances[0].symbolTable.create_variable(name)) {
         Napi::TypeError::New(env, name + " is not a valid variable name").ThrowAsJavaScriptException();
         return;
       }
@@ -74,7 +93,7 @@ Expression<T>::Expression(const Napi::CallbackInfo &info)
     std::vector<std::string> args;
     exprtk::collect_variables(expressionText, args);
     for (const auto &name : args) {
-      if (!symbolTable.create_variable(name)) {
+      if (!instances[0].symbolTable.create_variable(name)) {
         Napi::TypeError::New(env, name + " is not a valid variable name").ThrowAsJavaScriptException();
         return;
       }
@@ -104,9 +123,9 @@ Expression<T>::Expression(const Napi::CallbackInfo &info)
       size_t size = value.ToNumber().Int64Value();
       T *dummy = (T *)&size;
       auto *v = new exprtk::vector_view<T>(dummy, size);
-      vectorViews[name] = v;
+      instances[0].vectorViews[name] = v;
 
-      if (!symbolTable.add_vector(name, *v)) {
+      if (!instances[0].symbolTable.add_vector(name, *v)) {
         Napi::TypeError::New(env, name + " is not a valid vector name").ThrowAsJavaScriptException();
         return;
       }
@@ -115,9 +134,10 @@ Expression<T>::Expression(const Napi::CallbackInfo &info)
     }
   }
 
-  expression.register_symbol_table(symbolTable);
+  instances[0].expression.register_symbol_table(instances[0].symbolTable);
 
-  if (!parser().compile(expressionText, expression)) {
+  std::lock_guard<std::mutex> lock(parserMutex);
+  if (!parser().compile(expressionText, instances[0].expression)) {
     std::string errorText = "failed compiling expression " + expressionText + "\n";
     for (std::size_t i = 0; i < parser().error_count(); i++) {
       exprtk::parser_error::type error = parser().get_error(i);
@@ -126,26 +146,61 @@ Expression<T>::Expression(const Napi::CallbackInfo &info)
     }
     Napi::Error::New(env, errorText).ThrowAsJavaScriptException();
   }
+
+  instances[0].isInit = true;
+  instancesIdle.push_back(&instances[0]);
+  for (size_t i = 1; i < ExpressionMaxParallel; i++) {
+    instances[i].isInit = false;
+    instancesIdle.push_back(&instances[i]);
+  }
 }
 
 template <typename T> Expression<T>::~Expression() {
-  if (!asyncLock.try_lock()) {
-    fprintf(
-      stderr,
-      "GC waiting on a background evaluation of an Expression object, event loop blocked. "
-      "If you are using only the JS interface, this is a bug in ExprTk.js. "
-      "If you are using the C/C++ API, you must always protect Expression objects from the GC "
-      "by obtaining a persistent object reference. \n");
-    asyncLock.lock();
+  std::lock_guard<std::mutex> lock(asyncLock);
+  if (instances[0].isInit) {
+    size_t free = 0;
+    for (; !instancesIdle.empty(); instancesIdle.pop_front(), free++)
+      ;
+    if (free != instances.size())
+      fprintf(
+        stderr,
+        "GC waiting on a background evaluation of an Expression object, event loop blocked. "
+        "If you are using only the JS interface, this is a bug in ExprTk.js. "
+        "If you are using the C/C++ API, you must always protect Expression objects from the GC "
+        "by obtaining a persistent object reference. \n");
   }
-  asyncLock.unlock();
-  for (auto const &v : vectorViews) {
-    // exprtk will sometimes try to free this pointer
-    // on object destruction even if it never allocated it
-    v.second->rebase((T *)nullptr);
-    delete v.second;
+  for (auto &i : instances) {
+    if (i.isInit) {
+      for (auto const &v : i.vectorViews) {
+        // exprtk will sometimes try to free this pointer
+        // on object destruction even if it never allocated it
+        v.second->rebase((T *)nullptr);
+        delete v.second;
+      }
+      i.vectorViews.clear();
+    }
   }
-  vectorViews.clear();
+}
+
+template <typename T> void Expression<T>::compileInstance(ExpressionInstance<T> *i) {
+  if (i->isInit) return;
+  for (auto const &name : variableNames) {
+    if (instances[0].symbolTable.get_variable(name))
+      i->symbolTable.create_variable(name);
+    else {
+      auto vector = instances[0].symbolTable.get_vector(name);
+      auto size = vector->size();
+      T *dummy = (T *)&size;
+      auto *v = new exprtk::vector_view<T>(dummy, size);
+      i->vectorViews[name] = v;
+      i->symbolTable.add_vector(name, *v);
+    }
+  }
+  i->isInit = true;
+  i->expression.register_symbol_table(i->symbolTable);
+  std::lock_guard<std::mutex> lock(parserMutex);
+  maxActive++;
+  parser().compile(expressionText, i->expression);
 }
 
 /**
@@ -169,9 +224,9 @@ template <typename T> Expression<T>::~Expression() {
 ASYNCABLE_DEFINE(template <typename T>, Expression<T>::eval) {
   Napi::Env env = info.Env();
 
-  ExprTkJob<T> job(asyncLock);
+  ExprTkJob<T> job(this);
 
-  std::vector<std::function<void()>> importers;
+  std::vector<std::function<void(const ExpressionInstance<T> &)>> importers;
 
   if (info.Length() > 0 && info[0].IsObject() && !info[0].IsTypedArray()) {
     importFromObject(env, job, info[0], importers);
@@ -183,15 +238,15 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::eval) {
     importFromArgumentsArray(env, job, info, 0, last, importers);
   }
 
-  if (symbolTable.variable_count() + symbolTable.vector_count() != importers.size()) {
+  if (instances[0].symbolTable.variable_count() + instances[0].symbolTable.vector_count() != importers.size()) {
     Napi::TypeError::New(env, "wrong number of input arguments").ThrowAsJavaScriptException();
     return env.Null();
   }
 
-  job.main = [this, importers]() {
-    for (auto const &f : importers) f();
-    T r = expression.value();
-    if (expression.results().count()) { throw "explicit return values are not supported"; }
+  job.main = [importers](const ExpressionInstance<T> &i) {
+    for (auto const &f : importers) f(i);
+    T r = i.expression.value();
+    if (i.expression.results().count()) { throw "explicit return values are not supported"; }
     return r;
   };
   job.rval = [env](T r) { return Napi::Number::New(env, r); };
@@ -199,17 +254,17 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::eval) {
 }
 
 template <typename T> exprtk_result Expression<T>::capi_eval(const void *_scalars, void **_vectors, void *_result) {
+  std::lock_guard<std::mutex> lock(asyncLock);
+
   const T *scalars = reinterpret_cast<const T *>(_scalars);
   T **vectors = reinterpret_cast<T **>(_vectors);
   T *result = reinterpret_cast<T *>(_result);
 
-  std::lock_guard<std::mutex> lock(asyncLock);
-
-  size_t nvars = symbolTable.variable_count();
-  size_t nvectors = symbolTable.vector_count();
-  for (size_t i = 0; i < nvars; i++) symbolTable.get_variable(variableNames[i])->ref() = scalars[i];
-  for (size_t i = 0; i < nvectors; i++) vectorViews[variableNames[i + nvars]]->rebase(vectors[i]);
-  *result = expression.value();
+  size_t nvars = instances[0].symbolTable.variable_count();
+  size_t nvectors = instances[0].symbolTable.vector_count();
+  for (size_t i = 0; i < nvars; i++) instances[0].symbolTable.get_variable(variableNames[i])->ref() = scalars[i];
+  for (size_t i = 0; i < nvectors; i++) instances[0].vectorViews[variableNames[i + nvars]]->rebase(vectors[i]);
+  *result = instances[0].expression.value();
   return exprtk_ok;
 }
 
@@ -242,9 +297,9 @@ template <typename T> exprtk_result Expression<T>::capi_eval(const void *_scalar
 ASYNCABLE_DEFINE(template <typename T>, Expression<T>::map) {
   Napi::Env env = info.Env();
 
-  ExprTkJob<T> job(asyncLock);
+  ExprTkJob<T> job(this);
 
-  std::vector<std::function<void()>> importers;
+  std::vector<std::function<void(const ExpressionInstance<T> &)>> importers;
 
   if (
     info.Length() < 1 || !info[0].IsTypedArray() ||
@@ -263,7 +318,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::map) {
     return env.Null();
   }
   const std::string iteratorName = info[1].As<Napi::String>().Utf8Value();
-  auto iterator = symbolTable.get_variable(iteratorName);
+  auto iterator = instances[0].symbolTable.get_variable(iteratorName);
   if (iterator == nullptr) {
     Napi::TypeError::New(env, iteratorName + " is not a declared scalar variable").ThrowAsJavaScriptException();
     return env.Null();
@@ -279,7 +334,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::map) {
     importFromArgumentsArray(env, job, info, 2, last, importers, {iteratorName});
   }
 
-  if (symbolTable.variable_count() + symbolTable.vector_count() != importers.size() + 1) {
+  if (instances[0].symbolTable.variable_count() + instances[0].symbolTable.vector_count() != importers.size() + 1) {
     Napi::TypeError::New(env, "wrong number of input arguments").ThrowAsJavaScriptException();
     return env.Null();
   }
@@ -291,13 +346,15 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::map) {
   // but std::function is not compatible with move semantics
   auto persistent = std::make_shared<Napi::Reference<Napi::TypedArray>>(Napi::Persistent(result));
 
-  job.main = [this, importers, iterator, input, output, len]() {
-    for (auto const &f : importers) f();
+  job.main = [importers, iteratorName, input, output, len](const ExpressionInstance<T> &i) {
+    for (auto const &f : importers) f(i);
+    auto iterator = i.symbolTable.get_variable(iteratorName);
 
     T *it_ptr = &iterator->ref();
     T *in_ptr = input;
     T *out_ptr = output;
     auto const in_end = in_ptr + len;
+    auto &expression = i.expression;
     for (; in_ptr < in_end; in_ptr++, out_ptr++) {
       *it_ptr = *in_ptr;
       *out_ptr = expression.value();
@@ -316,30 +373,30 @@ exprtk_result Expression<T>::capi_map(
   const void *_scalars,
   void **_vectors,
   void *_result) {
+  std::lock_guard<std::mutex> lock(asyncLock);
   const T *scalars = reinterpret_cast<const T *>(_scalars);
   T **vectors = reinterpret_cast<T **>(_vectors);
   T *it_ptr = nullptr;
 
-  std::lock_guard<std::mutex> lock(asyncLock);
-
-  size_t nvars = symbolTable.variable_count();
-  size_t nvectors = symbolTable.vector_count();
+  size_t nvars = instances[0].symbolTable.variable_count();
+  size_t nvectors = instances[0].symbolTable.vector_count();
 
   size_t scalars_idx = 0;
   for (size_t i = 0; i < nvars; i++) {
     if (variableNames[i] == iterator_name) {
-      it_ptr = &symbolTable.get_variable(variableNames[i])->ref();
+      it_ptr = &instances[0].symbolTable.get_variable(variableNames[i])->ref();
     } else {
-      symbolTable.get_variable(variableNames[i])->ref() = scalars[scalars_idx++];
+      instances[0].symbolTable.get_variable(variableNames[i])->ref() = scalars[scalars_idx++];
     }
   }
-  for (size_t i = 0; i < nvectors; i++) vectorViews[variableNames[i + nvars]]->rebase(vectors[i]);
+  for (size_t i = 0; i < nvectors; i++) instances[0].vectorViews[variableNames[i + nvars]]->rebase(vectors[i]);
 
   if (it_ptr == nullptr) return exprtk_invalid_argument;
 
   const T *in_ptr = reinterpret_cast<const T *>(_iterator_vector);
   T *out_ptr = reinterpret_cast<T *>(_result);
   auto const in_end = in_ptr + iterator_len;
+  auto &expression = instances[0].expression;
   for (; in_ptr < in_end; in_ptr++, out_ptr++) {
     *it_ptr = *in_ptr;
     *out_ptr = expression.value();
@@ -380,9 +437,9 @@ exprtk_result Expression<T>::capi_map(
 ASYNCABLE_DEFINE(template <typename T>, Expression<T>::reduce) {
   Napi::Env env = info.Env();
 
-  ExprTkJob<T> job(asyncLock);
+  ExprTkJob<T> job(this);
 
-  std::vector<std::function<void()>> importers;
+  std::vector<std::function<void(const ExpressionInstance<T> &)>> importers;
 
   if (
     info.Length() < 1 || !info[0].IsTypedArray() ||
@@ -401,7 +458,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::reduce) {
     return env.Null();
   }
   const std::string iteratorName = info[1].As<Napi::String>().Utf8Value();
-  auto iterator = symbolTable.get_variable(iteratorName);
+  auto iterator = instances[0].symbolTable.get_variable(iteratorName);
   if (iterator == nullptr) {
     Napi::TypeError::New(env, iteratorName + " is not a declared scalar variable").ThrowAsJavaScriptException();
     return env.Null();
@@ -412,7 +469,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::reduce) {
     return env.Null();
   }
   const std::string accuName = info[2].As<Napi::String>().Utf8Value();
-  auto accu = symbolTable.get_variable(accuName);
+  auto accu = instances[0].symbolTable.get_variable(accuName);
   if (accu == nullptr) {
     Napi::TypeError::New(env, accuName + " is not a declared scalar variable").ThrowAsJavaScriptException();
     return env.Null();
@@ -435,17 +492,21 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::reduce) {
     importFromArgumentsArray(env, job, info, 4, last, importers, {iteratorName, accuName});
   }
 
-  if (symbolTable.variable_count() + symbolTable.vector_count() != importers.size() + 2) {
+  if (instances[0].symbolTable.variable_count() + instances[0].symbolTable.vector_count() != importers.size() + 2) {
     Napi::TypeError::New(env, "wrong number of input arguments").ThrowAsJavaScriptException();
     return env.Null();
   }
 
-  job.main = [this, importers, iterator, accu, accuInit, input, len]() {
-    for (auto const &f : importers) f();
+  job.main = [importers, iteratorName, accuName, accuInit, input, len](const ExpressionInstance<T> &i) {
+    auto iterator = i.symbolTable.get_variable(iteratorName);
+    auto accu = i.symbolTable.get_variable(accuName);
+
+    for (auto const &f : importers) f(i);
     accu->ref() = accuInit;
     T *it_ptr = &iterator->ref();
     T *accu_ptr = &accu->ref();
     T *input_end = input + len;
+    auto &expression = i.expression;
     for (T *i = input; i < input_end; i++) {
       *it_ptr = *i;
       *accu_ptr = expression.value();
@@ -465,33 +526,33 @@ exprtk_result Expression<T>::capi_reduce(
   const void *_scalars,
   void **_vectors,
   void *_result) {
+  std::lock_guard<std::mutex> lock(asyncLock);
   const T *scalars = reinterpret_cast<const T *>(_scalars);
   T **vectors = reinterpret_cast<T **>(_vectors);
   T *it_ptr = nullptr;
   T *accu_ptr = nullptr;
 
-  size_t nvars = symbolTable.variable_count();
-  size_t nvectors = symbolTable.vector_count();
-
-  std::lock_guard<std::mutex> lock(asyncLock);
+  size_t nvars = instances[0].symbolTable.variable_count();
+  size_t nvectors = instances[0].symbolTable.vector_count();
 
   int scalars_idx = 0;
   for (size_t i = 0; i < nvars; i++) {
     if (variableNames[i] == iterator_name) {
-      it_ptr = &symbolTable.get_variable(variableNames[i])->ref();
+      it_ptr = &instances[0].symbolTable.get_variable(variableNames[i])->ref();
     } else if (variableNames[i] == accumulator) {
-      accu_ptr = &symbolTable.get_variable(variableNames[i])->ref();
+      accu_ptr = &instances[0].symbolTable.get_variable(variableNames[i])->ref();
     } else {
-      symbolTable.get_variable(variableNames[i])->ref() = scalars[scalars_idx++];
+      instances[0].symbolTable.get_variable(variableNames[i])->ref() = scalars[scalars_idx++];
     }
   }
-  for (size_t i = 0; i < nvectors; i++) vectorViews[variableNames[nvars + i]]->rebase(vectors[i]);
+  for (size_t i = 0; i < nvectors; i++) instances[0].vectorViews[variableNames[nvars + i]]->rebase(vectors[i]);
 
   if (it_ptr == nullptr || accu_ptr == nullptr) return exprtk_invalid_argument;
 
   const T *in_ptr = reinterpret_cast<const T *>(_iterator_vector);
   T *out_ptr = reinterpret_cast<T *>(_result);
   auto const input_end = in_ptr + iterator_len;
+  auto &expression = instances[0].expression;
   for (; in_ptr < input_end; in_ptr++) {
     *it_ptr = *in_ptr;
     *accu_ptr = expression.value();
@@ -615,7 +676,7 @@ static const size_t NapiElementSize[] = {
 ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
   Napi::Env env = info.Env();
 
-  ExprTkJob<T> job(asyncLock);
+  ExprTkJob<T> job(this);
 
   if (info.Length() < 1 || !info[0].IsObject()) {
 
@@ -624,7 +685,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
     return env.Null();
   }
 
-  if (symbolTable.vector_count() > 0) {
+  if (instances[0].symbolTable.vector_count() > 0) {
     Napi::TypeError::New(env, "cwise()/cwiseAsync() are not compatible with vector arguments")
       .ThrowAsJavaScriptException();
     return env.Null();
@@ -644,7 +705,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
   for (std::size_t i = 0; i < argNames.Length(); i++) {
     const std::string name = argNames.Get(i).As<Napi::String>().Utf8Value();
     Napi::Value value = args.Get(name);
-    auto exprtk_ptr = symbolTable.get_variable(name);
+    auto exprtk_ptr = instances[0].symbolTable.get_variable(name);
     if (exprtk_ptr == nullptr) {
       Napi::TypeError::New(env, name + " is not a declared scalar variable").ThrowAsJavaScriptException();
       return env.Null();
@@ -679,7 +740,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
     }
   }
 
-  if (symbolTable.variable_count() != scalars.size() + vectors.size()) {
+  if (instances[0].symbolTable.variable_count() != scalars.size() + vectors.size()) {
     Napi::TypeError::New(env, "wrong number of input arguments").ThrowAsJavaScriptException();
     return env.Null();
   }
@@ -705,9 +766,14 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
   auto persistent = std::make_shared<Napi::Reference<Napi::TypedArray>>(Napi::Persistent(result));
 
   if (typeConversionRequired) {
-    job.main = [this, scalars, vectors, output, elementSize, len, toCaster]() mutable {
-      for (auto const &v : scalars) { *v.exprtk_var = *(reinterpret_cast<const T *>(v.storage)); }
+    job.main = [scalars, vectors, output, elementSize, len, toCaster](const ExpressionInstance<T> &i) mutable {
+      for (auto &v : scalars) {
+        v.exprtk_var = &i.symbolTable.get_variable(v.name)->ref();
+        *v.exprtk_var = *(reinterpret_cast<const T *>(v.storage));
+      }
+      for (auto &v : vectors) { v.exprtk_var = &i.symbolTable.get_variable(v.name)->ref(); }
 
+      auto &expression = i.expression;
       uint8_t *output_end = output + len * elementSize;
       for (uint8_t *output_ptr = output; output_ptr < output_end; output_ptr += elementSize) {
         for (auto &v : vectors) {
@@ -719,9 +785,14 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
       return 0;
     };
   } else {
-    job.main = [this, scalars, vectors, output, len]() mutable {
-      for (auto const &v : scalars) { *v.exprtk_var = *(reinterpret_cast<const T *>(v.storage)); }
+    job.main = [scalars, vectors, output, len](const ExpressionInstance<T> &i) mutable {
+      for (auto &v : scalars) {
+        v.exprtk_var = &i.symbolTable.get_variable(v.name)->ref();
+        *v.exprtk_var = *(reinterpret_cast<const T *>(v.storage));
+      }
+      for (auto &v : vectors) { v.exprtk_var = &i.symbolTable.get_variable(v.name)->ref(); }
 
+      auto &expression = i.expression;
       T *output_end = reinterpret_cast<T *>(output) + len;
       for (T *output_ptr = reinterpret_cast<T *>(output); output_ptr < output_end; output_ptr++) {
         for (auto &v : vectors) {
@@ -741,16 +812,18 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
 template <typename T>
 exprtk_result
 Expression<T>::capi_cwise(const size_t n_args, const exprtk_capi_cwise_arg *args, exprtk_capi_cwise_arg *result) {
+  std::lock_guard<std::mutex> lock(asyncLock);
 
   bool typeConversionRequired = false;
   size_t len = 0;
   std::vector<symbolDesc<T>> scalars, vectors;
 
-  if (vectorViews.size() > 0) return exprtk_invalid_argument; // cwise is not (yet) compatible with vector arguments
+  if (instances[0].vectorViews.size() > 0)
+    return exprtk_invalid_argument; // cwise is not (yet) compatible with vector arguments
 
   for (size_t i = 0; i < n_args; i++) {
     symbolDesc<T> current;
-    auto exprtk_ptr = symbolTable.get_variable(args[i].name);
+    auto exprtk_ptr = instances[0].symbolTable.get_variable(args[i].name);
     if (exprtk_ptr == nullptr) return exprtk_invalid_argument; // invalid variable name
     current.exprtk_var = &exprtk_ptr->ref();
 
@@ -774,7 +847,7 @@ Expression<T>::capi_cwise(const size_t n_args, const exprtk_capi_cwise_arg *args
     }
   }
 
-  if (symbolTable.variable_count() != scalars.size() + vectors.size())
+  if (instances[0].symbolTable.variable_count() != scalars.size() + vectors.size())
     return exprtk_invalid_argument; // wrong number of input arguments
 
   uint8_t *output = reinterpret_cast<uint8_t *>(result->data);
@@ -782,10 +855,10 @@ Expression<T>::capi_cwise(const size_t n_args, const exprtk_capi_cwise_arg *args
   auto const toCaster = NapiToCasters<T>[result->type];
   if (static_cast<napi_typedarray_type>(result->type) != NapiArrayType<T>::type) typeConversionRequired = true;
 
-  std::lock_guard<std::mutex> lock(asyncLock);
   if (typeConversionRequired) {
     for (auto const &v : scalars) { *v.exprtk_var = *(reinterpret_cast<const T *>(v.storage)); }
 
+    auto &expression = instances[0].expression;
     uint8_t *output_end = output + len * elementSize;
     for (uint8_t *output_ptr = output; output_ptr < output_end; output_ptr += elementSize) {
       for (auto &v : vectors) {
@@ -797,6 +870,7 @@ Expression<T>::capi_cwise(const size_t n_args, const exprtk_capi_cwise_arg *args
   } else {
     for (auto const &v : scalars) { *v.exprtk_var = *(reinterpret_cast<const T *>(v.storage)); }
 
+    auto &expression = instances[0].expression;
     T *output_end = reinterpret_cast<T *>(output) + len;
     for (T *output_ptr = reinterpret_cast<T *>(output); output_ptr < output_end; output_ptr++) {
       for (auto &v : vectors) {
@@ -858,7 +932,7 @@ template <typename T> Napi::Value Expression<T>::GetScalars(const Napi::Callback
 
   size_t i = 0;
   for (const auto &name : variableNames) {
-    if (symbolTable.get_variable(name)) { scalars.Set(i++, name); }
+    if (instances[0].symbolTable.get_variable(name)) { scalars.Set(i++, name); }
   }
 
   return scalars;
@@ -880,7 +954,7 @@ template <typename T> Napi::Value Expression<T>::GetVectors(const Napi::Callback
   Napi::Object vectors = Napi::Object::New(env);
 
   for (const auto &name : variableNames) {
-    auto vector = symbolTable.get_vector(name);
+    auto vector = instances[0].symbolTable.get_vector(name);
     if (vector != nullptr) { vectors.Set(name, vector->size()); }
   }
 
@@ -964,6 +1038,7 @@ template <typename T> Napi::Value Expression<T>::GetCAPI(const Napi::CallbackInf
 
   if (capiDescriptor != nullptr) return capiDescriptor->Value();
 
+  auto &symbolTable = instances[0].symbolTable;
   size_t size = sizeof(exprtk_expression) + symbolTable.variable_count() * sizeof(char *) +
     symbolTable.vector_count() * sizeof(exprtk_capi_vector);
 
@@ -997,11 +1072,63 @@ template <typename T> Napi::Value Expression<T>::GetCAPI(const Napi::CallbackInf
   return result;
 }
 
+/**
+ * Get/set the maximum allowed parallel instances for this Expression
+ *
+ * @kind member
+ * @name maxParallel
+ * @instance
+ * @memberof Expression
+ * @type {number}
+ */
+template <typename T> Napi::Value Expression<T>::GetMaxParallel(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+
+  return Napi::Number::New(env, maxParallel);
+}
+
+template <typename T> void Expression<T>::SetMaxParallel(const Napi::CallbackInfo &info, const Napi::Value &value) {
+  Napi::Env env = info.Env();
+
+  if (value.IsEmpty() || !value.IsNumber()) {
+    Napi::TypeError::New(env, "value must be a number").ThrowAsJavaScriptException();
+    return;
+  }
+
+  size_t newMax = value.ToNumber().Uint32Value();
+  if (newMax > maxParallel) {
+    Napi::TypeError::New(
+      env,
+      "maximum instances is limited to the number of threads set by the environment variable EXPRTKJS_THREADS : " +
+        std::to_string(maxParallel))
+      .ThrowAsJavaScriptException();
+    return;
+  }
+  maxParallel = newMax;
+}
+
+/**
+ * Get the currently reached peak of simultaneously running instances for this Expression
+ *
+ * @readonly
+ * @kind member
+ * @name maxActive
+ * @instance
+ * @memberof Expression
+ * @type {number}
+ */
+template <typename T> Napi::Value Expression<T>::GetMaxActive(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+
+  return Napi::Number::New(env, maxActive);
+}
+
 template <typename T> Napi::Function Expression<T>::GetClass(Napi::Env env) {
   napi_property_attributes props =
     static_cast<napi_property_attributes>(napi_writable | napi_configurable | napi_enumerable);
   napi_property_attributes hidden = static_cast<napi_property_attributes>(napi_configurable);
   static const std::string className = std::string(NapiArrayType<T>::name) + "Expression";
+  static const Napi::Value maxParallel = Napi::Number::New(env, ExpressionMaxParallel);
   return Expression<T>::DefineClass(
     env,
     className.c_str(),
@@ -1010,6 +1137,9 @@ template <typename T> Napi::Function Expression<T>::GetClass(Napi::Env env) {
      Expression<T>::InstanceAccessor("vectors", &Expression<T>::GetVectors, nullptr),
      Expression<T>::InstanceAccessor("type", &Expression<T>::GetType, nullptr),
      Expression<T>::InstanceAccessor("_CAPI_", &Expression<T>::GetCAPI, nullptr, hidden),
+     Expression<T>::InstanceAccessor("maxParallel", &Expression<T>::GetMaxParallel, &Expression<T>::SetMaxParallel),
+     Expression<T>::InstanceAccessor("maxActive", &Expression<T>::GetMaxActive, nullptr),
+     Expression<T>::StaticValue("maxParallel", maxParallel),
      ASYNCABLE_INSTANCE_METHOD(Expression<T>, eval, props),
      ASYNCABLE_INSTANCE_METHOD(Expression<T>, map, props),
      ASYNCABLE_INSTANCE_METHOD(Expression<T>, reduce, props),
@@ -1017,6 +1147,9 @@ template <typename T> Napi::Function Expression<T>::GetClass(Napi::Env env) {
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
+  const char *exprtkjs_threads = std::getenv("EXPRTKJS_THREADS");
+  if (exprtkjs_threads != nullptr) ExpressionMaxParallel = std::stoi(exprtkjs_threads);
+  initAsyncWorkers(ExpressionMaxParallel);
 #ifndef EXPRTK_DISABLE_INT_TYPES
   exports.Set(Napi::String::New(env, NapiArrayType<int8_t>::name), Expression<int8_t>::GetClass(env));
   exports.Set(Napi::String::New(env, NapiArrayType<uint8_t>::name), Expression<uint8_t>::GetClass(env));

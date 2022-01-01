@@ -4,9 +4,12 @@
 #include <map>
 #include <mutex>
 #include <functional>
+#include <list>
+#include <queue>
 #include <napi.h>
 
 #include <exprtkjs.h>
+
 #include "async.h"
 
 namespace exprtk_js {
@@ -100,10 +103,20 @@ template <> struct NapiArrayType<float> {
   }
 };
 
+template <class T> struct ExpressionInstance {
+  exprtk::symbol_table<T> symbolTable;
+  exprtk::expression<T> expression;
+  bool isInit;
+  // These are the vectorViews needed for rebasing the vectors when evaluating
+  // Read "SECTION 14" of the ExprTk manual for more information on this
+  std::map<std::string, exprtk::vector_view<T> *> vectorViews;
+};
+
 template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> {
     public:
   Expression(const Napi::CallbackInfo &);
   ~Expression();
+  void compileInstance(ExpressionInstance<T> *instance);
 
   ASYNCABLE_DECLARE(eval);
   ASYNCABLE_DECLARE(map);
@@ -133,17 +146,25 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
   Napi::Value GetScalars(const Napi::CallbackInfo &info);
   Napi::Value GetVectors(const Napi::CallbackInfo &info);
   Napi::Value GetCAPI(const Napi::CallbackInfo &info);
+  Napi::Value GetMaxParallel(const Napi::CallbackInfo &info);
+  void SetMaxParallel(const Napi::CallbackInfo &info, const Napi::Value &value);
+  Napi::Value GetMaxActive(const Napi::CallbackInfo &info);
 
   static Napi::Function GetClass(Napi::Env);
 
+  std::queue<ExprTkAsyncWorker<T> *> work_queue;
+
     private:
-  // ExprTk stuff
   std::string expressionText;
-  exprtk::symbol_table<T> symbolTable;
-  exprtk::expression<T> expression;
-  // These are the vectorViews needed for rebasing the vectors when evaluating
-  // Read "SECTION 14" of the ExprTk manual for more information on this
-  std::map<std::string, exprtk::vector_view<T> *> vectorViews;
+
+  size_t maxParallel;
+  size_t maxActive;
+
+  std::mutex asyncLock;
+
+  // ExprTk stuff in multiple instances to support reentrancy
+  std::vector<ExpressionInstance<T>> instances;
+  std::list<ExpressionInstance<T> *> instancesIdle;
 
   // this one is prone to static initialization fiasco
   // there is a single shared instance per data type
@@ -152,12 +173,10 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
 
     return _parser;
   }
+  std::mutex parserMutex;
 
   // get_variable_list / get_vector_list do not conserve the initial order
   std::vector<std::string> variableNames;
-
-  // Expression is not reentrant because of the symbol table
-  std::mutex asyncLock;
 
   // This is a persistent reference to the CAPI object of this Expression
   std::shared_ptr<Napi::Reference<Napi::ArrayBuffer>> capiDescriptor;
@@ -171,12 +190,12 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
     ExprTkJob<T> &job,
     const std::string &name,
     const Napi::Value &value,
-    std::vector<std::function<void()>> &importers) const {
+    std::vector<std::function<void(const ExpressionInstance<T> &)>> &importers) const {
     if (value.IsTypedArray()) {
-      if (vectorViews.count(name) == 0) {
+      if (instances[0].vectorViews.count(name) == 0) {
         throw Napi::TypeError::New(env, name + " is not a declared vector variable");
       }
-      auto v = vectorViews.at(name);
+      auto v = instances[0].vectorViews.at(name);
       if (value.As<Napi::TypedArray>().TypedArrayType() != NapiArrayType<T>::type) {
         throw Napi::TypeError::New(env, "vector data must be a " + std::string(NapiArrayType<T>::name) + "Array");
       }
@@ -191,15 +210,21 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
 
       T *raw = reinterpret_cast<T *>(data.ArrayBuffer().Data());
       job.persist(data);
-      importers.push_back([v, raw]() { v->rebase(raw); });
+      importers.push_back([raw, name](const ExpressionInstance<T> &i) {
+        auto v = i.vectorViews.at(name);
+        v->rebase(raw);
+      });
       return;
     }
 
     if (value.IsNumber()) {
-      auto v = symbolTable.get_variable(name);
+      auto v = instances[0].symbolTable.get_variable(name);
       if (v == nullptr) { throw Napi::TypeError::New(env, name + " is not a declared scalar variable"); }
       T raw = NapiArrayType<T>::CastFrom(value);
-      importers.push_back([v, raw]() { v->ref() = raw; });
+      importers.push_back([raw, name](const ExpressionInstance<T> &i) {
+        auto v = i.symbolTable.get_variable(name);
+        v->ref() = raw;
+      });
       return;
     }
 
@@ -210,7 +235,7 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
     const Napi::Env &env,
     ExprTkJob<T> &job,
     const Napi::Value &object,
-    std::vector<std::function<void()>> &importers) const {
+    std::vector<std::function<void(const ExpressionInstance<T> &)>> &importers) const {
 
     Napi::Object args = object.ToObject();
     Napi::Array argNames = args.GetPropertyNames();
@@ -228,7 +253,7 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
     const Napi::CallbackInfo &info,
     size_t firstArg,
     size_t lastArg,
-    std::vector<std::function<void()>> &importers,
+    std::vector<std::function<void(const ExpressionInstance<T> &)>> &importers,
     const std::set<std::string> &skip = {}) const {
 
     size_t i = firstArg;
@@ -238,6 +263,21 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
       i++;
       if (i == lastArg) return;
     }
+  }
+
+public:
+  inline ExpressionInstance<T> *getIdleInstance() {
+    std::lock_guard<std::mutex> lock(asyncLock);
+    if (instancesIdle.empty()) return nullptr;
+    auto *r = instancesIdle.front();
+    instancesIdle.pop_front();
+    if (!r->isInit) compileInstance(r);
+    return r;
+  }
+
+  inline void releaseIdleInstance(ExpressionInstance<T> *i) {
+    std::lock_guard<std::mutex> lock(asyncLock);
+    instancesIdle.push_front(i);
   }
 };
 
