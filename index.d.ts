@@ -19,6 +19,7 @@ export class Expression<T> {
 
   evalAsync(arguments: Record<string, number | T>): Promise<number>;
   evalAsync(...arguments: (number | T)[]): Promise<number>;
+  evalAsync(arguments: Record<string, number | T>, callback: (this: Expression<T>, e: Error | null, r: number | undefined) => void): void;
 
 
   map(array: T, iterator: string, arguments: Record<string, number | T>): T;
@@ -26,6 +27,7 @@ export class Expression<T> {
 
   mapAsync(array: T, iterator: string, arguments: Record<string, number | T>): Promise<T>;
   mapAsync(array: T, iterator: string, ...arguments: (number | T)[]): Promise<T>;
+  mapAsync(array: T, iterator: string, arguments: Record<string, number | T>, callback: (this: Expression<T>, e: Error | null, r: T | undefined) => void): void;
 
 
   reduce(array: T, iterator: string, accumulator: string, initializer: number, arguments: Record<string, number | T>): number;
@@ -33,12 +35,14 @@ export class Expression<T> {
 
   reduceAsync(array: T, iterator: string, accumulator: string, initializer: number, arguments: Record<string, number | T>): Promise<number>;
   reduceAsync(array: T, iterator: string, accumulator: string, initializer: number, ...arguments: (number | T)[]): Promise<number>;
+  reduceAsync(array: T, iterator: string, accumulator: string, initializer: number, arguments: Record<string, number | T>, callback: (this: Expression<T>, e: Error | null, r: number | undefined) => void): void
 
   cwise(arguments: Record<string, number | TypedArray>): T;
   cwise<U extends TypedArray>(arguments: Record<string, number | TypedArray>, result: U): U;
 
   cwiseAsync(arguments: Record<string, number | TypedArray>): Promise<T>;
   cwiseAsync<U extends TypedArray>(arguments: Record<string, number | TypedArray>, result: U): Promise<U>;
+  cwiseAsync(arguments: Record<string, number | TypedArray>, callback: (this: Expression<T>, e: Error | null, r: T | undefined) => void): void;
 }
 
 export class Int8 extends Expression<Int8Array>{ }
