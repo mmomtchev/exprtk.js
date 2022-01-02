@@ -254,17 +254,18 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::eval) {
 }
 
 template <typename T> exprtk_result Expression<T>::capi_eval(const void *_scalars, void **_vectors, void *_result) {
-  std::lock_guard<std::mutex> lock(asyncLock);
-
   const T *scalars = reinterpret_cast<const T *>(_scalars);
   T **vectors = reinterpret_cast<T **>(_vectors);
   T *result = reinterpret_cast<T *>(_result);
 
-  size_t nvars = instances[0].symbolTable.variable_count();
-  size_t nvectors = instances[0].symbolTable.vector_count();
-  for (size_t i = 0; i < nvars; i++) instances[0].symbolTable.get_variable(variableNames[i])->ref() = scalars[i];
-  for (size_t i = 0; i < nvectors; i++) instances[0].vectorViews[variableNames[i + nvars]]->rebase(vectors[i]);
-  *result = instances[0].expression.value();
+  InstanceGuard<T> instance(this);
+
+  size_t nvars = instance()->symbolTable.variable_count();
+  size_t nvectors = instance()->symbolTable.vector_count();
+  for (size_t i = 0; i < nvars; i++) instance()->symbolTable.get_variable(variableNames[i])->ref() = scalars[i];
+  for (size_t i = 0; i < nvectors; i++) instance()->vectorViews[variableNames[i + nvars]]->rebase(vectors[i]);
+  *result = instance()->expression.value();
+
   return exprtk_ok;
 }
 
@@ -373,30 +374,31 @@ exprtk_result Expression<T>::capi_map(
   const void *_scalars,
   void **_vectors,
   void *_result) {
-  std::lock_guard<std::mutex> lock(asyncLock);
   const T *scalars = reinterpret_cast<const T *>(_scalars);
   T **vectors = reinterpret_cast<T **>(_vectors);
   T *it_ptr = nullptr;
 
-  size_t nvars = instances[0].symbolTable.variable_count();
-  size_t nvectors = instances[0].symbolTable.vector_count();
+  InstanceGuard<T> instance(this);
+
+  size_t nvars = instance()->symbolTable.variable_count();
+  size_t nvectors = instance()->symbolTable.vector_count();
 
   size_t scalars_idx = 0;
   for (size_t i = 0; i < nvars; i++) {
     if (variableNames[i] == iterator_name) {
-      it_ptr = &instances[0].symbolTable.get_variable(variableNames[i])->ref();
+      it_ptr = &instance()->symbolTable.get_variable(variableNames[i])->ref();
     } else {
-      instances[0].symbolTable.get_variable(variableNames[i])->ref() = scalars[scalars_idx++];
+      instance()->symbolTable.get_variable(variableNames[i])->ref() = scalars[scalars_idx++];
     }
   }
-  for (size_t i = 0; i < nvectors; i++) instances[0].vectorViews[variableNames[i + nvars]]->rebase(vectors[i]);
+  for (size_t i = 0; i < nvectors; i++) instance()->vectorViews[variableNames[i + nvars]]->rebase(vectors[i]);
 
   if (it_ptr == nullptr) return exprtk_invalid_argument;
 
   const T *in_ptr = reinterpret_cast<const T *>(_iterator_vector);
   T *out_ptr = reinterpret_cast<T *>(_result);
   auto const in_end = in_ptr + iterator_len;
-  auto &expression = instances[0].expression;
+  auto &expression = instance()->expression;
   for (; in_ptr < in_end; in_ptr++, out_ptr++) {
     *it_ptr = *in_ptr;
     *out_ptr = expression.value();
@@ -526,33 +528,34 @@ exprtk_result Expression<T>::capi_reduce(
   const void *_scalars,
   void **_vectors,
   void *_result) {
-  std::lock_guard<std::mutex> lock(asyncLock);
   const T *scalars = reinterpret_cast<const T *>(_scalars);
   T **vectors = reinterpret_cast<T **>(_vectors);
   T *it_ptr = nullptr;
   T *accu_ptr = nullptr;
 
-  size_t nvars = instances[0].symbolTable.variable_count();
-  size_t nvectors = instances[0].symbolTable.vector_count();
+  InstanceGuard<T> instance(this);
+
+  size_t nvars = instance()->symbolTable.variable_count();
+  size_t nvectors = instance()->symbolTable.vector_count();
 
   int scalars_idx = 0;
   for (size_t i = 0; i < nvars; i++) {
     if (variableNames[i] == iterator_name) {
-      it_ptr = &instances[0].symbolTable.get_variable(variableNames[i])->ref();
+      it_ptr = &instance()->symbolTable.get_variable(variableNames[i])->ref();
     } else if (variableNames[i] == accumulator) {
-      accu_ptr = &instances[0].symbolTable.get_variable(variableNames[i])->ref();
+      accu_ptr = &instance()->symbolTable.get_variable(variableNames[i])->ref();
     } else {
-      instances[0].symbolTable.get_variable(variableNames[i])->ref() = scalars[scalars_idx++];
+      instance()->symbolTable.get_variable(variableNames[i])->ref() = scalars[scalars_idx++];
     }
   }
-  for (size_t i = 0; i < nvectors; i++) instances[0].vectorViews[variableNames[nvars + i]]->rebase(vectors[i]);
+  for (size_t i = 0; i < nvectors; i++) instance()->vectorViews[variableNames[nvars + i]]->rebase(vectors[i]);
 
   if (it_ptr == nullptr || accu_ptr == nullptr) return exprtk_invalid_argument;
 
   const T *in_ptr = reinterpret_cast<const T *>(_iterator_vector);
   T *out_ptr = reinterpret_cast<T *>(_result);
   auto const input_end = in_ptr + iterator_len;
-  auto &expression = instances[0].expression;
+  auto &expression = instance()->expression;
   for (; in_ptr < input_end; in_ptr++) {
     *it_ptr = *in_ptr;
     *accu_ptr = expression.value();
@@ -812,18 +815,18 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
 template <typename T>
 exprtk_result
 Expression<T>::capi_cwise(const size_t n_args, const exprtk_capi_cwise_arg *args, exprtk_capi_cwise_arg *result) {
-  std::lock_guard<std::mutex> lock(asyncLock);
-
   bool typeConversionRequired = false;
   size_t len = 0;
   std::vector<symbolDesc<T>> scalars, vectors;
 
-  if (instances[0].vectorViews.size() > 0)
+  InstanceGuard<T> instance(this);
+
+  if (instance()->vectorViews.size() > 0)
     return exprtk_invalid_argument; // cwise is not (yet) compatible with vector arguments
 
   for (size_t i = 0; i < n_args; i++) {
     symbolDesc<T> current;
-    auto exprtk_ptr = instances[0].symbolTable.get_variable(args[i].name);
+    auto exprtk_ptr = instance()->symbolTable.get_variable(args[i].name);
     if (exprtk_ptr == nullptr) return exprtk_invalid_argument; // invalid variable name
     current.exprtk_var = &exprtk_ptr->ref();
 
@@ -847,7 +850,7 @@ Expression<T>::capi_cwise(const size_t n_args, const exprtk_capi_cwise_arg *args
     }
   }
 
-  if (instances[0].symbolTable.variable_count() != scalars.size() + vectors.size())
+  if (instance()->symbolTable.variable_count() != scalars.size() + vectors.size())
     return exprtk_invalid_argument; // wrong number of input arguments
 
   uint8_t *output = reinterpret_cast<uint8_t *>(result->data);
@@ -858,7 +861,7 @@ Expression<T>::capi_cwise(const size_t n_args, const exprtk_capi_cwise_arg *args
   if (typeConversionRequired) {
     for (auto const &v : scalars) { *v.exprtk_var = *(reinterpret_cast<const T *>(v.storage)); }
 
-    auto &expression = instances[0].expression;
+    auto &expression = instance()->expression;
     uint8_t *output_end = output + len * elementSize;
     for (uint8_t *output_ptr = output; output_ptr < output_end; output_ptr += elementSize) {
       for (auto &v : vectors) {
@@ -870,7 +873,7 @@ Expression<T>::capi_cwise(const size_t n_args, const exprtk_capi_cwise_arg *args
   } else {
     for (auto const &v : scalars) { *v.exprtk_var = *(reinterpret_cast<const T *>(v.storage)); }
 
-    auto &expression = instances[0].expression;
+    auto &expression = instance()->expression;
     T *output_end = reinterpret_cast<T *>(output) + len;
     for (T *output_ptr = reinterpret_cast<T *>(output); output_ptr < output_end; output_ptr++) {
       for (auto &v : vectors) {

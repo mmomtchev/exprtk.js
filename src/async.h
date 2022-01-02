@@ -34,6 +34,7 @@ static constexpr char asyncResourceName[] = "ExprTk.js:async";
 
 template <class T> class Expression;
 template <class T> struct ExpressionInstance;
+template <class T> class InstanceGuard;
 
 class GenericWorker {
     public:
@@ -64,7 +65,14 @@ template <class T> class ExprTkAsyncWorker : public GenericWorker {
   void Queue();
 
     private:
-  Expression<T> *expression;
+  inline static void enqueue(ExprTkAsyncWorker<T> *target) {
+    std::unique_lock<std::mutex> globalLock(global_work_mutex);
+    global_work_queue.push(target);
+    globalLock.unlock();
+    global_condition.notify_one();
+  }
+
+    Expression<T> *expression;
   ExpressionInstance<T> *instance;
   const MainFunc doit;
   const RValFunc rval;
@@ -131,19 +139,17 @@ template <class T> void ExprTkAsyncWorker<T>::OnExecute() {
   try {
     raw = doit(*instance);
 
-    if (!expression->work_queue.empty()) {
+    auto *w = expression->dequeue();
+    if (w != nullptr) {
+      w->instance = this->instance;
       // TODO this requires one iterator of the worker thread
       // which can be avoided -> we can immediately run the next job
+      // but in this case the scheduling won't be fair unless
+      // some other mechanism is implemented
 
       // This is what is not possible with the default Node.js async mechanism:
       // enqueue a new job in the aux thread
-      auto *w = expression->work_queue.front();
-      expression->work_queue.pop();
-      std::unique_lock<std::mutex> globalLock(global_work_mutex);
-      w->instance = this->instance;
-      global_work_queue.push(w);
-      globalLock.unlock();
-      global_condition.notify_one();
+      enqueue(w);
     } else {
       expression->releaseIdleInstance(instance);
     }
@@ -159,16 +165,13 @@ template <class T> void ExprTkAsyncWorker<T>::Queue() {
     // There is an idle instance in this Expression
     // -> enqueue on the master queue for immediate execution
     this->instance = i;
-    std::unique_lock<std::mutex> globalLock(global_work_mutex);
-    global_work_queue.push(this);
-    globalLock.unlock();
-    global_condition.notify_one();
+    enqueue(this);
     return;
   }
   // There is no idle instance in this Expression
   // -> enqueue on the local queue
   // OnExecute will dequeue it
-  expression->work_queue.push(this);
+  expression->enqueue(this);
 }
 
 template <class T> class ExprTkJob {
@@ -205,10 +208,8 @@ template <class T> class ExprTkJob {
       return info.Env().Undefined();
     }
     try {
-      ExpressionInstance<T> *i;
-      do { i = expression->getIdleInstance(); } while (i == nullptr);
-      T obj = main(*i);
-      expression->releaseIdleInstance(i);
+      InstanceGuard<T> i(expression);
+      T obj = main(*i());
       return rval(obj);
     } catch (const char *err) {
       Napi::Error::New(info.Env(), err).ThrowAsJavaScriptException();

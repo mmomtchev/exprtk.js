@@ -3,6 +3,7 @@
 #include <exprtk.hpp>
 #include <map>
 #include <mutex>
+#include <condition_variable>
 #include <functional>
 #include <list>
 #include <queue>
@@ -152,9 +153,12 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
 
   static Napi::Function GetClass(Napi::Env);
 
-  std::queue<ExprTkAsyncWorker<T> *> work_queue;
-
     private:
+  // This is the evaluations that are waiting for an evaluation instance
+  std::queue<ExprTkAsyncWorker<T> *> work_queue;
+  // This is where synchronous evaluation sleep while waiting for an instance
+  std::condition_variable work_condition;
+
   std::string expressionText;
 
   size_t maxParallel;
@@ -265,7 +269,20 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
     }
   }
 
-public:
+    public:
+  inline void enqueue(ExprTkAsyncWorker<T> *w) {
+    std::lock_guard<std::mutex> lock(asyncLock);
+    work_queue.push(w);
+  }
+
+  inline ExprTkAsyncWorker<T> *dequeue() {
+    std::lock_guard<std::mutex> lock(asyncLock);
+    if (work_queue.empty()) return nullptr;
+    auto *w = work_queue.front();
+    work_queue.pop();
+    return w;
+  }
+
   inline ExpressionInstance<T> *getIdleInstance() {
     std::lock_guard<std::mutex> lock(asyncLock);
     if (instancesIdle.empty()) return nullptr;
@@ -276,9 +293,42 @@ public:
   }
 
   inline void releaseIdleInstance(ExpressionInstance<T> *i) {
-    std::lock_guard<std::mutex> lock(asyncLock);
+    std::unique_lock<std::mutex> lock(asyncLock);
     instancesIdle.push_front(i);
+    lock.unlock();
+    work_condition.notify_one();
   }
+
+  inline ExpressionInstance<T> *waitIdleInstance() {
+    std::unique_lock<std::mutex> lock(asyncLock);
+    work_condition.wait(lock, [this] { return !instancesIdle.empty(); });
+    auto *r = instancesIdle.front();
+    instancesIdle.pop_front();
+    if (!r->isInit) compileInstance(r);
+    return r;
+  }
+};
+
+// A RAII guard for acquiring an ExpressionInstance
+// and releasing it when going out of scope
+// Used by the synchronous methods
+template <typename T> class InstanceGuard {
+    public:
+  inline InstanceGuard(Expression<T> *e) : expression(e) {
+    instance = expression->waitIdleInstance();
+  }
+
+  inline ~InstanceGuard() {
+    expression->releaseIdleInstance(instance);
+  }
+
+  inline ExpressionInstance<T> *operator()() const {
+    return instance;
+  }
+
+    private:
+  Expression<T> *expression;
+  ExpressionInstance<T> *instance;
 };
 
 }; // namespace exprtk_js

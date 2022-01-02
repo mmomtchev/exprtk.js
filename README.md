@@ -353,9 +353,9 @@ You will need `ExprTk.js` as a development dependency and you will need to inclu
 
 You will need to be much more careful when using the C-API which is much less strict on checking its input arguments. Passing dangling pointers or arrays of incorrect sizes or types will result in a Node.js crash.
 
-Be also advised that, while being completely independent of V8, the C-API can still block if another asynchronous operation is running on that `Expression` object. The module is always safe to call and it will take care of waiting for all other operations to complete. Normally, it is not to be called from the main thread - as this will block the event loop until the evaluation completes.
+Be also advised that, while being completely independent of V8, the C-API can still block if all `Expression` instances are busy running asynchronous operations. The module is always safe to call and it will take care of waiting for all other operations to complete.
 
-At the moment an `Expression` object can not be evaluated multiple times in parallel. A reentrant, but more expensive for single use, version is planned for the next release.
+Invocations from C++ follow the synchronous call semantics as it is expected that a C++ module will manage its own threads. Normally, one should avoid calling the module from the main thread - as this will block the event loop until the evaluation completes.
 
 ## Build time and binary size
 
