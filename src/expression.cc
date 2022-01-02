@@ -59,6 +59,7 @@ Expression<T>::Expression(const Napi::CallbackInfo &info)
   : Napi::ObjectWrap<Expression<T>>::ObjectWrap(info),
     maxParallel(ExpressionMaxParallel),
     maxActive(1),
+    currentActive(0),
     instances(ExpressionMaxParallel),
     capiDescriptor(nullptr) {
   Napi::Env env = info.Env();

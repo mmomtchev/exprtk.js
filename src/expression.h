@@ -163,6 +163,7 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
 
   size_t maxParallel;
   size_t maxActive;
+  size_t currentActive;
 
   std::mutex asyncLock;
 
@@ -285,9 +286,10 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
 
   inline ExpressionInstance<T> *getIdleInstance() {
     std::lock_guard<std::mutex> lock(asyncLock);
-    if (instancesIdle.empty()) return nullptr;
+    if (instancesIdle.empty() || currentActive >= maxParallel) return nullptr;
     auto *r = instancesIdle.front();
     instancesIdle.pop_front();
+    currentActive++;
     if (!r->isInit) compileInstance(r);
     return r;
   }
@@ -295,15 +297,17 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
   inline void releaseIdleInstance(ExpressionInstance<T> *i) {
     std::unique_lock<std::mutex> lock(asyncLock);
     instancesIdle.push_front(i);
+    currentActive--;
     lock.unlock();
     work_condition.notify_one();
   }
 
   inline ExpressionInstance<T> *waitIdleInstance() {
     std::unique_lock<std::mutex> lock(asyncLock);
-    work_condition.wait(lock, [this] { return !instancesIdle.empty(); });
+    work_condition.wait(lock, [this] { return !instancesIdle.empty() && currentActive < maxParallel; });
     auto *r = instancesIdle.front();
     instancesIdle.pop_front();
+    currentActive++;
     if (!r->isInit) compileInstance(r);
     return r;
   }

@@ -326,13 +326,14 @@ describe('Expression', () => {
                     a[i] = new Float64Array(big);
                     a[i].fill(i);
                 }
+                vectorMean.maxParallel = Math.min(os.cpus().length, 3);
                 return assert.isFulfilled(Promise.all(a.map((v) => vectorMean.evalAsync(v))).then((r) => {
                     for (let i = 0; i < 16; i++)
                         assert.closeTo(r[i], i, 10e-9);
                     if (process.env.MOCHA_TEST_CONCURRENCY === undefined || +process.env.MOCHA_TEST_CONCURRENCY == 1)
-                        // On real CPUs if we launch 16 128Kb we should always get
-                        // os.cpus().length instances running at the same time
-                        assert.equal(vectorMean.maxActive, os.cpus().length);
+                        // On real CPUs if we launch 16 128Kb arrays we should always get
+                        // exactly maxParallel instances running at the same time
+                        assert.equal(vectorMean.maxActive, vectorMean.maxParallel);
                     else if (os.cpus().length > 1)
                         // Virtual CPUs (Github Actions) version:
                         // if we launch 16 128Kb arrays and we have more than 1 vCPU
