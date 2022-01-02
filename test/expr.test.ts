@@ -3,6 +3,7 @@ import Expression, { Float64 } from '..';
 import { Float64 as expr } from '..';
 
 import { exec } from 'child_process';
+import * as asyncHooks from 'async_hooks';
 
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
@@ -338,6 +339,34 @@ describe('Expression', () => {
                         // we should get at least 2 running at the same time
                         assert.isAtLeast(vectorMean.maxActive, 2);
                 }));
+            });
+            it('should create exactly one async context', () => {
+                let asyncHooksCreated = 0;
+                const asyncHook =
+                    asyncHooks.createHook({
+                        init: function init(asyncId, type) {
+                            if (type === 'ExprTk.js:async') asyncHooksCreated++;
+                        }
+                    });
+                asyncHook.enable();
+                return assert.isFulfilled(mean.evalAsync(5, 10).then((r) => {
+                    asyncHook.disable();
+                    assert.equal(asyncHooksCreated, 1);
+                    assert.closeTo(r, (5 + 10) / 2, 10e-9);
+                }));
+            });
+            it('should pass a this value when used in callback mode', (done) => {
+                mean.evalAsync({ a: 5, b: 10 }, function(e, r) {
+                    try {
+                        assert.isDefined(r);
+                        if (r) assert.closeTo(r, (5 + 10) / 2, 10e-9);
+                        assert.isNull(e);
+                        assert.strictEqual(this, mean);
+                        done();
+                    } catch (e) {
+                        done(e);
+                    }
+                });
             });
         });
 

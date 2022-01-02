@@ -75,7 +75,6 @@ template <class T> class ExprTkAsyncWorker : public GenericWorker {
   Napi::Reference<Napi::Function> callbackRef;
   napi_threadsafe_function callbackGate;
   Napi::Object asyncResource;
-  Napi::AsyncContext asyncContext;
 };
 
 template <class T>
@@ -92,13 +91,11 @@ ExprTkAsyncWorker<T>::ExprTkAsyncWorker(
     rval(rval),
     err(nullptr),
     env(callback.Env()),
-    callbackRef(Napi::Persistent(callback)),
-    asyncResource(Napi::Object::New(env)),
-    asyncContext(env, asyncResourceName, asyncResource) {
+    callbackRef(Napi::Persistent(callback)) {
 
   Napi::String asyncResourceNameObject = Napi::String::New(env, asyncResourceName);
   napi_status status = napi_create_threadsafe_function(
-    env, callback, asyncResource, asyncResourceNameObject, 0, 1, nullptr, nullptr, this, CallJS, &callbackGate);
+    env, callback, nullptr, asyncResourceNameObject, 0, 1, nullptr, nullptr, this, CallJS, &callbackGate);
   if ((status) != napi_ok) throw Napi::Error::New(env);
 
   for (auto const &i : objects) persistent[i.first] = Napi::Persistent(i.second);
@@ -113,9 +110,9 @@ template <class T> void ExprTkAsyncWorker<T>::CallJS(napi_env env, napi_value js
   auto *self = static_cast<ExprTkAsyncWorker<T> *>(context);
   auto cb = Napi::Function(env, js_callback);
   if (self->err == nullptr) {
-    cb.MakeCallback(self->expression->Value(), {Napi::Env(env).Null(), self->rval(self->raw)}, self->asyncContext);
+    cb.MakeCallback(self->expression->Value(), {Napi::Env(env).Null(), self->rval(self->raw)}, nullptr);
   } else {
-    cb.MakeCallback(self->expression->Value(), {Napi::Error::New(env, self->err).Value()}, self->asyncContext);
+    cb.MakeCallback(self->expression->Value(), {Napi::Error::New(env, self->err).Value()}, nullptr);
   }
   delete self;
 }
