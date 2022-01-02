@@ -108,11 +108,20 @@ template <class T> ExprTkAsyncWorker<T>::~ExprTkAsyncWorker() {
 template <class T> void ExprTkAsyncWorker<T>::CallJS(napi_env env, napi_value js_callback, void *context, void *data) {
   // Here we are back in the main V8 thread, JS is not running
   auto *self = static_cast<ExprTkAsyncWorker<T> *>(context);
-  auto cb = Napi::Function(env, js_callback);
-  if (self->err == nullptr) {
-    cb.MakeCallback(self->expression->Value(), {Napi::Env(env).Null(), self->rval(self->raw)}, nullptr);
-  } else {
-    cb.MakeCallback(self->expression->Value(), {Napi::Error::New(env, self->err).Value()}, nullptr);
+  try {
+    // If the JS callback throws, MakeCallback will throw a JS Error object as a C++ exception
+    // Normally node-addon-api handles these, but not in this case
+    auto cb = Napi::Function(env, js_callback);
+    if (self->err == nullptr) {
+      cb.MakeCallback(self->expression->Value(), {Napi::Env(env).Null(), self->rval(self->raw)}, nullptr);
+    } else {
+      cb.MakeCallback(self->expression->Value(), {Napi::Error::New(env, self->err).Value()}, nullptr);
+    }
+  } catch (const Napi::Error &e) { 
+    // Alas, there is currently no way to properly terminate the Node process
+    // on an unhandled async exception
+    fprintf(stderr, "Unhandled exception in async callback: %s\n", e.Message().c_str());
+    exit(1);
   }
   delete self;
 }
