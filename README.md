@@ -138,13 +138,16 @@ const r = await mean.evalAsync(inputArray);
 *   [map](#map)
     *   [Parameters](#parameters-2)
     *   [Examples](#examples-2)
-*   [reduce](#reduce)
+*   [mapMPAsync](#mapmpasync)
     *   [Parameters](#parameters-3)
     *   [Examples](#examples-3)
-*   [maxParallel](#maxparallel-1)
-*   [Expression](#expression-1)
+*   [reduce](#reduce)
     *   [Parameters](#parameters-4)
     *   [Examples](#examples-4)
+*   [maxParallel](#maxparallel-1)
+*   [Expression](#expression-1)
+    *   [Parameters](#parameters-5)
+    *   [Examples](#examples-5)
 
 ## toString
 
@@ -306,6 +309,36 @@ const r2 = expr.map(array, 'x', {f: 0, c: 0});
 
 expr.mapAsync(array, 'x', 0, 1000, (e,r) => console.log(e, r));
 expr.mapAsync(array, 'x', {f: 0, c: 0}, (e,r) => console.log(e, r));
+```
+
+Returns **TypedArray\<T>**&#x20;
+
+## mapMPAsync
+
+Evaluate the expression for every element of a TypedArray
+distributing the array over multiple threads.
+
+All arrays must match the internal data type.
+
+If target is specified, it will write the data into a preallocated array.
+This can be used when multiple operations are chained to avoid reallocating a new array at every step.
+Otherwise it will return a new array.
+
+### Parameters
+
+*   `target` **TypedArray\<T>?** array in which the data is to be written
+*   `array` **TypedArray\<T>** for the expression to be iterated over
+*   `threads` **number** number, must not exceed Expression.maxParallel
+*   `iterator` **string** variable name
+*   `arguments` **...(Array<(number | TypedArray\<T>)> | Record\<string, (number | TypedArray\<T>)>)** of the function, iterator removed
+
+### Examples
+
+```javascript
+// Clamp values in an array to [0..1000]
+const expr = new Expression('clamp(f, x, c)', ['f', 'x', 'c']);
+
+await expr.mapMPAsync(array, expr.maxParallel, 'x', 0, 1000);
 ```
 
 Returns **TypedArray\<T>**&#x20;

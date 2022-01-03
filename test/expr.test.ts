@@ -587,7 +587,8 @@ describe('Expression', () => {
                     P: P.subarray(2, 4),
                     T: T.subarray(2, 4),
                     phi: phi.subarray(2, 4),
-                    R, Mv, Md });
+                    R, Mv, Md
+                });
                 assert.instanceOf(result, Float64Array);
                 for (const i in result) assert.closeTo(result[i], expected[+i + 2], 10e-5);
             });
@@ -654,6 +655,54 @@ describe('Expression', () => {
             it('should reject if all the arguments are scalar', () => {
                 return assert.isRejected(density.cwiseAsync({ P: 1, T: 2, phi: 3, R, Mv, Md }),
                     /at least one argument must be a non-zero length vector/);
+            });
+        });
+
+        describe('mapMPAsync()', () => {
+            const big = 128 * 1024;
+            let array: Float64Array, plus: Float64;
+            before(() => {
+                array = new Float64Array(big);
+                for (let i = 0; i < big; i++) array[i] = i;
+                plus = new expr('a + b');
+            });
+
+            it('should evaluate an expression with multiple parallel instances', () => {
+                const q = plus.mapMPAsync(array, expr.maxParallel, 'a', 12);
+                return assert.isFulfilled(q.then((r) => {
+                    assert.instanceOf(r, Float64Array);
+                    assert.equal(r.length, big);
+                    for (let i = 0; i < big; i += big / 1024)
+                        assert.closeTo(r[i], i + 12, 10e-9);
+                }));
+            });
+
+            it('should support writing into a preallocated array', () => {
+                const dst = new Float64Array(big);
+                const q = plus.mapMPAsync(dst, array, expr.maxParallel, 'a', 12);
+                return assert.isFulfilled(q.then((r) => {
+                    assert.strictEqual(dst, r);
+                    assert.equal(r.length, big);
+                    for (let i = 0; i < big; i += big / 1024)
+                        assert.closeTo(r[i], i + 12, 10e-9);
+                }));
+            });
+
+            it('should reject if the array sizes do not match', () => {
+                const dst = new Float64Array(big / 2);
+                const q = plus.mapMPAsync(dst, array, expr.maxParallel, 'a', 12);
+                return assert.isRejected(q, /same size/);
+            });
+
+            it('should reject if the arguments are invalid', () => {
+                const q = plus.mapMPAsync({} as Float64Array, expr.maxParallel, 'a', 12);
+                return assert.isRejected(q, /invalid arguments/);
+            });
+
+            it('should reject if the number of threads is invalid', () => {
+                const dst = new Float64Array(big);
+                const q = plus.mapMPAsync(dst, array, expr.maxParallel + 1, 'a', 12);
+                return assert.isRejected(q, /exceed maxParallel/);
             });
         });
     });
