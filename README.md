@@ -50,7 +50,7 @@ When launching an asynchronous operation, the scalar arguments will be copied an
 
 An `Expression` is not reentrant so multiple concurrent evaluations of the same `Expression` object will wait on one another. This is something that is taken care by the module itself - whether it is called from JS or from C/C++. Multiple evaluations on multiple `Expression` objects will run in parallel up to the limit set by the Node.js environment variable `UV_THREADPOOL_SIZE`. Mixing synchronous and asynchronous evaluations is supported, but a synchronous evaluation will block the event loop until all asynchronous evaluations on that same object are finished. If an evaluation of an `Expression` object has to wait for a previous evaluation of the same object to complete, the two evaluations will use two thread pool slots. This means that starting `UV_THREADPOOL_SIZE` evaluations on a single object can tie down the whole thread pool until the first one is completed.
 
-### 1.1
+### 2.0 (upcoming)
 
 A single `Expression` object can contain multiple `ExprTk` `expression` instances that are compiled on-demand when needed up to a limit set by the `maxParallel` instance property. The global number of available threads can be set by using the environment variable `EXPRTKJS_THREADS` and it is independent of Node.js/libuv's own async work mechanism. It can be read from the `maxParallel` static class property. The actual peak instances usage of an `Expression` object can be checked by reading the `maxActive` instance property.
 
