@@ -81,6 +81,7 @@ describe('Expression', () => {
             const ri8 = idi8.map(ai8, 'a', 1);
             assert.instanceOf(ri8, Int8Array);
             assert.deepEqual(ri8, new Int8Array([1, 1, 2, 2]));
+            assert.instanceOf(idi8.mapAsync(ai8, 'a', 1), Promise);
         });
 
         it('Uint8', () => {
@@ -89,6 +90,7 @@ describe('Expression', () => {
             const rui8 = idui8.map(aui8, 'a', 1);
             assert.instanceOf(rui8, Uint8Array);
             assert.deepEqual(rui8, new Uint8Array([1, 1, 2, 2]));
+            assert.instanceOf(idui8.mapAsync(rui8, 'a', 1), Promise);
         });
 
         it('Int16', () => {
@@ -97,6 +99,7 @@ describe('Expression', () => {
             const ri16 = idi16.map(ai16, 'a', 1);
             assert.instanceOf(ri16, Int16Array);
             assert.deepEqual(ri16, new Int16Array([1, 1, 2, 2]));
+            assert.instanceOf(idi16.mapAsync(ai16, 'a', 1), Promise);
         });
 
         it('Uint16', () => {
@@ -105,6 +108,7 @@ describe('Expression', () => {
             const rui16 = idui16.map(aui16, 'a', 1);
             assert.instanceOf(rui16, Uint16Array);
             assert.deepEqual(rui16, new Uint16Array([1, 1, 2, 2]));
+            assert.instanceOf(idui16.mapAsync(rui16, 'a', 1), Promise);
         });
 
         it('Int32', () => {
@@ -113,6 +117,7 @@ describe('Expression', () => {
             const ri32 = idi32.map(ai32, 'a', 1);
             assert.instanceOf(ri32, Int32Array);
             assert.deepEqual(ri32, new Int32Array([1, 1, 2, 2]));
+            assert.instanceOf(idi32.mapAsync(ai32, 'a', 1), Promise);
         });
 
         it('Uint32', () => {
@@ -121,6 +126,7 @@ describe('Expression', () => {
             const rui32 = idui32.map(aui32, 'a', 1);
             assert.instanceOf(rui32, Uint32Array);
             assert.deepEqual(rui32, new Uint32Array([1, 1, 2, 2]));
+            assert.instanceOf(idui32.mapAsync(rui32, 'a', 1), Promise);
         });
 
         it('Float32', () => {
@@ -129,6 +135,7 @@ describe('Expression', () => {
             const r32 = id32.map(a32, 'a', 1);
             assert.instanceOf(r32, Float32Array);
             assert.deepEqual(r32, new Float32Array([1, 1.5, 2, 2.5]));
+            assert.instanceOf(id32.mapAsync(r32, 'a', 1), Promise);
         });
 
         it('Float64', () => {
@@ -137,6 +144,7 @@ describe('Expression', () => {
             const r64 = id64.map(a64, 'a', 1);
             assert.instanceOf(r64, Float64Array);
             assert.deepEqual(r64, new Float64Array([1, 1.5, 2, 2.5]));
+            assert.instanceOf(id64.mapAsync(r64, 'a', 1), Promise);
         });
     });
 
