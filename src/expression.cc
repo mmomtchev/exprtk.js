@@ -204,6 +204,10 @@ template <typename T> void Expression<T>::compileInstance(ExpressionInstance<T> 
   parser().compile(expressionText, i->expression);
 }
 
+template <typename T> static inline T *GetTypedArrayPtr(const Napi::TypedArray &array) {
+  return reinterpret_cast<T*>(reinterpret_cast<uint8_t*>(array.ArrayBuffer().Data()) + array.ByteOffset());
+}
+
 /**
  * Evaluate the expression.
  * 
@@ -340,7 +344,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::map) {
   }
 
   Napi::TypedArray array = info[arg++].As<Napi::TypedArray>();
-  T *input = reinterpret_cast<T *>(array.ArrayBuffer().Data());
+  T *input = GetTypedArrayPtr<T>(array);
   size_t len = array.ElementLength();
   if (result.IsEmpty()) { result = NapiArrayType<T>::New(env, len); }
 
@@ -375,7 +379,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::map) {
     return env.Null();
   }
 
-  T *output = reinterpret_cast<T *>(result.ArrayBuffer().Data());
+  T *output = GetTypedArrayPtr<T>(result);
 
   // this should have been an unique_ptr
   // but std::function is not compatible with move semantics
@@ -486,7 +490,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::reduce) {
     return env.Null();
   }
   Napi::TypedArray array = info[0].As<Napi::TypedArray>();
-  T *input = reinterpret_cast<T *>(array.ArrayBuffer().Data());
+  T *input = GetTypedArrayPtr<T>(array);
   size_t len = array.ElementLength();
 
   if (info.Length() < 2 || !info[1].IsString()) {
@@ -766,7 +770,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
       }
       current.name = name;
       current.type = array.TypedArrayType();
-      current.data = reinterpret_cast<uint8_t *>(array.ArrayBuffer().Data());
+      current.data = GetTypedArrayPtr<uint8_t>(array);
       current.elementSize = array.ElementSize();
       current.fromCaster = NapiFromCasters<T>[current.type];
       if (current.type != NapiArrayType<T>::type) typeConversionRequired = true;
@@ -794,7 +798,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
     result = NapiArrayType<T>::New(env, len);
   }
 
-  uint8_t *output = reinterpret_cast<uint8_t *>(result.ArrayBuffer().Data());
+  uint8_t *output = GetTypedArrayPtr<uint8_t>(result);
   size_t elementSize = result.ElementSize();
   napi_typedarray_type outputType = result.TypedArrayType();
   const NapiToCaster_t<T> toCaster = NapiToCasters<T>[outputType];

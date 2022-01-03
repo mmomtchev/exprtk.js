@@ -397,6 +397,11 @@ describe('Expression', () => {
                 assert.deepEqual(r, new Float64Array([2, 2, 3, 4, 4, 4]));
             });
 
+            it('should support subarrays', () => {
+                const r = clamp.map(vector.subarray(2, 4), 'x', 2, 4);
+                assert.deepEqual(r, new Float64Array([3, 4]));
+            });
+
             it('should throw w/o iterator', () => {
                 assert.throws(() => {
                     (clamp as any).map(vector, 2, 4);
@@ -469,6 +474,12 @@ describe('Expression', () => {
                 const r = sumPow.reduce(vector, 'x', 'a', 0, 2);
                 assert.isNumber(r);
                 assert.equal(r, 91);
+            });
+
+            it('should support subarrays', () => {
+                const r = sumPow.reduce(vector.subarray(2, 4), 'x', 'a', 0, 2);
+                assert.isNumber(r);
+                assert.equal(r, 25);
             });
 
             it('should throw w/o iterator', () => {
@@ -562,13 +573,23 @@ describe('Expression', () => {
                 const result = new Float32Array(5);
                 const r = density.cwise({ P, T, phi, R, Mv, Md }, result);
                 assert.strictEqual(result, r);
-                for (const i in result) assert.closeTo(result[i], expected[i], 10e-3);
+                for (const i in result) assert.closeTo(result[i], expected[i], 10e-5);
             });
 
             it('should create a new array', () => {
                 const result = density.cwise({ P, T, phi, R, Mv, Md });
                 assert.instanceOf(result, Float64Array);
-                for (const i in result) assert.closeTo(result[i], expected[i], 10e-3);
+                for (const i in result) assert.closeTo(result[i], expected[i], 10e-5);
+            });
+
+            it('should support subarrays', () => {
+                const result = density.cwise({
+                    P: P.subarray(2, 4),
+                    T: T.subarray(2, 4),
+                    phi: phi.subarray(2, 4),
+                    R, Mv, Md });
+                assert.instanceOf(result, Float64Array);
+                for (const i in result) assert.closeTo(result[i], expected[+i + 2], 10e-5);
             });
 
             it('should throw on missing arguments', () => {
@@ -603,14 +624,14 @@ describe('Expression', () => {
                 const q = density.cwiseAsync({ P, T, phi, R, Mv, Md }, result);
                 return assert.isFulfilled(q.then((r) => {
                     assert.strictEqual(result, r);
-                    for (const i in result) assert.closeTo(result[i], expected[i], 10e-3);
+                    for (const i in result) assert.closeTo(result[i], expected[i], 10e-5);
                 }));
             });
 
             it('should create a new array', () => {
                 const q = density.cwiseAsync({ P, T, phi, R, Mv, Md }).then((r) => {
                     assert.instanceOf(r, Float64Array);
-                    for (const i in r) assert.closeTo(r[i], expected[i], 10e-3);
+                    for (const i in r) assert.closeTo(r[i], expected[i], 10e-5);
                 });
                 return assert.isFulfilled(q);
             });
