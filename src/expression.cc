@@ -1127,27 +1127,41 @@ template <typename T> Napi::Value Expression<T>::GetMaxActive(const Napi::Callba
   return Napi::Number::New(env, maxActive);
 }
 
+/**
+ * Get a string representation of this object
+ *
+ * @kind method
+ * @name toString
+ * @instance
+ * @memberof Expression
+ * @returns {string}
+ */
+template <typename T> Napi::Value Expression<T>::ToString(const Napi::CallbackInfo &info) {
+  return GetExpression(info);
+}
+
 template <typename T> Napi::Function Expression<T>::GetClass(Napi::Env env) {
-  napi_property_attributes props =
-    static_cast<napi_property_attributes>(napi_writable | napi_configurable | napi_enumerable);
-  napi_property_attributes hidden = static_cast<napi_property_attributes>(napi_configurable);
-  static const std::string className = std::string(NapiArrayType<T>::name) + "Expression";
-  static const Napi::Value maxParallel = Napi::Number::New(env, ExpressionMaxParallel);
+  const std::string className = std::string(NapiArrayType<T>::name) + "Expression";
+  const Napi::Value maxParallel = Napi::Number::New(env, ExpressionMaxParallel);
+  const Napi::Symbol toStringTag = Napi::Symbol::WellKnown(env, "toStringTag");
   return Expression<T>::DefineClass(
     env,
     className.c_str(),
-    {Expression<T>::InstanceAccessor("expression", &Expression<T>::GetExpression, nullptr),
-     Expression<T>::InstanceAccessor("scalars", &Expression<T>::GetScalars, nullptr),
-     Expression<T>::InstanceAccessor("vectors", &Expression<T>::GetVectors, nullptr),
-     Expression<T>::InstanceAccessor("type", &Expression<T>::GetType, nullptr),
-     Expression<T>::InstanceAccessor("_CAPI_", &Expression<T>::GetCAPI, nullptr, hidden),
-     Expression<T>::InstanceAccessor("maxParallel", &Expression<T>::GetMaxParallel, &Expression<T>::SetMaxParallel),
-     Expression<T>::InstanceAccessor("maxActive", &Expression<T>::GetMaxActive, nullptr),
-     Expression<T>::StaticValue("maxParallel", maxParallel),
-     ASYNCABLE_INSTANCE_METHOD(Expression<T>, eval, props),
-     ASYNCABLE_INSTANCE_METHOD(Expression<T>, map, props),
-     ASYNCABLE_INSTANCE_METHOD(Expression<T>, reduce, props),
-     ASYNCABLE_INSTANCE_METHOD(Expression<T>, cwise, props)});
+    {Expression<T>::InstanceAccessor("expression", &Expression<T>::GetExpression, nullptr, napi_enumerable),
+     Expression<T>::InstanceAccessor("scalars", &Expression<T>::GetScalars, nullptr, napi_enumerable),
+     Expression<T>::InstanceAccessor("vectors", &Expression<T>::GetVectors, nullptr, napi_enumerable),
+     Expression<T>::InstanceAccessor("type", &Expression<T>::GetType, nullptr, napi_enumerable),
+     Expression<T>::InstanceAccessor("_CAPI_", &Expression<T>::GetCAPI, nullptr, napi_default),
+     Expression<T>::InstanceAccessor(
+       "maxParallel", &Expression<T>::GetMaxParallel, &Expression<T>::SetMaxParallel, napi_enumerable),
+     Expression<T>::InstanceAccessor("maxActive", &Expression<T>::GetMaxActive, nullptr, napi_enumerable),
+     Expression<T>::StaticValue("maxParallel", maxParallel, napi_enumerable),
+     Expression<T>::InstanceMethod("toString", &Expression<T>::ToString, napi_default_method),
+     Expression<T>::InstanceAccessor(toStringTag, &Expression<T>::ToString, nullptr, napi_default),
+     ASYNCABLE_INSTANCE_METHOD(Expression<T>, eval, napi_default_method),
+     ASYNCABLE_INSTANCE_METHOD(Expression<T>, map, napi_default_method),
+     ASYNCABLE_INSTANCE_METHOD(Expression<T>, reduce, napi_default_method),
+     ASYNCABLE_INSTANCE_METHOD(Expression<T>, cwise, napi_default_method)});
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {

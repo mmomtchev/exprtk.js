@@ -4,6 +4,7 @@ import { Float64 as expr } from '..';
 
 import { exec } from 'child_process';
 import * as asyncHooks from 'async_hooks';
+import { inspect } from 'util';
 
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
@@ -56,6 +57,8 @@ describe('Expression', () => {
             const mean = new expr('(a + b) / 2');
             assert.instanceOf(mean, expr);
             assert.equal(mean.expression, '(a + b) / 2');
+            assert.equal(mean.toString(), '(a + b) / 2');
+            assert.equal(inspect(mean), 'Float64Expression [(a + b) / 2] {}');
             assert.deepEqual(mean.scalars, ['a', 'b']);
             assert.deepEqual(mean.vectors, {});
 

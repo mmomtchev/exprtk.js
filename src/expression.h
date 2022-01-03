@@ -124,6 +124,8 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
   ASYNCABLE_DECLARE(reduce);
   ASYNCABLE_DECLARE(cwise);
 
+  Napi::Value ToString(const Napi::CallbackInfo &info);
+
   exprtk_result capi_eval(const void *scalars, void **vectors, void *result);
   exprtk_result capi_map(
     const char *iterator_name,
