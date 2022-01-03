@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - New multithreading model independent of Node.js/libuv
  - `Expression.prototype.toString()`
 
+# [1.0.1] 2022-01-03
+ - Fix missing promisification of the async methods for integer types
+
 # [1.0.0] 2021-12-26
  - Fix missing TS types
  - Minor README.md updates
