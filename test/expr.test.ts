@@ -368,7 +368,7 @@ describe('Expression', () => {
                 }));
             });
             it('should pass a this value when used in callback mode', (done) => {
-                mean.evalAsync({ a: 5, b: 10 }, function(e, r) {
+                mean.evalAsync({ a: 5, b: 10 }, function (e, r) {
                     try {
                         assert.isDefined(r);
                         if (r) assert.closeTo(r, (5 + 10) / 2, 10e-9);
@@ -390,10 +390,17 @@ describe('Expression', () => {
                 assert.deepEqual(r, new Float64Array([2, 2, 3, 4, 4, 4]));
             });
 
+            it('should accept a preallocated array', () => {
+                const dst = new Float64Array(6);
+                const r = clamp.map(dst, vector, 'x', 2, 4);
+                assert.strictEqual(r, dst);
+                assert.deepEqual(r, new Float64Array([2, 2, 3, 4, 4, 4]));
+            });
+
             it('should throw w/o iterator', () => {
                 assert.throws(() => {
                     (clamp as any).map(vector, 2, 4);
-                }, /second argument must be the iterator variable name/);
+                }, /invalid iterator variable name/);
             });
 
             it('should throw w/ invalid iterator', () => {
@@ -407,6 +414,18 @@ describe('Expression', () => {
                     clamp.map(vector, 'x', 4);
                 }, /wrong number of input arguments/);
             });
+
+            it('should throw w/ invalid preallocated array', () => {
+                assert.throws(() => {
+                    clamp.map((new Float32Array(6)) as unknown as Float64Array, vector, 'x', 4);
+                }, /target array must be a Float64Array/);
+            });
+
+            it('should throw w/ preallocated array of wrong size', () => {
+                assert.throws(() => {
+                    clamp.map(new Float64Array(4), vector, 'x', 4);
+                }, /both arrays must have the same size/);
+            });
         });
 
         describe('mapAsync()', () => {
@@ -416,9 +435,18 @@ describe('Expression', () => {
                 return assert.eventually.deepEqual(r, new Float64Array([2, 2, 3, 4, 4, 4]));
             });
 
+            it('should accept a preallocated array', () => {
+                const dst = new Float64Array(6);
+                const q = clamp.mapAsync(dst, vector, 'x', 2, 4);
+                return assert.isFulfilled(q.then((r) => {
+                    assert.deepEqual(r, new Float64Array([2, 2, 3, 4, 4, 4]));
+                    assert.strictEqual(r, dst);
+                }));
+            });
+
             it('should reject w/o iterator', () => {
                 return assert.isRejected((clamp as any).mapAsync(vector, 2, 4),
-                    /second argument must be the iterator variable name/);
+                    /invalid iterator variable name/);
             });
 
             it('should reject w/ invalid iterator', () => {
@@ -427,6 +455,11 @@ describe('Expression', () => {
 
             it('should reject w/ invalid variables', () => {
                 return assert.isRejected(clamp.mapAsync(vector, 'x', 4), /wrong number of input arguments/);
+            });
+
+            it('should throw w/ preallocated array of wrong size', () => {
+                return assert.isRejected(clamp.mapAsync(new Float64Array(4), vector, 'c', 2, 4),
+                    /both arrays must have the same size/);
             });
         });
 

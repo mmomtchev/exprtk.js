@@ -8,10 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [2.0.0] WIP
  - Full reentrancy, supporting multiple concurrent evaluations of the same `Expression` object
  - New multithreading model independent of Node.js/libuv
+ - Support writing into a preallocated array for `Expression.prototype.map`
  - `Expression.prototype.toString()`
 
-# [1.0.1] 2022-01-03
+### [1.0.1] 2022-01-03
  - Fix missing promisification of the async methods for integer types
+ - Correct wrong exception message
 
 # [1.0.0] 2021-12-26
  - Fix missing TS types

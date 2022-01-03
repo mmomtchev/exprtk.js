@@ -122,58 +122,53 @@ const r = await mean.evalAsync(inputArray);
 
 ### Table of Contents
 
-*   [Expression](#expression)
-    *   [Parameters](#parameters)
-    *   [Examples](#examples)
-*   [expression](#expression-1)
+*   [toString](#tostring)
+*   [expression](#expression)
+*   [maxActive](#maxactive)
+*   [maxParallel](#maxparallel)
 *   [scalars](#scalars)
 *   [type](#type)
 *   [vectors](#vectors)
 *   [cwise](#cwise)
+    *   [Parameters](#parameters)
+    *   [Examples](#examples)
+*   [eval](#eval)
     *   [Parameters](#parameters-1)
     *   [Examples](#examples-1)
-*   [eval](#eval)
+*   [map](#map)
     *   [Parameters](#parameters-2)
     *   [Examples](#examples-2)
-*   [map](#map)
+*   [reduce](#reduce)
     *   [Parameters](#parameters-3)
     *   [Examples](#examples-3)
-*   [reduce](#reduce)
+*   [maxParallel](#maxparallel-1)
+*   [Expression](#expression-1)
     *   [Parameters](#parameters-4)
     *   [Examples](#examples-4)
 
-## Expression
+## toString
 
-### Parameters
+Get a string representation of this object
 
-*   `expression` **string** function
-*   `variables` **Array\<string>?** An array containing all the scalar variables' names, will be determined automatically if omitted, however order won't be guaranteed, scalars are passed by value
-*   `vectors` **Record\<string, number>?** An object containing all the vector variables' names and their sizes, vector size must be known at compilation (object construction), vectors are passed by reference and can be modified by the ExprTk expression
-
-### Examples
-
-```javascript
-// This determines the internally used type
-const expr = require("exprtk.js").Float64;
-
-// arithmetic mean of 2 variables
-const mean = new Expression('(a+b)/2', ['a', 'b']);
-
-// naive stddev of an array of 1024 elements
-const stddev = new Expression(
- 'var sum := 0; var sumsq := 0; ' + 
- 'for (var i := 0; i < x[]; i += 1) { sum += x[i]; sumsq += x[i] * x[i] }; ' +
- '(sumsq - (sum*sum) / x[]) / (x[] - 1);',
- [], {x: 1024})
-```
-
-Returns **[Expression](#expression)**&#x20;
+Returns **string**&#x20;
 
 ## expression
 
 Return the expression as a string
 
 Type: string
+
+## maxActive
+
+Get the currently reached peak of simultaneously running instances for this Expression
+
+Type: number
+
+## maxParallel
+
+Get/set the maximum allowed parallel instances for this Expression
+
+Type: number
 
 ## scalars
 
@@ -278,8 +273,13 @@ faster than calling `array.map(expr.eval)`.
 
 All arrays must match the internal data type.
 
+If target is specified, it will write the data into a preallocated array.
+This can be used when multiple operations are chained to avoid reallocating a new array at every step.
+Otherwise it will return a new array.
+
 ### Parameters
 
+*   `target` **TypedArray\<T>?** array in which the data is to be written
 *   `array` **TypedArray\<T>** for the expression to be iterated over
 *   `iterator` **string** variable name
 *   `arguments` **...(Array<(number | TypedArray\<T>)> | Record\<string, (number | TypedArray\<T>)>)** of the function, iterator removed
@@ -290,8 +290,17 @@ All arrays must match the internal data type.
 // Clamp values in an array to [0..1000]
 const expr = new Expression('clamp(f, x, c)', ['f', 'x', 'c']);
 
-// r will be a TypedArray of the same type
+// In a preallocated array
+const r = new array.constructor(array.length);
 // These two are equivalent
+expr.map(r, array, 'x', 0, 1000);
+expr.map(r, array, 'x', {f: 0, c: 0});
+
+expr.mapAsync(r, array, 'x', 0, 1000, (e,r) => console.log(e, r));
+expr.mapAsync(r, array, 'x', {f: 0, c: 0}, (e,r) => console.log(e, r));
+
+// In a new array
+// r1/r2 will be TypedArray's of the same type
 const r1 = expr.map(array, 'x', 0, 1000);
 const r2 = expr.map(array, 'x', {f: 0, c: 0});
 
@@ -336,6 +345,40 @@ const sumSq = await sum.reduceAsync(array, 'x', {'a' : 0}, (e,r) => console.log(
 ```
 
 Returns **number**&#x20;
+
+## maxParallel
+
+Get the number of threads available for evaluating expressions.
+Set by the `EXPRTKJS_THREADS` environment variable.
+
+Type: number
+
+## Expression
+
+### Parameters
+
+*   `expression` **string** function
+*   `variables` **Array\<string>?** An array containing all the scalar variables' names, will be determined automatically if omitted, however order won't be guaranteed, scalars are passed by value
+*   `vectors` **Record\<string, number>?** An object containing all the vector variables' names and their sizes, vector size must be known at compilation (object construction), vectors are passed by reference and can be modified by the ExprTk expression
+
+### Examples
+
+```javascript
+// This determines the internally used type
+const expr = require("exprtk.js").Float64;
+
+// arithmetic mean of 2 variables
+const mean = new Expression('(a+b)/2', ['a', 'b']);
+
+// naive stddev of an array of 1024 elements
+const stddev = new Expression(
+ 'var sum := 0; var sumsq := 0; ' + 
+ 'for (var i := 0; i < x[]; i += 1) { sum += x[i]; sumsq += x[i] * x[i] }; ' +
+ '(sumsq - (sum*sum) / x[]) / (x[] - 1);',
+ [], {x: 1024})
+```
+
+Returns **[Expression](#expression)**&#x20;
 
 # Notes
 

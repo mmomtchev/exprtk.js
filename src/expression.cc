@@ -277,7 +277,12 @@ template <typename T> exprtk_result Expression<T>::capi_eval(const void *_scalar
  * faster than calling `array.map(expr.eval)`.
  * 
  * All arrays must match the internal data type.
+ * 
+ * If target is specified, it will write the data into a preallocated array.
+ * This can be used when multiple operations are chained to avoid reallocating a new array at every step.
+ * Otherwise it will return a new array.
  *
+ * @param {TypedArray<T>} [target] array in which the data is to be written
  * @param {TypedArray<T>} array for the expression to be iterated over
  * @param {string} iterator variable name
  * @param {...(number|TypedArray<T>)[]|Record<string, number|TypedArray<T>>} arguments of the function, iterator removed
@@ -287,9 +292,18 @@ template <typename T> exprtk_result Expression<T>::capi_eval(const void *_scalar
  * @example
  * // Clamp values in an array to [0..1000]
  * const expr = new Expression('clamp(f, x, c)', ['f', 'x', 'c']);
- * 
- * // r will be a TypedArray of the same type
+ *
+ * // In a preallocated array
+ * const r = new array.constructor(array.length);
  * // These two are equivalent
+ * expr.map(r, array, 'x', 0, 1000);
+ * expr.map(r, array, 'x', {f: 0, c: 0});
+ *
+ * expr.mapAsync(r, array, 'x', 0, 1000, (e,r) => console.log(e, r));
+ * expr.mapAsync(r, array, 'x', {f: 0, c: 0}, (e,r) => console.log(e, r));
+ * 
+ * // In a new array
+ * // r1/r2 will be TypedArray's of the same type
  * const r1 = expr.map(array, 'x', 0, 1000);
  * const r2 = expr.map(array, 'x', {f: 0, c: 0});
  *
@@ -303,37 +317,57 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::map) {
 
   std::vector<std::function<void(const ExpressionInstance<T> &)>> importers;
 
-  if (
-    info.Length() < 1 || !info[0].IsTypedArray() ||
-    info[0].As<Napi::TypedArray>().TypedArrayType() != NapiArrayType<T>::type) {
+  size_t arg = 0;
+  Napi::TypedArray result;
+  if (info.Length() > 1 && info[1].IsTypedArray()) {
+    // The caller passed a preallocated array
+    result = info[arg].As<Napi::TypedArray>();
+    if (result.TypedArrayType() != NapiArrayType<T>::type) {
+      Napi::TypeError::New(env, "target array must be a " + std::string(NapiArrayType<T>::name) + "Array")
+        .ThrowAsJavaScriptException();
+      return env.Null();
+    }
+    arg = 1;
+  }
 
-    Napi::TypeError::New(env, "first argument must be a " + std::string(NapiArrayType<T>::name) + "Array")
+  if (
+    info.Length() < arg + 1 || !info[arg].IsTypedArray() ||
+    info[arg].As<Napi::TypedArray>().TypedArrayType() != NapiArrayType<T>::type) {
+
+    Napi::TypeError::New(env, "array argument must be a " + std::string(NapiArrayType<T>::name) + "Array")
       .ThrowAsJavaScriptException();
     return env.Null();
   }
-  Napi::TypedArray array = info[0].As<Napi::TypedArray>();
+
+  Napi::TypedArray array = info[arg++].As<Napi::TypedArray>();
   T *input = reinterpret_cast<T *>(array.ArrayBuffer().Data());
   size_t len = array.ElementLength();
+  if (result.IsEmpty()) { result = NapiArrayType<T>::New(env, len); }
 
-  if (info.Length() < 2 || !info[1].IsString()) {
-    Napi::TypeError::New(env, "second argument must be the iterator variable name").ThrowAsJavaScriptException();
+  if (result.ElementLength() != array.ElementLength()) {
+    Napi::TypeError::New(env, "both arrays must have the same size").ThrowAsJavaScriptException();
     return env.Null();
   }
-  const std::string iteratorName = info[1].As<Napi::String>().Utf8Value();
+
+  if (info.Length() < arg + 1 || !info[arg].IsString()) {
+    Napi::TypeError::New(env, "invalid iterator variable name").ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  const std::string iteratorName = info[arg++].As<Napi::String>().Utf8Value();
   auto iterator = instances[0].symbolTable.get_variable(iteratorName);
   if (iterator == nullptr) {
     Napi::TypeError::New(env, iteratorName + " is not a declared scalar variable").ThrowAsJavaScriptException();
     return env.Null();
   }
 
-  if (info.Length() > 2 && info[2].IsObject() && !info[2].IsTypedArray()) {
-    importFromObject(env, job, info[2], importers);
+  if (info.Length() > arg && info[arg].IsObject() && !info[arg].IsTypedArray()) {
+    importFromObject(env, job, info[arg], importers);
   }
 
-  if (info.Length() > 2 && (info[2].IsNumber() || info[2].IsTypedArray())) {
+  if (info.Length() > arg && (info[arg].IsNumber() || info[arg].IsTypedArray())) {
     size_t last = info.Length();
     if (async && last > 2 && info[last - 1].IsFunction()) last--;
-    importFromArgumentsArray(env, job, info, 2, last, importers, {iteratorName});
+    importFromArgumentsArray(env, job, info, arg, last, importers, {iteratorName});
   }
 
   if (instances[0].symbolTable.variable_count() + instances[0].symbolTable.vector_count() != importers.size() + 1) {
@@ -341,7 +375,6 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::map) {
     return env.Null();
   }
 
-  Napi::TypedArray result = NapiArrayType<T>::New(env, len);
   T *output = reinterpret_cast<T *>(result.ArrayBuffer().Data());
 
   // this should have been an unique_ptr
