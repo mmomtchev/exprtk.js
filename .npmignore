@@ -1,0 +1,9 @@
+node_modules
+build
+deps/*.zip
+lib/binding
+coverage
+
+.git
+.github
+.vscode
