@@ -35,6 +35,14 @@ export class Expression<T> {
   mapAsync(target: T, array: T, iterator: string, ...arguments: (number | T)[]): Promise<T>;
   mapAsync(target: T, array: T, iterator: string, arguments: Record<string, number | T>, callback: (this: Expression<T>, e: Error | null, r: T | undefined) => void): void;
 
+  mapAsync(threads: number, array: T, iterator: string, arguments: Record<string, number | T>): Promise<T>;
+  mapAsync(threads: number, array: T, iterator: string, ...arguments: (number | T)[]): Promise<T>;
+  mapAsync(threads: number, array: T, iterator: string, arguments: Record<string, number | T>, callback: (this: Expression<T>, e: Error | null, r: T | undefined) => void): void;
+
+  mapAsync(threads: number, target: T, array: T, iterator: string, arguments: Record<string, number | T>): Promise<T>;
+  mapAsync(threads: number, target: T, array: T, iterator: string, ...arguments: (number | T)[]): Promise<T>;
+  mapAsync(threads: number, target: T, array: T, iterator: string, arguments: Record<string, number | T>, callback: (this: Expression<T>, e: Error | null, r: T | undefined) => void): void;
+
 
   mapMPAsync(array: T, threads: number, iterator: string, arguments: Record<string, number | T>): Promise<T>;
   mapMPAsync(array: T, threads: number, iterator: string, ...arguments: (number | T)[]): Promise<T>;

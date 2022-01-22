@@ -6,6 +6,7 @@
 #include <mutex>
 #include <queue>
 #include <condition_variable>
+#include <atomic>
 #include <napi.h>
 
 namespace exprtk_js {
@@ -35,45 +36,63 @@ static constexpr char asyncResourceName[] = "ExprTk.js:async";
 template <class T> class Expression;
 template <class T> struct ExpressionInstance;
 template <class T> class InstanceGuard;
+struct GenericJoblet;
 
 class GenericWorker {
     public:
+  virtual void OnExecute(GenericJoblet *j) = 0;
+};
+
+template <class T> class AsyncWorker;
+extern std::mutex global_work_mutex;
+extern std::condition_variable global_condition;
+extern std::queue<GenericJoblet *> global_work_queue;
+
+/**
+ * A Joblet is a single thread splinter of a Job
+ */
+struct GenericJoblet {
+  GenericWorker *worker;
+  size_t id;
+  inline void enqueue() {
+    std::unique_lock<std::mutex> globalLock(global_work_mutex);
+    global_work_queue.push(this);
+    globalLock.unlock();
+    global_condition.notify_one();
+  }
   virtual void OnExecute() = 0;
 };
 
-extern std::queue<GenericWorker *> global_work_queue;
-extern std::mutex global_work_mutex;
-extern std::condition_variable global_condition;
+template <class T> struct Joblet : public GenericJoblet {
+  ExpressionInstance<T> *instance;
 
-template <class T> class ExprTkAsyncWorker : public GenericWorker {
+  virtual void OnExecute() {
+    worker->OnExecute(this);
+  }
+};
+
+template <class T> class AsyncWorker : public GenericWorker {
     public:
-  typedef std::function<T(const ExpressionInstance<T> &)> MainFunc;
+  typedef std::function<T(const ExpressionInstance<T> &, size_t)> MainFunc;
   typedef std::function<Napi::Value(const T)> RValFunc;
 
-  explicit ExprTkAsyncWorker(
+  explicit AsyncWorker(
     Expression<T> *e,
     Napi::Function &callback,
     const MainFunc &doit,
     const RValFunc &rval,
+    size_t joblets,
     const std::map<std::string, Napi::Object> &objects);
-  virtual ~ExprTkAsyncWorker();
+  virtual ~AsyncWorker();
 
-  virtual void OnExecute();
+  virtual void OnExecute(GenericJoblet *j);
   static void OnComplete(napi_env, napi_status, void *this_pointer);
   static void CallJS(napi_env env, napi_value js_callback, void *context, void *data);
   void OnFinish();
   void Queue();
 
     private:
-  inline static void enqueue(ExprTkAsyncWorker<T> *target) {
-    std::unique_lock<std::mutex> globalLock(global_work_mutex);
-    global_work_queue.push(target);
-    globalLock.unlock();
-    global_condition.notify_one();
-  }
-
-    Expression<T> *expression;
-  ExpressionInstance<T> *instance;
+  Expression<T> *expression;
   const MainFunc doit;
   const RValFunc rval;
   T raw;
@@ -83,23 +102,27 @@ template <class T> class ExprTkAsyncWorker : public GenericWorker {
   Napi::Reference<Napi::Function> callbackRef;
   napi_threadsafe_function callbackGate;
   Napi::Object asyncResource;
+  std::vector<Joblet<T>> joblets;
+  std::atomic_size_t jobletsReady;
 };
 
 template <class T>
-ExprTkAsyncWorker<T>::ExprTkAsyncWorker(
+AsyncWorker<T>::AsyncWorker(
   Expression<T> *e,
   Napi::Function &callback,
   const MainFunc &doit,
   const RValFunc &rval,
+  size_t nJoblets,
   const std::map<std::string, Napi::Object> &objects)
 
   : expression(e),
-    instance(nullptr),
     doit(doit),
     rval(rval),
     err(nullptr),
     env(callback.Env()),
-    callbackRef(Napi::Persistent(callback)) {
+    callbackRef(Napi::Persistent(callback)),
+    joblets(nJoblets),
+    jobletsReady(0) {
 
   Napi::String asyncResourceNameObject = Napi::String::New(env, asyncResourceName);
   napi_status status = napi_create_threadsafe_function(
@@ -107,15 +130,20 @@ ExprTkAsyncWorker<T>::ExprTkAsyncWorker(
   if ((status) != napi_ok) throw Napi::Error::New(env);
 
   for (auto const &i : objects) persistent[i.first] = Napi::Persistent(i.second);
+  for (size_t i = 0; i < nJoblets; i++) {
+    joblets[i].worker = this;
+    joblets[i].id = i;
+    joblets[i].instance = nullptr;
+  }
 }
 
-template <class T> ExprTkAsyncWorker<T>::~ExprTkAsyncWorker() {
+template <class T> AsyncWorker<T>::~AsyncWorker() {
   napi_release_threadsafe_function(callbackGate, napi_tsfn_release);
 }
 
-template <class T> void ExprTkAsyncWorker<T>::CallJS(napi_env env, napi_value js_callback, void *context, void *data) {
+template <class T> void AsyncWorker<T>::CallJS(napi_env env, napi_value js_callback, void *context, void *data) {
   // Here we are back in the main V8 thread, JS is not running
-  auto *self = static_cast<ExprTkAsyncWorker<T> *>(context);
+  auto *self = static_cast<AsyncWorker<T> *>(context);
   try {
     // If the JS callback throws, MakeCallback will throw a JS Error object as a C++ exception
     // Normally node-addon-api handles these, but not in this case
@@ -125,7 +153,7 @@ template <class T> void ExprTkAsyncWorker<T>::CallJS(napi_env env, napi_value js
     } else {
       cb.MakeCallback(self->expression->Value(), {Napi::Error::New(env, self->err).Value()}, nullptr);
     }
-  } catch (const Napi::Error &e) { 
+  } catch (const Napi::Error &e) {
     // Alas, there is currently no way to properly terminate the Node process
     // on an unhandled async exception
     fprintf(stderr, "Unhandled exception in async callback: %s\n", e.Message().c_str());
@@ -134,54 +162,61 @@ template <class T> void ExprTkAsyncWorker<T>::CallJS(napi_env env, napi_value js
   delete self;
 }
 
-template <class T> void ExprTkAsyncWorker<T>::OnExecute() {
+template <class T> void AsyncWorker<T>::OnExecute(GenericJoblet *j) {
+  auto *joblet = reinterpret_cast<Joblet<T> *>(j);
   // Here we are in the aux thread, JS is running
   try {
-    raw = doit(*instance);
-
-    auto *w = expression->dequeue();
-    if (w != nullptr) {
-      w->instance = this->instance;
-      // TODO this requires one iterator of the worker thread
-      // which can be avoided -> we can immediately run the next job
-      // but in this case the scheduling won't be fair unless
-      // some other mechanism is implemented
-
-      // This is what is not possible with the default Node.js async mechanism:
-      // enqueue a new job in the aux thread
-      enqueue(w);
-    } else {
-      expression->releaseIdleInstance(instance);
-    }
-
+    raw = doit(*joblet->instance, joblet->id);
   } catch (const char *err) { this->err = err; }
-  // This will trigger CallJS in the main thread
-  napi_call_threadsafe_function(callbackGate, nullptr, napi_tsfn_nonblocking);
-}
+  jobletsReady.fetch_add(1);
 
-template <class T> void ExprTkAsyncWorker<T>::Queue() {
-  ExpressionInstance<T> *i = expression->getIdleInstance();
-  if (i != nullptr) {
-    // There is an idle instance in this Expression
-    // -> enqueue on the master queue for immediate execution
-    this->instance = i;
-    enqueue(this);
-    return;
+  auto *w = expression->dequeue();
+  if (w != nullptr) {
+    w->instance = joblet->instance;
+    // TODO this requires one iteration of the worker thread
+    // which can be avoided -> we can immediately run the next job
+    // but in this case the scheduling won't be fair unless
+    // some other mechanism is implemented
+
+    // This is what is not possible with the default Node.js async mechanism:
+    // enqueue a new job in the aux thread
+    w->enqueue();
+  } else {
+    expression->releaseIdleInstance(joblet->instance);
   }
-  // There is no idle instance in this Expression
-  // -> enqueue on the local queue
-  // OnExecute will dequeue it
-  expression->enqueue(this);
+
+  if (jobletsReady == joblets.size()) {
+    // This will trigger CallJS in the main thread
+    napi_call_threadsafe_function(callbackGate, nullptr, napi_tsfn_nonblocking);
+  }
 }
 
-template <class T> class ExprTkJob {
+template <class T> void AsyncWorker<T>::Queue() {
+  for (auto &j : joblets) {
+    ExpressionInstance<T> *i = expression->getIdleInstance();
+    if (i != nullptr) {
+      // There is an idle instance in this Expression
+      // -> enqueue on the master queue for immediate execution
+      j.instance = i;
+      j.enqueue();
+      continue;
+    }
+    // There is no idle instance in this Expression
+    // -> enqueue on the local queue
+    // OnExecute will dequeue it
+    expression->enqueue(&j);
+  }
+}
+
+template <class T> class Job {
     public:
-  typedef std::function<T(const ExpressionInstance<T> &)> MainFunc;
+  typedef std::function<T(const ExpressionInstance<T> &, size_t)> MainFunc;
   typedef std::function<Napi::Value(const T)> RValFunc;
   MainFunc main;
   RValFunc rval;
+  size_t joblets;
 
-  ExprTkJob(Expression<T> *e) : main(), rval(), expression(e), persistent(), autoIndex(0){};
+  Job(Expression<T> *e) : main(), rval(), joblets(1), expression(e), persistent(), autoIndex(0){};
 
   inline void persist(const std::string &key, const Napi::Object &obj) {
     persistent[key] = obj;
@@ -203,13 +238,13 @@ template <class T> class ExprTkJob {
         return info.Env().Undefined();
       }
       Napi::Function callback = info[cb_arg].As<Napi::Function>();
-      auto worker = new ExprTkAsyncWorker<T>(expression, callback, main, rval, persistent);
+      auto worker = new AsyncWorker<T>(expression, callback, main, rval, joblets, persistent);
       worker->Queue();
       return info.Env().Undefined();
     }
     try {
       InstanceGuard<T> i(expression);
-      T obj = main(*i());
+      T obj = main(*i(), 0);
       return rval(obj);
     } catch (const char *err) {
       Napi::Error::New(info.Env(), err).ThrowAsJavaScriptException();

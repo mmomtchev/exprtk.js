@@ -193,6 +193,8 @@ describe('Expression', () => {
         let sumPow: Expression.Float64;
         let vectorFill: Expression.Float64;
         const vector = new Float64Array([1, 2, 3, 4, 5, 6]);
+        const big = 128 * 1024;
+        let bigarray: Float64Array, plus: Float64;
 
         let density: Expression.Float64;
         const R = 0.0831446;
@@ -221,6 +223,10 @@ describe('Expression', () => {
             vectorFill = new expr(
                 'for (var i := 0; i < 10; i += 1) { x[i] := i; }; x[];',
                 [], { 'x': 10 });
+
+            bigarray = new Float64Array(big);
+            for (let i = 0; i < big; i++) bigarray[i] = i;
+            plus = new expr('a + b');
 
             // Air density of humid air from relative humidity (phi), temperature (T) and pressure (P)
             // rho = ( Pd * Md + Pv * Mv ) / ( R * T )     // density (Avogadro's law)
@@ -465,6 +471,27 @@ describe('Expression', () => {
             it('should throw w/ preallocated array of wrong size', () => {
                 return assert.isRejected(clamp.mapAsync(new Float64Array(4), vector, 'c', 2, 4),
                     /both arrays must have the same size/);
+            });
+
+            it('should evaluate an expression with multiple parallel instances', () => {
+                const q = plus.mapAsync(expr.maxParallel, bigarray, 'a', 12);
+                return assert.isFulfilled(q.then((r) => {
+                    assert.instanceOf(r, Float64Array);
+                    assert.equal(r.length, big);
+                    for (let i = 0; i < big; i += big / 1024)
+                        assert.closeTo(r[i], i + 12, 10e-9);
+                }));
+            });
+
+            it('should support writing into a preallocated array', () => {
+                const dst = new Float64Array(big);
+                const q = plus.mapAsync(expr.maxParallel, dst, bigarray, 'a', 12);
+                return assert.isFulfilled(q.then((r) => {
+                    assert.strictEqual(dst, r);
+                    assert.equal(r.length, big);
+                    for (let i = 0; i < big; i += big / 1024)
+                        assert.closeTo(r[i], i + 12, 10e-9);
+                }));
             });
         });
 

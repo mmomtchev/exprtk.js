@@ -157,7 +157,7 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
 
     private:
   // This is the evaluations that are waiting for an evaluation instance
-  std::queue<ExprTkAsyncWorker<T> *> work_queue;
+  std::queue<Joblet<T> *> work_queue;
   // This is where synchronous evaluation sleep while waiting for an instance
   std::condition_variable work_condition;
 
@@ -194,7 +194,7 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
   // Actual importing is deferred to right before the evaluation which might be waiting on an async lock
   void importValue(
     const Napi::Env &env,
-    ExprTkJob<T> &job,
+    Job<T> &job,
     const std::string &name,
     const Napi::Value &value,
     std::vector<std::function<void(const ExpressionInstance<T> &)>> &importers) const {
@@ -240,7 +240,7 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
 
   inline void importFromObject(
     const Napi::Env &env,
-    ExprTkJob<T> &job,
+    Job<T> &job,
     const Napi::Value &object,
     std::vector<std::function<void(const ExpressionInstance<T> &)>> &importers) const {
 
@@ -256,7 +256,7 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
 
   inline void importFromArgumentsArray(
     const Napi::Env &env,
-    ExprTkJob<T> &job,
+    Job<T> &job,
     const Napi::CallbackInfo &info,
     size_t firstArg,
     size_t lastArg,
@@ -273,12 +273,12 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
   }
 
     public:
-  inline void enqueue(ExprTkAsyncWorker<T> *w) {
+  inline void enqueue(Joblet<T> *w) {
     std::lock_guard<std::mutex> lock(asyncLock);
     work_queue.push(w);
   }
 
-  inline ExprTkAsyncWorker<T> *dequeue() {
+  inline Joblet<T> *dequeue() {
     std::lock_guard<std::mutex> lock(asyncLock);
     if (work_queue.empty()) return nullptr;
     auto *w = work_queue.front();

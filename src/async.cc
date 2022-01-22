@@ -3,7 +3,7 @@
 using namespace exprtk_js;
 
 std::mutex exprtk_js::global_work_mutex;
-std::queue<GenericWorker *> exprtk_js::global_work_queue;
+std::queue<GenericJoblet *> exprtk_js::global_work_queue;
 std::condition_variable exprtk_js::global_condition;
 
 std::vector<std::thread> workers;
@@ -19,15 +19,15 @@ void threadsDestructor() {
 
 void workerThread() {
   while (!theEnd) {
-    GenericWorker *w;
+    GenericJoblet *j;
     {
       std::unique_lock<std::mutex> lock(global_work_mutex);
       global_condition.wait(lock, [] { return !global_work_queue.empty() || theEnd; });
       if (theEnd) return;
-      w = global_work_queue.front();
+      j = global_work_queue.front();
       global_work_queue.pop();
     }
-    w->OnExecute();
+    j->OnExecute();
   }
 }
 

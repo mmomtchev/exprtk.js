@@ -205,7 +205,7 @@ template <typename T> void Expression<T>::compileInstance(ExpressionInstance<T> 
 }
 
 template <typename T> static inline T *GetTypedArrayPtr(const Napi::TypedArray &array) {
-  return reinterpret_cast<T*>(reinterpret_cast<uint8_t*>(array.ArrayBuffer().Data()) + array.ByteOffset());
+  return reinterpret_cast<T *>(reinterpret_cast<uint8_t *>(array.ArrayBuffer().Data()) + array.ByteOffset());
 }
 
 /**
@@ -229,7 +229,7 @@ template <typename T> static inline T *GetTypedArrayPtr(const Napi::TypedArray &
 ASYNCABLE_DEFINE(template <typename T>, Expression<T>::eval) {
   Napi::Env env = info.Env();
 
-  ExprTkJob<T> job(this);
+  Job<T> job(this);
 
   std::vector<std::function<void(const ExpressionInstance<T> &)>> importers;
 
@@ -248,7 +248,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::eval) {
     return env.Null();
   }
 
-  job.main = [importers](const ExpressionInstance<T> &i) {
+  job.main = [importers](const ExpressionInstance<T> &i, size_t) {
     for (auto const &f : importers) f(i);
     T r = i.expression.value();
     if (i.expression.results().count()) { throw "explicit return values are not supported"; }
@@ -286,7 +286,8 @@ template <typename T> exprtk_result Expression<T>::capi_eval(const void *_scalar
  * This can be used when multiple operations are chained to avoid reallocating a new array at every step.
  * Otherwise it will return a new array.
  *
- * @param {TypedArray<T>} [target] array in which the data is to be written
+ * @param {TypedArray<T>} [threads] number of threads to use, 1 if not specified
+ * @param {TypedArray<T>} [target] array in which the data is to be written, will allocate a new array if none is specified
  * @param {TypedArray<T>} array for the expression to be iterated over
  * @param {string} iterator variable name
  * @param {...(number|TypedArray<T>)[]|Record<string, number|TypedArray<T>>} arguments of the function, iterator removed
@@ -317,13 +318,18 @@ template <typename T> exprtk_result Expression<T>::capi_eval(const void *_scalar
 ASYNCABLE_DEFINE(template <typename T>, Expression<T>::map) {
   Napi::Env env = info.Env();
 
-  ExprTkJob<T> job(this);
+  Job<T> job(this);
 
   std::vector<std::function<void(const ExpressionInstance<T> &)>> importers;
 
   size_t arg = 0;
+  if (info.Length() > arg + 1 && info[arg].IsNumber()) {
+    job.joblets = static_cast<size_t>(info[0].ToNumber().Uint32Value());
+    arg++;
+  }
+
   Napi::TypedArray result;
-  if (info.Length() > 1 && info[1].IsTypedArray()) {
+  if (info.Length() > arg + 1 && info[arg + 1].IsTypedArray()) {
     // The caller passed a preallocated array
     result = info[arg].As<Napi::TypedArray>();
     if (result.TypedArrayType() != NapiArrayType<T>::type) {
@@ -331,7 +337,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::map) {
         .ThrowAsJavaScriptException();
       return env.Null();
     }
-    arg = 1;
+    arg++;
   }
 
   if (
@@ -345,8 +351,8 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::map) {
 
   Napi::TypedArray array = info[arg++].As<Napi::TypedArray>();
   T *input = GetTypedArrayPtr<T>(array);
-  size_t len = array.ElementLength();
-  if (result.IsEmpty()) { result = NapiArrayType<T>::New(env, len); }
+  size_t lenTotal = array.ElementLength();
+  if (result.IsEmpty()) { result = NapiArrayType<T>::New(env, lenTotal); }
 
   if (result.ElementLength() != array.ElementLength()) {
     Napi::TypeError::New(env, "both arrays must have the same size").ThrowAsJavaScriptException();
@@ -381,25 +387,29 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::map) {
 
   T *output = GetTypedArrayPtr<T>(result);
 
+  // integer division ceiling
+  size_t lenPerJoblet = (lenTotal + job.joblets - 1) / job.joblets;
+
   // this should have been an unique_ptr
   // but std::function is not compatible with move semantics
   auto persistent = std::make_shared<Napi::Reference<Napi::TypedArray>>(Napi::Persistent(result));
 
-  job.main = [importers, iteratorName, input, output, len](const ExpressionInstance<T> &i) {
-    for (auto const &f : importers) f(i);
-    auto iterator = i.symbolTable.get_variable(iteratorName);
+  job.main =
+    [importers, iteratorName, input, output, lenTotal, lenPerJoblet](const ExpressionInstance<T> &i, size_t id) {
+      for (auto const &f : importers) f(i);
+      auto iterator = i.symbolTable.get_variable(iteratorName);
 
-    T *it_ptr = &iterator->ref();
-    T *in_ptr = input;
-    T *out_ptr = output;
-    auto const in_end = in_ptr + len;
-    auto &expression = i.expression;
-    for (; in_ptr < in_end; in_ptr++, out_ptr++) {
-      *it_ptr = *in_ptr;
-      *out_ptr = expression.value();
-    }
-    return 0;
-  };
+      T *it_ptr = &iterator->ref();
+      T *in_ptr = input + id * lenPerJoblet;
+      T *out_ptr = output + id * lenPerJoblet;
+      const T *in_end = input + std::min(lenTotal, (id + 1) * lenPerJoblet);
+      auto &expression = i.expression;
+      for (; in_ptr < in_end; in_ptr++, out_ptr++) {
+        *it_ptr = *in_ptr;
+        *out_ptr = expression.value();
+      }
+      return 0;
+    };
   job.rval = [persistent](T r) { return persistent->Value(); };
   return job.run(info, async, info.Length() - 1);
 }
@@ -477,7 +487,7 @@ exprtk_result Expression<T>::capi_map(
 ASYNCABLE_DEFINE(template <typename T>, Expression<T>::reduce) {
   Napi::Env env = info.Env();
 
-  ExprTkJob<T> job(this);
+  Job<T> job(this);
 
   std::vector<std::function<void(const ExpressionInstance<T> &)>> importers;
 
@@ -537,7 +547,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::reduce) {
     return env.Null();
   }
 
-  job.main = [importers, iteratorName, accuName, accuInit, input, len](const ExpressionInstance<T> &i) {
+  job.main = [importers, iteratorName, accuName, accuInit, input, len](const ExpressionInstance<T> &i, size_t) {
     auto iterator = i.symbolTable.get_variable(iteratorName);
     auto accu = i.symbolTable.get_variable(accuName);
 
@@ -717,7 +727,7 @@ static const size_t NapiElementSize[] = {
 ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
   Napi::Env env = info.Env();
 
-  ExprTkJob<T> job(this);
+  Job<T> job(this);
 
   if (info.Length() < 1 || !info[0].IsObject()) {
 
@@ -807,7 +817,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
   auto persistent = std::make_shared<Napi::Reference<Napi::TypedArray>>(Napi::Persistent(result));
 
   if (typeConversionRequired) {
-    job.main = [scalars, vectors, output, elementSize, len, toCaster](const ExpressionInstance<T> &i) mutable {
+    job.main = [scalars, vectors, output, elementSize, len, toCaster](const ExpressionInstance<T> &i, size_t) mutable {
       for (auto &v : scalars) {
         v.exprtk_var = &i.symbolTable.get_variable(v.name)->ref();
         *v.exprtk_var = *(reinterpret_cast<const T *>(v.storage));
@@ -826,7 +836,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
       return 0;
     };
   } else {
-    job.main = [scalars, vectors, output, len](const ExpressionInstance<T> &i) mutable {
+    job.main = [scalars, vectors, output, len](const ExpressionInstance<T> &i, size_t) mutable {
       for (auto &v : scalars) {
         v.exprtk_var = &i.symbolTable.get_variable(v.name)->ref();
         *v.exprtk_var = *(reinterpret_cast<const T *>(v.storage));
