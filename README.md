@@ -143,9 +143,6 @@ const r = await mean.evalAsync(inputArray);
 *   [map](#map)
     *   [Parameters](#parameters-2)
     *   [Examples](#examples-2)
-*   [mapMPAsync](#mapmpasync)
-    *   [Parameters](#parameters-3)
-    *   [Examples](#examples-3)
 *   [reduce](#reduce)
     *   [Parameters](#parameters-4)
     *   [Examples](#examples-4)
@@ -317,17 +314,6 @@ expr.mapAsync(array, 'x', {f: 0, c: 0}, (e,r) => console.log(e, r));
 ```
 
 Returns **TypedArray\<T>**&#x20;
-
-## mapMPAsync
-
-Evaluate the expression for every element of a TypedArray
-distributing the array over multiple threads.
-
-All arrays must match the internal data type.
-
-If target is specified, it will write the data into a preallocated array.
-This can be used when multiple operations are chained to avoid reallocating a new array at every step.
-Otherwise it will return a new array.
 
 ### Parameters
 

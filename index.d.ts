@@ -49,12 +49,6 @@ export class Expression<T> {
   mapAsync(threads: number, target: T, array: T, iterator: string, arguments: Record<string, number | T>, callback: (this: Expression<T>, e: Error | null, r: T | undefined) => void): void;
 
 
-  mapMPAsync(array: T, threads: number, iterator: string, arguments: Record<string, number | T>): Promise<T>;
-  mapMPAsync(array: T, threads: number, iterator: string, ...arguments: (number | T)[]): Promise<T>;
-  mapMPAsync(target: T, array: T, threads: number, iterator: string, arguments: Record<string, number | T>): Promise<T>;
-  mapMPAsync(target: T, array: T, threads: number, iterator: string, ...arguments: (number | T)[]): Promise<T>;
-
-
   reduce(array: T, iterator: string, accumulator: string, initializer: number, arguments: Record<string, number | T>): number;
   reduce(array: T, iterator: string, accumulator: string, initializer: number, ...arguments: (number | T)[]): number;
 
@@ -62,6 +56,7 @@ export class Expression<T> {
   reduceAsync(array: T, iterator: string, accumulator: string, initializer: number, ...arguments: (number | T)[]): Promise<number>;
   reduceAsync(array: T, iterator: string, accumulator: string, initializer: number, arguments: Record<string, number | T>, callback: (this: Expression<T>, e: Error | null, r: number | undefined) => void): void
 
+  
   cwise(arguments: Record<string, number | TypedArray>): T;
   cwise<U extends TypedArray>(arguments: Record<string, number | TypedArray>, result: U): U;
 
