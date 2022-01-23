@@ -206,9 +206,7 @@ AsyncWorker<T>::AsyncWorker(
   size_t nJoblets,
   const std::map<std::string, Napi::Object> &objects)
 
-  : Worker<T>(e, doit, rval, nJoblets),
-    env(callback.Env()),
-    callbackRef(Napi::Persistent(callback)) {
+  : Worker<T>(e, doit, rval, nJoblets), env(callback.Env()), callbackRef(Napi::Persistent(callback)) {
 
   Napi::String asyncResourceNameObject = Napi::String::New(env, asyncResourceName);
   napi_status status = napi_create_threadsafe_function(
@@ -266,8 +264,7 @@ template <class T> class SyncWorker : public Worker<T> {
 };
 
 template <class T>
-SyncWorker<T>::SyncWorker(
-  Expression<T> *e, Semaphore &sem, const MainFunc &doit, const RValFunc &rval, size_t nJoblets)
+SyncWorker<T>::SyncWorker(Expression<T> *e, Semaphore &sem, const MainFunc &doit, const RValFunc &rval, size_t nJoblets)
   : Worker<T>(e, doit, rval, nJoblets), sem(sem) {
 }
 
@@ -317,7 +314,7 @@ template <class T> class Job {
       Semaphore sem(true); // initialized locked
       auto worker = new SyncWorker<T>(expression, sem, main, rval, joblets);
       worker->Queue(); // will unlock it
-      sem.lock(); // wait for the unlock
+      sem.lock();      // wait for the unlock
       if (worker->Error() != nullptr) {
         Napi::Error::New(info.Env(), worker->Error()).ThrowAsJavaScriptException();
         return info.Env().Undefined();

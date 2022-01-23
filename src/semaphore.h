@@ -6,7 +6,8 @@
 // while a mutex can be unlocked only by its owner
 class Semaphore {
     public:
-  Semaphore(bool initial) : mtx(), cond(), busy(initial) {}
+  Semaphore(bool initial) : mtx(), cond(), busy(initial) {
+  }
 
   Semaphore(const Semaphore &Semaphore) = delete;
   Semaphore(Semaphore &&Semaphore) = delete;
