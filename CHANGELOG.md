@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [2.0.0] WIP
  - Full reentrancy, supporting multiple concurrent evaluations of the same `Expression` object
  - New multithreading model independent of Node.js/libuv
+ - Support OpenMP-style parallelism in `TypedArray.prototype.map`
  - Support writing into a preallocated array for `Expression.prototype.map`
  - Support passing `TypedArray` subarrays (`TypedArray.prototype.subarray`)
  - `Expression.prototype.toString()`
