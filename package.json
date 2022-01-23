@@ -59,7 +59,7 @@
     "chai": "^4.3.4",
     "chai-as-promised": "^7.1.1",
     "documentation-polyglot": "^1.0.0",
-    "eslint": "^8.5.0",
+    "eslint": "^8.6.0",
     "eslint-plugin-array-func": "^3.1.7",
     "eslint-plugin-mocha": "^10.0.3",
     "eslint-plugin-prefer-arrow": "^1.2.3",
