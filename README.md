@@ -144,12 +144,12 @@ const r = await mean.evalAsync(inputArray);
     *   [Parameters](#parameters-2)
     *   [Examples](#examples-2)
 *   [reduce](#reduce)
-    *   [Parameters](#parameters-4)
-    *   [Examples](#examples-4)
+    *   [Parameters](#parameters-3)
+    *   [Examples](#examples-3)
 *   [maxParallel](#maxparallel-1)
 *   [Expression](#expression-1)
-    *   [Parameters](#parameters-5)
-    *   [Examples](#examples-5)
+    *   [Parameters](#parameters-4)
+    *   [Examples](#examples-4)
 
 ## toString
 
@@ -284,7 +284,8 @@ Otherwise it will return a new array.
 
 ### Parameters
 
-*   `target` **TypedArray\<T>?** array in which the data is to be written
+*   `threads` **TypedArray\<T>?** number of threads to use, 1 if not specified
+*   `target` **TypedArray\<T>?** array in which the data is to be written, will allocate a new array if none is specified
 *   `array` **TypedArray\<T>** for the expression to be iterated over
 *   `iterator` **string** variable name
 *   `arguments` **...(Array<(number | TypedArray\<T>)> | Record\<string, (number | TypedArray\<T>)>)** of the function, iterator removed
@@ -311,25 +312,10 @@ const r2 = expr.map(array, 'x', {f: 0, c: 0});
 
 expr.mapAsync(array, 'x', 0, 1000, (e,r) => console.log(e, r));
 expr.mapAsync(array, 'x', {f: 0, c: 0}, (e,r) => console.log(e, r));
-```
 
-Returns **TypedArray\<T>**&#x20;
-
-### Parameters
-
-*   `target` **TypedArray\<T>?** array in which the data is to be written
-*   `array` **TypedArray\<T>** for the expression to be iterated over
-*   `threads` **number** number, must not exceed Expression.maxParallel
-*   `iterator` **string** variable name
-*   `arguments` **...(Array<(number | TypedArray\<T>)> | Record\<string, (number | TypedArray\<T>)>)** of the function, iterator removed
-
-### Examples
-
-```javascript
-// Clamp values in an array to [0..1000]
-const expr = new Expression('clamp(f, x, c)', ['f', 'x', 'c']);
-
-await expr.mapMPAsync(array, expr.maxParallel, 'x', 0, 1000);
+// Using 4 multiple parallel threads (OpenMP-style parallelism)
+const r1 = expr.map(4, array, 'x', 0, 1000);
+const r2 = expr.map(4, array, 'x', {f: 0, c: 0});
 ```
 
 Returns **TypedArray\<T>**&#x20;
