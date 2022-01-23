@@ -4,11 +4,6 @@
     'enable_coverage%': 'false',
     'disable_int%': 'false'
   },
-  'conditions': [
-    ['disable_int == "true"', {
-      'defines': [ 'EXPRTK_DISABLE_INT_TYPES' ]
-    }]
-  ],
   'target_defaults': {
     'cflags!': [ '-fno-exceptions', '-fno-rtti', '-fvisibility=default' ],
     'cflags_cc!': [ '-fno-exceptions', '-fno-rtti', '-fvisibility=default' ],
@@ -24,9 +19,14 @@
         '-std=c++14'
 			]
     },
-    "msvs_settings": {
-      "VCCLCompilerTool": {
-        "AdditionalOptions": [
+    'conditions': [
+      ['disable_int == "true"', {
+        'defines': [ 'EXPRTK_DISABLE_INT_TYPES' ]
+      }]
+    ],
+    'msvs_settings': {
+      'VCCLCompilerTool': {
+        'AdditionalOptions': [
           '/MP',
           '/GR',
           '/EHsc',
@@ -34,8 +34,8 @@
           '/wd4723',
           '/std:c++14'
         ],
-        "ExceptionHandling": 1,
-        "RuntimeTypeInfo": "true"
+        'ExceptionHandling': 1,
+        'RuntimeTypeInfo': 'true'
       }
     },
     'configurations': {

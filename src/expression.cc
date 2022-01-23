@@ -314,6 +314,10 @@ template <typename T> exprtk_result Expression<T>::capi_eval(const void *_scalar
  *
  * expr.mapAsync(array, 'x', 0, 1000, (e,r) => console.log(e, r));
  * expr.mapAsync(array, 'x', {f: 0, c: 0}, (e,r) => console.log(e, r));
+ * 
+ * // Using 4 multiple parallel threads (OpenMP-style parallelism)
+ * const r1 = expr.map(4, array, 'x', 0, 1000);
+ * const r2 = expr.map(4, array, 'x', {f: 0, c: 0});
  */
 ASYNCABLE_DEFINE(template <typename T>, Expression<T>::map) {
   Napi::Env env = info.Env();
@@ -326,6 +330,11 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::map) {
   if (info.Length() > arg + 1 && info[arg].IsNumber()) {
     job.joblets = static_cast<size_t>(info[0].ToNumber().Uint32Value());
     arg++;
+    if (job.joblets > maxParallel) {
+      Napi::TypeError::New(env, "maximum threads must not exceed maxParallel = " + std::to_string(maxParallel))
+        .ThrowAsJavaScriptException();
+      return env.Null();
+    }
   }
 
   Napi::TypedArray result;
@@ -641,13 +650,25 @@ template <typename T> struct symbolDesc {
 // napi_biguint64_array
 template <typename T>
 static const NapiFromCaster_t<T> NapiFromCasters[] = {
+#ifndef EXPRTK_DISABLE_INT_TYPES
   [](uint8_t *data) { return static_cast<T>(*(reinterpret_cast<int8_t *>(data))); },
   [](uint8_t *data) { return *data; },
+#else
   [](uint8_t *data) -> T { throw "unsupported type"; },
+  [](uint8_t *data) -> T { throw "unsupported type"; },
+#endif
+  [](uint8_t *data) -> T { throw "unsupported type"; },
+#ifndef EXPRTK_DISABLE_INT_TYPES
   [](uint8_t *data) { return static_cast<T>(*(reinterpret_cast<int16_t *>(data))); },
   [](uint8_t *data) { return static_cast<T>(*(reinterpret_cast<uint16_t *>(data))); },
   [](uint8_t *data) { return static_cast<T>(*(reinterpret_cast<int32_t *>(data))); },
   [](uint8_t *data) { return static_cast<T>(*(reinterpret_cast<uint32_t *>(data))); },
+#else
+  [](uint8_t *data) -> T { throw "unsupported type"; },
+  [](uint8_t *data) -> T { throw "unsupported type"; },
+  [](uint8_t *data) -> T { throw "unsupported type"; },
+  [](uint8_t *data) -> T { throw "unsupported type"; },
+#endif
   [](uint8_t *data) { return static_cast<T>(*(reinterpret_cast<float *>(data))); },
   [](uint8_t *data) { return static_cast<T>(*(reinterpret_cast<double *>(data))); },
   [](uint8_t *data) -> T { throw "unsupported type"; },
@@ -655,13 +676,25 @@ static const NapiFromCaster_t<T> NapiFromCasters[] = {
 
 template <typename T>
 static const NapiToCaster_t<T> NapiToCasters[] = {
+#ifndef EXPRTK_DISABLE_INT_TYPES
   [](uint8_t *dst, T value) { *(reinterpret_cast<int8_t *>(dst)) = static_cast<int8_t>(value); },
   [](uint8_t *dst, T value) { *dst = static_cast<uint8_t>(value); },
+#else
   [](uint8_t *dst, T value) { throw "unsupported type"; },
+  [](uint8_t *dst, T value) { throw "unsupported type"; },
+#endif
+  [](uint8_t *dst, T value) { throw "unsupported type"; },
+#ifndef EXPRTK_DISABLE_INT_TYPES
   [](uint8_t *dst, T value) { *(reinterpret_cast<int16_t *>(dst)) = static_cast<int16_t>(value); },
   [](uint8_t *dst, T value) { *(reinterpret_cast<uint16_t *>(dst)) = static_cast<uint16_t>(value); },
   [](uint8_t *dst, T value) { *(reinterpret_cast<int32_t *>(dst)) = static_cast<int32_t>(value); },
   [](uint8_t *dst, T value) { *(reinterpret_cast<uint32_t *>(dst)) = static_cast<uint32_t>(value); },
+#else
+  [](uint8_t *dst, T value) { throw "unsupported type"; },
+  [](uint8_t *dst, T value) { throw "unsupported type"; },
+  [](uint8_t *dst, T value) { throw "unsupported type"; },
+  [](uint8_t *dst, T value) { throw "unsupported type"; },
+#endif
   [](uint8_t *dst, T value) { *(reinterpret_cast<float *>(dst)) = static_cast<float>(value); },
   [](uint8_t *dst, T value) { *(reinterpret_cast<double *>(dst)) = static_cast<double>(value); },
   [](uint8_t *dst, T value) { throw "unsupported type"; },
@@ -1012,6 +1045,7 @@ template <typename T> Napi::Value Expression<T>::GetVectors(const Napi::Callback
   return vectors;
 }
 
+#ifndef EXPRTK_DISABLE_INT_TYPES
 #define CALL_TYPED_EXPRESSION_METHOD(type, object, method, ...)                                                        \
   {                                                                                                                    \
     switch (static_cast<napi_typedarray_type>(type)) {                                                                 \
@@ -1026,6 +1060,16 @@ template <typename T> Napi::Value Expression<T>::GetVectors(const Napi::Callback
       default: return exprtk_invalid_argument;                                                                         \
     }                                                                                                                  \
   }
+#else
+#define CALL_TYPED_EXPRESSION_METHOD(type, object, method, ...)                                                        \
+  {                                                                                                                    \
+    switch (static_cast<napi_typedarray_type>(type)) {                                                                 \
+      case napi_float32_array: return reinterpret_cast<Expression<float> *>(object)->method(__VA_ARGS__); break;       \
+      case napi_float64_array: return reinterpret_cast<Expression<double> *>(object)->method(__VA_ARGS__); break;      \
+      default: return exprtk_invalid_argument;                                                                         \
+    }                                                                                                                  \
+  }
+#endif
 
 extern "C" {
 exprtk_result entry_capi_eval(exprtk_expression *expression, const void *scalars, void **vectors, void *result) {

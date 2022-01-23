@@ -408,6 +408,28 @@ describe('Expression', () => {
                 assert.deepEqual(r, new Float64Array([3, 4]));
             });
 
+            it('should evaluate an expression with multiple parallel instances', () => {
+                const r = plus.map(expr.maxParallel, bigarray, 'a', 12);
+                assert.instanceOf(r, Float64Array);
+                assert.equal(r.length, big);
+                for (let i = 0; i < big; i += big / 1024)
+                    assert.closeTo(r[i], i + 12, 10e-9);
+            });
+
+            it('should support odd subtasks', () => {
+                const r = plus.map(Math.min(expr.maxParallel - 1, 1), bigarray, 'a', 12);
+                assert.instanceOf(r, Float64Array);
+                assert.equal(r.length, big);
+                for (let i = 0; i < big; i += big / 1024)
+                    assert.closeTo(r[i], i + 12, 10e-9);
+            });
+
+            it('should reject if the number of threads is invalid', () => {
+                assert.throws(() => {
+                    plus.map(expr.maxParallel + 1, bigarray, 'a', 12);
+                }, /exceed maxParallel/);
+            });
+
             it('should throw w/o iterator', () => {
                 assert.throws(() => {
                     (clamp as any).map(vector, 2, 4);
@@ -481,6 +503,11 @@ describe('Expression', () => {
                     for (let i = 0; i < big; i += big / 1024)
                         assert.closeTo(r[i], i + 12, 10e-9);
                 }));
+            });
+
+            it('should reject if the number of threads is invalid', () => {
+                const q = plus.mapAsync(expr.maxParallel + 1, bigarray, 'a', 12);
+                return assert.isRejected(q, /exceed maxParallel/);
             });
 
             it('should support writing into a preallocated array', () => {

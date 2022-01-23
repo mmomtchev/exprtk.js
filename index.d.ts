@@ -27,6 +27,11 @@ export class Expression<T> {
   map(target: T, array: T, iterator: string, arguments: Record<string, number | T>): T;
   map(target: T, array: T, iterator: string, ...arguments: (number | T)[]): T;
 
+  map(threads: number, array: T, iterator: string, arguments: Record<string, number | T>): T;
+  map(threads: number, array: T, iterator: string, ...arguments: (number | T)[]): T;
+  map(threads: number, target: T, array: T, iterator: string, arguments: Record<string, number | T>): T;
+  map(threads: number, target: T, array: T, iterator: string, ...arguments: (number | T)[]): T;
+
   mapAsync(array: T, iterator: string, arguments: Record<string, number | T>): Promise<T>;
   mapAsync(array: T, iterator: string, ...arguments: (number | T)[]): Promise<T>;
   mapAsync(array: T, iterator: string, arguments: Record<string, number | T>, callback: (this: Expression<T>, e: Error | null, r: T | undefined) => void): void;

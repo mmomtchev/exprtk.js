@@ -17,6 +17,7 @@ namespace exprtk_js {
 
 template <typename T> struct NapiArrayType {};
 
+#ifndef EXPRTK_DISABLE_INT_TYPES
 template <> struct NapiArrayType<int8_t> {
   static const napi_typedarray_type type = napi_int8_array;
   static constexpr const char *name = "Int8";
@@ -82,6 +83,7 @@ template <> struct NapiArrayType<uint32_t> {
     return value.As<Napi::Number>().Uint32Value();
   }
 };
+#endif
 template <> struct NapiArrayType<double> {
   static const napi_typedarray_type type = napi_float64_array;
   static constexpr const char *name = "Float64";

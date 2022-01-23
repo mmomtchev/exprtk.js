@@ -1,6 +1,7 @@
 const b = require('benny');
 const { assert } = require('chai');
 const e = require('..');
+const cpus = require('os').cpus().length;
 
 // You should probably read the notes in `Performance.md`
 
@@ -62,6 +63,11 @@ module.exports = function (type, size) {
       const r = exprExprTkI.cwise({ x: a1 });
       assert.instanceOf(r, allocator);
       assert.equal(r[4], exprJS(4));
+    }),
+    b.add(`ExprTk.js map() ${cpus}-way MP traversal`, () => {
+      const r = exprExprTkI.map(cpus, a1, 'x');
+      assert.instanceOf(r, allocator);
+      assert.equal(r[4], testFn(4));
     }),
     b.cycle(),
     b.complete()
