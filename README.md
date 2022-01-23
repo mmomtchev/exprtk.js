@@ -80,6 +80,11 @@ const resultingArray = clamp.map(inputArray, 'x', {minv: 5, maxv: 10});
 // async
 const resultingArray = await clamp.mapAsync(inputArray, 'x', 5, 10);
 const resultingArray = await clamp.mapAsync(inputArray, 'x', {minv: 5, maxv: 10});
+
+// OpenMP-style (4 threads map)
+const resultingArray = clamp.map(4, inputArray, 'x', 5, 10);
+const resultingArray = await clamp.mapAsync(4, inputArray, 'x', {minv: 5, maxv: 10});
+
 ```
 
 ### Array traversal with `reduce()`/`reduceAsync()`
