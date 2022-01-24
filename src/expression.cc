@@ -315,9 +315,9 @@ template <typename T> exprtk_result Expression<T>::capi_eval(const void *_scalar
  * expr.mapAsync(array, 'x', 0, 1000, (e,r) => console.log(e, r));
  * expr.mapAsync(array, 'x', {f: 0, c: 0}, (e,r) => console.log(e, r));
  * 
- * // Using 4 multiple parallel threads (OpenMP-style parallelism)
+ * // Using multiple (4) parallel threads (OpenMP-style parallelism)
  * const r1 = expr.map(4, array, 'x', 0, 1000);
- * const r2 = expr.map(4, array, 'x', {f: 0, c: 0});
+ * const r2 = await expr.mapAsync(4, array, 'x', {f: 0, c: 0});
  */
 ASYNCABLE_DEFINE(template <typename T>, Expression<T>::map) {
   Napi::Env env = info.Env();
