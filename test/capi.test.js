@@ -17,7 +17,7 @@ describe('Expression C-API', () => {
   before(() => {
     mean_u32 = new Expression.Uint32('(a + b) / 2');
     mean_f32 = new Expression.Float32('(a + b) / 2');
-    vector = new Expression.Int16('x[0] + x[1] + c', ['c'], { x: 2 });
+    vector = new Expression.Uint32('x[0] + x[1] + c', ['c'], { x: 2 });
 
     const binding_path = path.dirname(binary.find(path.resolve(path.join(__dirname, '../package.json'))));
     const test_addon_path = path.resolve(binding_path, 'exprtk.js-test.node');
@@ -47,8 +47,8 @@ describe('Expression C-API', () => {
   });
 
   it('capi_eval()', () => {
-    const r = testAddon.testEval(mean_u32);
-    assert.equal(r, 14);
+    const r = testAddon.testEval(vector);
+    assert.equal(r, 15);
   });
 
   it('capi_map()', () => {
@@ -63,9 +63,14 @@ describe('Expression C-API', () => {
   });
 
   it('capi_cwise()', () => {
-    const r = testAddon.testCwise(mean_f32);
-    assert.instanceOf(r, Float64Array);
     const expected = new Float64Array([5.5, 11, 16.5, 22, 27.5]);
+
+    let r = testAddon.testCwise(mean_f32, false);
+    assert.instanceOf(r, Float64Array);
+    for (let i = 0; i < 5; i++) assert.closeTo(r[i], expected[i], 10e-9);
+
+    r = testAddon.testCwise(mean_f32, true);
+    assert.instanceOf(r, Float64Array);
     for (let i = 0; i < 5; i++) assert.closeTo(r[i], expected[i], 10e-9);
   });
 });

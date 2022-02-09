@@ -43,6 +43,11 @@ describe('Expression', () => {
                 new expr('a ! b', ['a', 'b']);
             }, /failed compiling/);
         });
+        it('should throw w/ invalid variable name', () => {
+            assert.throws(() => {
+                new expr('1a ! b', ['1a', 'b']);
+            }, /not a valid variable name/);
+        });
         it('should throw w/ invalid vector', () => {
             assert.throws(() => {
                 new (expr as any)('a', ['a'], 12);
@@ -52,6 +57,11 @@ describe('Expression', () => {
             assert.throws(() => {
                 new (expr as any)('a', ['a'], { x: '12' });
             }, /vector size must be a number/);
+        });
+        it('should throw w/ invalid vector name', () => {
+            assert.throws(() => {
+                new (expr as any)('a', ['a'], { '1x': 5 });
+            }, /not a valid vector name/);
         });
         it('should accept an expression w/o explicit arguments', () => {
             const mean = new expr('(a + b) / 2');
@@ -396,6 +406,12 @@ describe('Expression', () => {
                 assert.deepEqual(r, new Float64Array([2, 2, 3, 4, 4, 4]));
             });
 
+            it('should accept named arguments in an object ', () => {
+                const r = clamp.map(vector, 'x', {minv: 2, maxv: 4});
+                assert.instanceOf(r, Float64Array);
+                assert.deepEqual(r, new Float64Array([2, 2, 3, 4, 4, 4]));
+            });
+
             it('should accept a preallocated array', () => {
                 const dst = new Float64Array(6);
                 const r = clamp.map(dst, vector, 'x', 2, 4);
@@ -412,8 +428,10 @@ describe('Expression', () => {
                 const r = plus.map(expr.maxParallel, bigarray, 'a', 12);
                 assert.instanceOf(r, Float64Array);
                 assert.equal(r.length, big);
-                if (process.env.MOCHA_TEST_CONCURRENCY === undefined || +process.env.MOCHA_TEST_CONCURRENCY == 1)
-                    assert.isAbove(plus.maxActive, 16);
+                if (process.env.MOCHA_TEST_CONCURRENCY === undefined
+                        || +process.env.MOCHA_TEST_CONCURRENCY == 1
+                        && os.cpus().length >= 4)
+                    assert.isAbove(plus.maxActive, 1);
                 for (let i = 0; i < big; i += big / 1024)
                     assert.closeTo(r[i], i + 12, 10e-9);
             });
@@ -424,6 +442,12 @@ describe('Expression', () => {
                 assert.equal(r.length, big);
                 for (let i = 0; i < big; i += big / 1024)
                     assert.closeTo(r[i], i + 12, 10e-9);
+            });
+
+            it('should throw w/ invalid array', () => {
+                assert.throws(() => {
+                    clamp.map((new Float32Array(6)) as unknown as Float64Array, 'x', 4);
+                }, /array argument must be a Float64Array/);
             });
 
             it('should reject if the number of threads is invalid', () => {
@@ -536,6 +560,12 @@ describe('Expression', () => {
                 const r = sumPow.reduce(vector.subarray(2, 4), 'x', 'a', 0, 2);
                 assert.isNumber(r);
                 assert.equal(r, 25);
+            });
+
+            it('should throw w/o array', () => {
+                assert.throws(() => {
+                    (sumPow as any).reduce();
+                }, /first argument must be/);
             });
 
             it('should throw w/o iterator', () => {
@@ -657,7 +687,7 @@ describe('Expression', () => {
             });
 
             it('should work when optimizing away the type conversion', () => {
-                const r = plus.cwise({a: bigarray, b: 14});
+                const r = plus.cwise({ a: bigarray, b: 14 });
                 for (let i = 0; i < bigarray.length; i += 128) assert.closeTo(r[i], i + 14, 10e-5);
             });
 
@@ -676,6 +706,24 @@ describe('Expression', () => {
                 assert.throws(() => {
                     (density as any).cwise({ P: 'abc', T, R, Mv, Md });
                 }, /P is not a number or a TypedArray/);
+            });
+
+            it('should throw on invalid number of threads', () => {
+                assert.throws(() => {
+                    (density as any).cwise(1e3, { P, T, R, Mv, Md });
+                }, /maximum threads must not exceed maxParallel/);
+            });
+
+            it('should throw on invalid variables', () => {
+                assert.throws(() => {
+                    (density as any).cwise({ P, T, R, Mv, Md, X: 12 });
+                }, /X is not a declared scalar variable/);
+            });
+
+            it('should throw on invalid vector lengths', () => {
+                assert.throws(() => {
+                    (density as any).cwise({ P, T, R, Mv, Md: new Float64Array(2) });
+                }, /all vectors must have the same number of elements/);
             });
 
             it('should throw on vector arguments', () => {
