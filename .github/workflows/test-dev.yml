@@ -58,10 +58,11 @@ jobs:
       run: npx node-pre-gyp build -j max
     - name: Run unit tests
       run: npm test
+      env:
+        MOCHA_TEST_CONCURRENCY: 0
     - name: Collect coverage data
       run: npm run gcov
     - name: Send data to codecov
       run: npm run codecov
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-        MOCHA_TEST_CONCURRENCY: 0

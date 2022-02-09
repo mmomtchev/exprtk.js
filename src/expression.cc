@@ -753,21 +753,39 @@ static const size_t NapiElementSize[] = {
  * 
  * // sync
  * density.cwise({phi, T, P, R, Md, Mv}, result);
- * 
+ *
+ * // sync multithreaded
+ * density.cwise(os.cpus().length, {phi, T, P, R, Md, Mv}, result);
+ *
  * // async
  * await density.cwiseAsync({phi, T, P, R, Md, Mv}, result);
+ * 
+ * // async multithreaded
+ * await density.cwiseAsync(os.cpus().length, {phi, T, P, R, Md, Mv}, result);
  */
 ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
   Napi::Env env = info.Env();
 
   Job<T> job(this);
 
-  if (info.Length() < 1 || !info[0].IsObject()) {
+  size_t arg = 0;
+  if (info.Length() > arg + 1 && info[arg].IsNumber()) {
+    job.joblets = static_cast<size_t>(info[0].ToNumber().Uint32Value());
+    arg++;
+    if (job.joblets > maxParallel) {
+      Napi::TypeError::New(env, "maximum threads must not exceed maxParallel = " + std::to_string(maxParallel))
+        .ThrowAsJavaScriptException();
+      return env.Null();
+    }
+  }
 
+  if (info.Length() < 1 || !info[arg].IsObject()) {
     Napi::TypeError::New(env, "first argument must be a an object containing the input values")
       .ThrowAsJavaScriptException();
     return env.Null();
   }
+  Napi::Object args = info[arg].As<Napi::Object>();
+  arg++;
 
   if (instances[0].symbolTable.vector_count() > 0) {
     Napi::TypeError::New(env, "cwise()/cwiseAsync() are not compatible with vector arguments")
@@ -775,15 +793,14 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
     return env.Null();
   }
 
-  if (info.Length() > 1 && !info[1].IsTypedArray() && (!async || !info[1].IsFunction())) {
-    Napi::TypeError::New(env, "second argument must be a TypedArray or undefined").ThrowAsJavaScriptException();
+  if (info.Length() >= arg + 1 && !info[arg].IsTypedArray() && (!async || !info[arg].IsFunction())) {
+    Napi::TypeError::New(env, "last argument must be a TypedArray or undefined").ThrowAsJavaScriptException();
     return env.Null();
   }
 
   bool typeConversionRequired = false;
 
   size_t len = 0;
-  Napi::Object args = info[0].As<Napi::Object>();
   Napi::Array argNames = args.GetPropertyNames();
   std::vector<symbolDesc<T>> scalars, vectors;
   for (std::size_t i = 0; i < argNames.Length(); i++) {
@@ -835,8 +852,8 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
   }
 
   Napi::TypedArray result;
-  if (info.Length() > 1 && info[1].IsTypedArray()) {
-    result = info[1].As<Napi::TypedArray>();
+  if (info.Length() >= arg + 1 && info[arg].IsTypedArray()) {
+    result = info[arg].As<Napi::TypedArray>();
   } else {
     result = NapiArrayType<T>::New(env, len);
   }
@@ -849,37 +866,52 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
 
   auto persistent = std::make_shared<Napi::Reference<Napi::TypedArray>>(Napi::Persistent(result));
 
+  // integer division ceiling
+  size_t lenPerJoblet = (len + job.joblets - 1) / job.joblets;
+
   if (typeConversionRequired) {
-    job.main = [scalars, vectors, output, elementSize, len, toCaster](const ExpressionInstance<T> &i, size_t) mutable {
-      for (auto &v : scalars) {
-        v.exprtk_var = &i.symbolTable.get_variable(v.name)->ref();
-        *v.exprtk_var = *(reinterpret_cast<const T *>(v.storage));
-      }
-      for (auto &v : vectors) { v.exprtk_var = &i.symbolTable.get_variable(v.name)->ref(); }
-
-      auto &expression = i.expression;
-      uint8_t *output_end = output + len * elementSize;
-      for (uint8_t *output_ptr = output; output_ptr < output_end; output_ptr += elementSize) {
-        for (auto &v : vectors) {
-          *v.exprtk_var = v.fromCaster(v.data);
-          v.data += v.elementSize;
+    job.main =
+      [scalars, vectors, output, elementSize, len, toCaster, lenPerJoblet](const ExpressionInstance<T> &i, size_t id) {
+        auto localVectors = vectors;
+        auto localScalars = scalars;
+        for (auto &v : localScalars) {
+          v.exprtk_var = &i.symbolTable.get_variable(v.name)->ref();
+          *v.exprtk_var = *(reinterpret_cast<const T *>(v.storage));
         }
-        toCaster(output_ptr, expression.value());
-      }
-      return 0;
-    };
+        for (auto &v : localVectors) {
+          v.exprtk_var = &i.symbolTable.get_variable(v.name)->ref();
+          v.data = v.data + id * lenPerJoblet * v.elementSize;
+        }
+
+        auto &expression = i.expression;
+        uint8_t *output_end = output + std::min((id + 1) * lenPerJoblet, len) * elementSize;
+        for (uint8_t *output_ptr = output + id * lenPerJoblet * elementSize; output_ptr < output_end;
+             output_ptr += elementSize) {
+          for (auto &v : localVectors) {
+            *v.exprtk_var = v.fromCaster(v.data);
+            v.data += v.elementSize;
+          }
+          toCaster(output_ptr, expression.value());
+        }
+        return 0;
+      };
   } else {
-    job.main = [scalars, vectors, output, len](const ExpressionInstance<T> &i, size_t) mutable {
-      for (auto &v : scalars) {
+    job.main = [scalars, vectors, output, len, lenPerJoblet](const ExpressionInstance<T> &i, size_t id) {
+      auto localVectors = vectors;
+      auto localScalars = scalars;
+      for (auto &v : localScalars) {
         v.exprtk_var = &i.symbolTable.get_variable(v.name)->ref();
         *v.exprtk_var = *(reinterpret_cast<const T *>(v.storage));
       }
-      for (auto &v : vectors) { v.exprtk_var = &i.symbolTable.get_variable(v.name)->ref(); }
+      for (auto &v : localVectors) {
+        v.exprtk_var = &i.symbolTable.get_variable(v.name)->ref();
+        v.data = v.data + id * lenPerJoblet * v.elementSize;
+      }
 
       auto &expression = i.expression;
-      T *output_end = reinterpret_cast<T *>(output) + len;
-      for (T *output_ptr = reinterpret_cast<T *>(output); output_ptr < output_end; output_ptr++) {
-        for (auto &v : vectors) {
+      T *output_end = reinterpret_cast<T *>(output) + std::min((id + 1) * lenPerJoblet, len);
+      for (T *output_ptr = reinterpret_cast<T *>(output) + id * lenPerJoblet; output_ptr < output_end; output_ptr++) {
+        for (auto &v : localVectors) {
           *v.exprtk_var = *(reinterpret_cast<T *>(v.data));
           v.data += v.elementSize;
         }

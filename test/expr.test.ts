@@ -412,11 +412,13 @@ describe('Expression', () => {
                 const r = plus.map(expr.maxParallel, bigarray, 'a', 12);
                 assert.instanceOf(r, Float64Array);
                 assert.equal(r.length, big);
+                if (process.env.MOCHA_TEST_CONCURRENCY === undefined || +process.env.MOCHA_TEST_CONCURRENCY == 1)
+                    assert.isAbove(plus.maxActive, 16);
                 for (let i = 0; i < big; i += big / 1024)
                     assert.closeTo(r[i], i + 12, 10e-9);
             });
 
-            it('should support odd subtasks', () => {
+            it('should support odd-sized subtasks', () => {
                 const r = plus.map(Math.min(expr.maxParallel - 1, 1), bigarray, 'a', 12);
                 assert.instanceOf(r, Float64Array);
                 assert.equal(r.length, big);
@@ -647,6 +649,23 @@ describe('Expression', () => {
                 for (const i in result) assert.closeTo(result[i], expected[+i + 2], 10e-5);
             });
 
+            it('should support using multiple parallel instances', () => {
+                const result = new Float32Array(5);
+                const r = density.cwise(density.maxParallel, { P, T, phi, R, Mv, Md }, result);
+                assert.strictEqual(result, r);
+                for (const i in result) assert.closeTo(result[i], expected[i], 10e-5);
+            });
+
+            it('should work when optimizing away the type conversion', () => {
+                const r = plus.cwise({a: bigarray, b: 14});
+                for (let i = 0; i < bigarray.length; i += 128) assert.closeTo(r[i], i + 14, 10e-5);
+            });
+
+            it('should work w/o type conversion and multiple parallel instances', () => {
+                const r = plus.cwise(plus.maxParallel, { a: bigarray, b: 14 });
+                for (let i = 0; i < bigarray.length; i += 128) assert.closeTo(r[i], i + 14, 10e-5);
+            });
+
             it('should throw on missing arguments', () => {
                 assert.throws(() => {
                     density.cwise({ P, T, R, Mv, Md });
@@ -689,6 +708,13 @@ describe('Expression', () => {
                     for (const i in r) assert.closeTo(r[i], expected[i], 10e-5);
                 });
                 return assert.isFulfilled(q);
+            });
+
+            it('should support using multiple parallel instances', () => {
+                const q = density.cwiseAsync(density.maxParallel, { P, T, phi, R, Mv, Md });
+                return assert.isFulfilled(q.then((r) => {
+                    for (const i in r) assert.closeTo(r[i], expected[i], 10e-5);
+                }));
             });
 
             it('should reject on missing arguments', () => {

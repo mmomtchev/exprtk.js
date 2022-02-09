@@ -59,10 +59,15 @@ export class Expression<T> {
   
   cwise(arguments: Record<string, number | TypedArray>): T;
   cwise<U extends TypedArray>(arguments: Record<string, number | TypedArray>, result: U): U;
+  cwise(threads: number, arguments: Record<string, number | TypedArray>): T;
+  cwise<U extends TypedArray>(threads: number, arguments: Record<string, number | TypedArray>, result: U): U;
 
   cwiseAsync(arguments: Record<string, number | TypedArray>): Promise<T>;
   cwiseAsync<U extends TypedArray>(arguments: Record<string, number | TypedArray>, result: U): Promise<U>;
   cwiseAsync(arguments: Record<string, number | TypedArray>, callback: (this: Expression<T>, e: Error | null, r: T | undefined) => void): void;
+  cwiseAsync(threads: number, arguments: Record<string, number | TypedArray>): Promise<T>;
+  cwiseAsync<U extends TypedArray>(threads: number, arguments: Record<string, number | TypedArray>, result: U): Promise<U>;
+  cwiseAsync(threads: number, arguments: Record<string, number | TypedArray>, callback: (this: Expression<T>, e: Error | null, r: T | undefined) => void): void;
 }
 
 export class Int8 extends Expression<Int8Array>{ }
