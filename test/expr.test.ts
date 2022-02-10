@@ -5,18 +5,17 @@ import { Float64 as expr } from '..';
 import { exec } from 'child_process';
 import * as asyncHooks from 'async_hooks';
 import { inspect } from 'util';
+import * as os from 'os';
 
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 chai.use(chaiAsPromised);
 const assert = chai.assert;
 
-import * as os from 'os';
-
 // The TS definition of chai.closeToPromised has a wrong signature
 // https://github.com/DefinitelyTyped/DefinitelyTyped/discussions/56990
 function closeToPromised(act: Promise<number>, exp: number, delta: number, msg?: string): PromiseLike<void> {
-    return assert.eventually.closeTo(act as unknown as number, exp, delta, msg);
+    return assert.eventually.closeTo(act, exp, delta, msg);
 }
 
 describe('Expression', () => {
