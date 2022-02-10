@@ -12,12 +12,6 @@ import chaiAsPromised from 'chai-as-promised';
 chai.use(chaiAsPromised);
 const assert = chai.assert;
 
-// The TS definition of chai.closeToPromised has a wrong signature
-// https://github.com/DefinitelyTyped/DefinitelyTyped/discussions/56990
-function closeToPromised(act: Promise<number>, exp: number, delta: number, msg?: string): PromiseLike<void> {
-    return assert.eventually.closeTo(act, exp, delta, msg);
-}
-
 describe('Expression', () => {
     afterEach((global as any).gc);
 
@@ -286,16 +280,16 @@ describe('Expression', () => {
 
         describe('evalAsync() object form', () => {
             it('should accept variables', () => {
-                return closeToPromised(mean.evalAsync({ a: 5, b: 10 }), (5 + 10) / 2, 10e-9);
+                return assert.eventually.closeTo(mean.evalAsync({ a: 5, b: 10 }), (5 + 10) / 2, 10e-9);
             });
             it('should accept vectors', () => {
-                return closeToPromised(vectorMean.evalAsync({ x: vector }), 3.5, 10e-9);
+                return assert.eventually.closeTo(vectorMean.evalAsync({ x: vector }), 3.5, 10e-9);
             });
             it('should reject if not all arguments are given', () => {
                 return assert.isRejected(vectorMean.evalAsync({}), /wrong number of input arguments/);
             });
             it('should support expression without arguments', () => {
-                return closeToPromised(pi.evalAsync({}), 3.14, 0.01);
+                return assert.eventually.closeTo(pi.evalAsync({}), 3.14, 0.01);
             });
             it('should modify the vector in place', () => {
                 const v = new Float64Array(10);
@@ -329,10 +323,10 @@ describe('Expression', () => {
 
         describe('evalAsync() argument list form', () => {
             it('should accept variables', () => {
-                return closeToPromised(mean.evalAsync(5, 10), (5 + 10) / 2, 10e-9);
+                return assert.eventually.closeTo(mean.evalAsync(5, 10), (5 + 10) / 2, 10e-9);
             });
             it('should accept an TypedArray', () => {
-                return closeToPromised(vectorMean.evalAsync(vector), 3.5, 10e-9);
+                return assert.eventually.closeTo(vectorMean.evalAsync(vector), 3.5, 10e-9);
             });
             it('should reject w/ vector that is not a Float64Array', () => {
                 return assert.isRejected(vectorMean.evalAsync(new Uint32Array(6) as unknown as Float64Array),
