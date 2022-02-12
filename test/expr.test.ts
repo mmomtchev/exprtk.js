@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import Expression, { Float64 } from '..';
-import { Float64 as expr } from '..';
+import Expression, { Float64 as expr } from '..';
 
 import { exec } from 'child_process';
 import * as asyncHooks from 'async_hooks';
@@ -85,7 +84,7 @@ describe('Expression', () => {
             assert.equal(mean.maxParallel, os.cpus().length);
         });
         it('should support setting the max parallel instances', () => {
-            const mean = new Float64('a + x[10]', ['a'], { x: 12 });
+            const mean = new expr('a + x[10]', ['a'], { x: 12 });
             assert.equal(mean.maxParallel, os.cpus().length);
             mean.maxParallel = 1;
             assert.equal(mean.maxParallel, 1);
@@ -94,7 +93,7 @@ describe('Expression', () => {
             }, /environment variable EXPRTKJS_THREADS/);
         });
         it(`should have \`os.cpus().length=${os.cpus().length}\` number of worker threads by default`, () => {
-            assert.equal(Float64.maxParallel, os.cpus().length);
+            assert.equal(expr.maxParallel, os.cpus().length);
         });
         it('should support setting the number of worker threads', (done) => {
             const testCode = '"const expr = require(\'.\').Float64; console.log(expr.maxParallel);"';
@@ -197,7 +196,7 @@ describe('Expression', () => {
         let vectorFill: Expression.Float64;
         const vector = new Float64Array([1, 2, 3, 4, 5, 6]);
         const big = 128 * 1024;
-        let bigarray: Float64Array, plus: Float64;
+        let bigarray: Float64Array, plus: Expression.Float64;
 
         let density: Expression.Float64;
         const R = 0.0831446;
