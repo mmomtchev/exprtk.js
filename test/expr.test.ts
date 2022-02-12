@@ -115,6 +115,7 @@ describe('Expression', () => {
 
     describe('types', () => {
         it('Int8', () => {
+            assert.instanceOf(Expression.Int8, Expression.Expression);
             const idi8 = new Expression.Int8('(a + b) / 2', ['a', 'b']);
             const ai8 = new Int8Array([1, 2, 3, 4]);
             const ri8 = idi8.map(ai8, 'a', 1);
@@ -124,6 +125,7 @@ describe('Expression', () => {
         });
 
         it('Uint8', () => {
+            assert.instanceOf(Expression.Uint8, Expression.Expression);
             const idui8 = new Expression.Uint8('(a + b) / 2', ['a', 'b']);
             const aui8 = new Uint8Array([1, 2, 3, 4]);
             const rui8 = idui8.map(aui8, 'a', 1);
@@ -133,6 +135,7 @@ describe('Expression', () => {
         });
 
         it('Int16', () => {
+            assert.instanceOf(Expression.Int16, Expression.Expression);
             const idi16 = new Expression.Int16('(a + b) / 2', ['a', 'b']);
             const ai16 = new Int16Array([1, 2, 3, 4]);
             const ri16 = idi16.map(ai16, 'a', 1);
@@ -142,6 +145,7 @@ describe('Expression', () => {
         });
 
         it('Uint16', () => {
+            assert.instanceOf(Expression.Uint16, Expression.Expression);
             const idui16 = new Expression.Uint16('(a + b) / 2', ['a', 'b']);
             const aui16 = new Uint16Array([1, 2, 3, 4]);
             const rui16 = idui16.map(aui16, 'a', 1);
@@ -151,6 +155,7 @@ describe('Expression', () => {
         });
 
         it('Int32', () => {
+            assert.instanceOf(Expression.Int32, Expression.Expression);
             const idi32 = new Expression.Int32('(a + b) / 2', ['a', 'b']);
             const ai32 = new Int32Array([1, 2, 3, 4]);
             const ri32 = idi32.map(ai32, 'a', 1);
@@ -160,6 +165,7 @@ describe('Expression', () => {
         });
 
         it('Uint32', () => {
+            assert.instanceOf(Expression.Uint32, Expression.Expression);
             const idui32 = new Expression.Uint32('(a + b) / 2', ['a', 'b']);
             const aui32 = new Uint32Array([1, 2, 3, 4]);
             const rui32 = idui32.map(aui32, 'a', 1);
@@ -169,6 +175,7 @@ describe('Expression', () => {
         });
 
         it('Float32', () => {
+            assert.instanceOf(Expression.Float32, Expression.Expression);
             const id32 = new Expression.Float32('(a + b) / 2', ['a', 'b']);
             const a32 = new Float32Array([1, 2, 3, 4]);
             const r32 = id32.map(a32, 'a', 1);
@@ -178,6 +185,7 @@ describe('Expression', () => {
         });
 
         it('Float64', () => {
+            assert.instanceOf(Expression.Float64, Expression.Expression);
             const id64 = new Expression.Float64('(a + b) / 2', ['a', 'b']);
             const a64 = new Float64Array([1, 2, 3, 4]);
             const r64 = id64.map(a64, 'a', 1);
