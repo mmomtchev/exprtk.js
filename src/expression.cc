@@ -1045,7 +1045,7 @@ template <typename T> Napi::Value Expression<T>::GetExpression(const Napi::Callb
  * @name allocator
  * @instance
  * @memberof Expression
- * @type {new (length: number) => TypedArray}
+ * @type {TypedArrayConstructor}
  */
 
 /**
@@ -1056,7 +1056,7 @@ template <typename T> Napi::Value Expression<T>::GetExpression(const Napi::Callb
  * @name allocator
  * @static
  * @memberof Expression
- * @type {new (length: number) => TypedArray}
+ * @type {TypedArrayConstructor}
  */
 
 /**
