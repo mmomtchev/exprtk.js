@@ -114,6 +114,12 @@ describe('Expression', () => {
     });
 
     describe('types', () => {
+        it('Expression', () => {
+            assert.throws(() => {
+                new Expression.Expression('a + b');
+            }, /abstract base class/);
+        });
+
         it('Int8', () => {
             const idi8 = new Expression.Int8('(a + b) / 2', ['a', 'b']);
             assert.instanceOf(idi8, Expression.Expression);
