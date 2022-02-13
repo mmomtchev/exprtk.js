@@ -2,7 +2,7 @@ export type TypedArray = Int8Array | Uint8Array | Int16Array | Uint16Array | Int
 
 export type TypedArrayType = 'Int8' | 'Uint8' | 'Int16' | 'Uint16' | 'Int32' | 'Uint32' | 'Float32' | 'Float64';
 
-export class Expression<T> {
+export class Expression<T extends TypedArray> {
   constructor(expression: string, scalars?: string[], vectors?: Record<string, number>);
 
   static readonly maxParallel: number;
