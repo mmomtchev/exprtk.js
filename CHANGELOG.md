@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Support passing `TypedArray` subarrays (`TypedArray.prototype.subarray`)
  - `Expression.prototype.toString()`
  - Add a shared superclass `Expression` supporting testing with `instanceof`
+ - `Expression.prototype.allocator()` allowing to call the TypedArray constructor
 
 ### [1.0.1] 2022-01-03
  - Fix missing promisification of the async methods for integer types

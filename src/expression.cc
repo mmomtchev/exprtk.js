@@ -1025,11 +1025,39 @@ template <typename T> Napi::Value Expression<T>::GetExpression(const Napi::Callb
  * @memberof Expression
  * @type {string}
  */
-template <typename T> Napi::Value Expression<T>::GetType(const Napi::CallbackInfo &info) {
-  Napi::Env env = info.Env();
 
-  return Napi::String::New(env, NapiArrayType<T>::name);
-}
+/**
+ * Return the type as a string
+ *
+ * @readonly
+ * @kind member
+ * @name type
+ * @static
+ * @memberof Expression
+ * @type {string}
+ */
+
+/**
+ * Return the data type constructor
+ *
+ * @readonly
+ * @kind member
+ * @name allocator
+ * @instance
+ * @memberof Expression
+ * @type {new (length: number) => TypedArray}
+ */
+
+/**
+ * Return the data type constructor
+ *
+ * @readonly
+ * @kind member
+ * @name allocator
+ * @static
+ * @memberof Expression
+ * @type {new (length: number) => TypedArray}
+ */
 
 /**
  * Return the scalar arguments as an array
@@ -1267,13 +1295,15 @@ template <typename T> Napi::Function Expression<T>::GetClass(Napi::Env env) {
   const std::string className = std::string(NapiArrayType<T>::name) + "Expression";
   const Napi::Value maxParallel = Napi::Number::New(env, ExpressionMaxParallel);
   const Napi::Symbol toStringTag = Napi::Symbol::WellKnown(env, "toStringTag");
+  const Napi::String type = Napi::String::New(env, NapiArrayType<T>::name);
   return Expression<T>::DefineClass(
     env,
     className.c_str(),
     {Expression<T>::InstanceAccessor("expression", &Expression<T>::GetExpression, nullptr, napi_enumerable),
      Expression<T>::InstanceAccessor("scalars", &Expression<T>::GetScalars, nullptr, napi_enumerable),
      Expression<T>::InstanceAccessor("vectors", &Expression<T>::GetVectors, nullptr, napi_enumerable),
-     Expression<T>::InstanceAccessor("type", &Expression<T>::GetType, nullptr, napi_enumerable),
+     Expression<T>::InstanceValue("type", type, napi_enumerable),
+     Expression<T>::StaticValue("type", type, napi_enumerable),
      Expression<T>::InstanceAccessor("_CAPI_", &Expression<T>::GetCAPI, nullptr, napi_default),
      Expression<T>::InstanceAccessor(
        "maxParallel", &Expression<T>::GetMaxParallel, &Expression<T>::SetMaxParallel, napi_enumerable),

@@ -147,7 +147,6 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
   exprtk_result capi_cwise(const size_t n_args, const exprtk_capi_cwise_arg *args, exprtk_capi_cwise_arg *result);
 
   Napi::Value GetExpression(const Napi::CallbackInfo &info);
-  Napi::Value GetType(const Napi::CallbackInfo &info);
   Napi::Value GetScalars(const Napi::CallbackInfo &info);
   Napi::Value GetVectors(const Napi::CallbackInfo &info);
   Napi::Value GetCAPI(const Napi::CallbackInfo &info);

@@ -8,11 +8,14 @@ export class Expression<T extends TypedArray> {
   static readonly maxParallel: number;
 
   readonly expression: string;
+  static readonly type: TypedArrayType;
   readonly type: TypedArrayType;
   readonly scalars: string[];
   readonly vectors: Record<string, number>;
   maxParallel: number;
   readonly maxActive: number;
+  static readonly allocator: new (length: number) => TypedArray;
+  readonly allocator: new (length: number) => TypedArray;
 
   eval(arguments: Record<string, number | T>): number;
   eval(...arguments: (number | T)[]): number;
