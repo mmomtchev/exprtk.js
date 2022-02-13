@@ -114,123 +114,55 @@ describe('Expression', () => {
     });
 
     describe('types', () => {
+
+        const array = [-3, -2, -1, 0, 1, 2, 3, 4, NaN];
+        const types = {
+            'Int8': { ctor: Expression.Int8, allocator: Int8Array,
+                result: [-1, 0, 0, 0, 1, 1, 2, 2, 0] },
+            'Uint8': { ctor: Expression.Uint8, allocator: Uint8Array,
+                result: [127, 127, 0, 0, 1, 1, 2, 2, 0] },
+            'Int16': { ctor: Expression.Int16, allocator: Int16Array,
+                result: [-1, 0, 0, 0, 1, 1, 2, 2, 0] },
+            'Uint16': { ctor: Expression.Uint16, allocator: Uint16Array,
+                result: [32767, 32767, 0, 0, 1, 1, 2, 2, 0] },
+            'Int32': { ctor: Expression.Int32, allocator: Int32Array,
+                result: [-1, 0, 0, 0, 1, 1, 2, 2, 0] },
+            'Uint32': { ctor: Expression.Uint32, allocator: Uint32Array,
+                result: [2147483647, 2147483647, 0, 0, 1, 1, 2, 2, 0] },
+            'Float32': { ctor: Expression.Float32, allocator: Float32Array,
+                result: [-1, -0.5, 0, 0.5, 1, 1.5, 2, 2.5, NaN] },
+            'Float64': { ctor: Expression.Float64, allocator: Float64Array,
+                result: [-1, -0.5, 0, 0.5, 1, 1.5, 2, 2.5, NaN] }
+        } as Record<string, {
+            ctor: Expression.ExpressionConstructor,
+            allocator: Expression.TypedArrayConstructor,
+            result: number[]
+        }>;
+
         it('Expression', () => {
             assert.throws(() => {
-                new Expression.Expression('a + b');
+                new (Expression.Expression as any)('a + b');
             }, /abstract base class/);
         });
 
-        it('Int8', () => {
-            assert.equal(Expression.Int8.type, 'Int8');
-            assert.equal(Expression.Int8.allocator, Int8Array);
-            const idi8 = new Expression.Int8('(a + b) / 2', ['a', 'b']);
-            assert.instanceOf(idi8, Expression.Expression);
-            assert.equal(idi8.type, 'Int8');
-            assert.equal(idi8.allocator, Int8Array);
-            const ai8 = new Int8Array([1, 2, 3, 4]);
-            const ri8 = idi8.map(ai8, 'a', 1);
-            assert.instanceOf(ri8, Int8Array);
-            assert.deepEqual(ri8, new Int8Array([1, 1, 2, 2]));
-            assert.instanceOf(idi8.mapAsync(ai8, 'a', 1), Promise);
-        });
+        for (const t of Object.keys(types)) {
+            it(t, () => {
+                const type = types[t];
+                assert.equal(type.ctor.type, t);
+                assert.equal(type.ctor.allocator, type.allocator);
 
-        it('Uint8', () => {
-            assert.equal(Expression.Uint8.type, 'Uint8');
-            assert.equal(Expression.Uint8.allocator, Uint8Array);
-            const idui8 = new Expression.Uint8('(a + b) / 2', ['a', 'b']);
-            assert.instanceOf(idui8, Expression.Expression);
-            assert.equal(idui8.type, 'Uint8');
-            assert.equal(idui8.allocator, Uint8Array);
-            const aui8 = new Uint8Array([1, 2, 3, 4]);
-            const rui8 = idui8.map(aui8, 'a', 1);
-            assert.instanceOf(rui8, Uint8Array);
-            assert.deepEqual(rui8, new Uint8Array([1, 1, 2, 2]));
-            assert.instanceOf(idui8.mapAsync(rui8, 'a', 1), Promise);
-        });
+                const e = new type.ctor('(a + b) / 2', ['a', 'b']);
+                assert.instanceOf(e, Expression.Expression);
+                assert.equal(e.type, t);
+                assert.equal(e.allocator, type.allocator);
 
-        it('Int16', () => {
-            assert.equal(Expression.Int16.type, 'Int16');
-            assert.equal(Expression.Int16.allocator, Int16Array);
-            const idi16 = new Expression.Int16('(a + b) / 2', ['a', 'b']);
-            assert.instanceOf(idi16, Expression.Expression);
-            assert.equal(idi16.type, 'Int16');
-            assert.equal(idi16.allocator, Int16Array);
-            const ai16 = new Int16Array([1, 2, 3, 4]);
-            const ri16 = idi16.map(ai16, 'a', 1);
-            assert.instanceOf(ri16, Int16Array);
-            assert.deepEqual(ri16, new Int16Array([1, 1, 2, 2]));
-            assert.instanceOf(idi16.mapAsync(ai16, 'a', 1), Promise);
-        });
-
-        it('Uint16', () => {
-            assert.equal(Expression.Uint16.type, 'Uint16');
-            assert.equal(Expression.Uint16.allocator, Uint16Array);
-            const idui16 = new Expression.Uint16('(a + b) / 2', ['a', 'b']);
-            assert.instanceOf(idui16, Expression.Expression);
-            assert.equal(idui16.type, 'Uint16');
-            assert.equal(idui16.allocator, Uint16Array);
-            const aui16 = new Uint16Array([1, 2, 3, 4]);
-            const rui16 = idui16.map(aui16, 'a', 1);
-            assert.instanceOf(rui16, Uint16Array);
-            assert.deepEqual(rui16, new Uint16Array([1, 1, 2, 2]));
-            assert.instanceOf(idui16.mapAsync(rui16, 'a', 1), Promise);
-        });
-
-        it('Int32', () => {
-            assert.equal(Expression.Int32.type, 'Int32');
-            assert.equal(Expression.Int32.allocator, Int32Array);
-            const idi32 = new Expression.Int32('(a + b) / 2', ['a', 'b']);
-            assert.instanceOf(idi32, Expression.Expression);
-            assert.equal(idi32.type, 'Int32');
-            assert.equal(idi32.allocator, Int32Array);
-            const ai32 = new Int32Array([1, 2, 3, 4]);
-            const ri32 = idi32.map(ai32, 'a', 1);
-            assert.instanceOf(ri32, Int32Array);
-            assert.deepEqual(ri32, new Int32Array([1, 1, 2, 2]));
-            assert.instanceOf(idi32.mapAsync(ai32, 'a', 1), Promise);
-        });
-
-        it('Uint32', () => {
-            assert.equal(Expression.Uint32.type, 'Uint32');
-            assert.equal(Expression.Uint32.allocator, Uint32Array);
-            const idui32 = new Expression.Uint32('(a + b) / 2', ['a', 'b']);
-            assert.instanceOf(idui32, Expression.Expression);
-            assert.equal(idui32.type, 'Uint32');
-            assert.equal(idui32.allocator, Uint32Array);
-            const aui32 = new Uint32Array([1, 2, 3, 4]);
-            const rui32 = idui32.map(aui32, 'a', 1);
-            assert.instanceOf(rui32, Uint32Array);
-            assert.deepEqual(rui32, new Uint32Array([1, 1, 2, 2]));
-            assert.instanceOf(idui32.mapAsync(rui32, 'a', 1), Promise);
-        });
-
-        it('Float32', () => {
-            assert.equal(Expression.Float32.type, 'Float32');
-            assert.equal(Expression.Float32.allocator, Float32Array);
-            const id32 = new Expression.Float32('(a + b) / 2', ['a', 'b']);
-            assert.instanceOf(id32, Expression.Expression);
-            assert.equal(id32.type, 'Float32');
-            assert.equal(id32.allocator, Float32Array);
-            const a32 = new Float32Array([1, 2, 3, 4]);
-            const r32 = id32.map(a32, 'a', 1);
-            assert.instanceOf(r32, Float32Array);
-            assert.deepEqual(r32, new Float32Array([1, 1.5, 2, 2.5]));
-            assert.instanceOf(id32.mapAsync(r32, 'a', 1), Promise);
-        });
-
-        it('Float64', () => {
-            assert.equal(Expression.Float64.type, 'Float64');
-            assert.equal(Expression.Float64.allocator, Float64Array);
-            const id64 = new Expression.Float64('(a + b) / 2', ['a', 'b']);
-            assert.instanceOf(id64, Expression.Expression);
-            assert.equal(id64.type, 'Float64');
-            assert.equal(id64.allocator, Float64Array);
-            const a64 = new Float64Array([1, 2, 3, 4]);
-            const r64 = id64.map(a64, 'a', 1);
-            assert.instanceOf(r64, Float64Array);
-            assert.deepEqual(r64, new Float64Array([1, 1.5, 2, 2.5]));
-            assert.instanceOf(id64.mapAsync(r64, 'a', 1), Promise);
-        });
+                const a = new type.allocator(array);
+                const r = (e as Expression.Int8).map((a as Int8Array), 'a', {b: 1});
+                assert.instanceOf(r, type.allocator);
+                assert.deepEqual(r, new type.allocator(type.result));
+                assert.instanceOf((e as Expression.Int8).mapAsync((a as Int8Array), 'a', {b: 1}), Promise);
+            });
+        }
     });
 
     describe('compute', () => {
@@ -445,7 +377,7 @@ describe('Expression', () => {
             });
 
             it('should accept named arguments in an object ', () => {
-                const r = clamp.map(vector, 'x', {minv: 2, maxv: 4});
+                const r = clamp.map(vector, 'x', { minv: 2, maxv: 4 });
                 assert.instanceOf(r, Float64Array);
                 assert.deepEqual(r, new Float64Array([2, 2, 3, 4, 4, 4]));
             });
@@ -467,8 +399,8 @@ describe('Expression', () => {
                 assert.instanceOf(r, Float64Array);
                 assert.equal(r.length, big);
                 if (process.env.MOCHA_TEST_CONCURRENCY === undefined
-                        || +process.env.MOCHA_TEST_CONCURRENCY == 1
-                        && os.cpus().length >= 4)
+                    || +process.env.MOCHA_TEST_CONCURRENCY == 1
+                    && os.cpus().length >= 4)
                     assert.isAbove(plus.maxActive, 1);
                 for (let i = 0; i < big; i += big / 1024)
                     assert.closeTo(r[i], i + 12, 10e-9);
