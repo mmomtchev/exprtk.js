@@ -120,15 +120,15 @@ describe('Expression', () => {
             'Int8': { ctor: Expression.Int8, allocator: Int8Array,
                 result: [-1, 0, 0, 0, 1, 1, 2, 2, 0] },
             'Uint8': { ctor: Expression.Uint8, allocator: Uint8Array,
-                result: [127, 127, 0, 0, 1, 1, 2, 2, 0] },
+                result: ['ub', 'ub', 'ub', 0, 1, 1, 2, 2, 0] },
             'Int16': { ctor: Expression.Int16, allocator: Int16Array,
                 result: [-1, 0, 0, 0, 1, 1, 2, 2, 0] },
             'Uint16': { ctor: Expression.Uint16, allocator: Uint16Array,
-                result: [32767, 32767, 0, 0, 1, 1, 2, 2, 0] },
+                result: ['ub', 'ub', 'ub', 0, 1, 1, 2, 2, 0] },
             'Int32': { ctor: Expression.Int32, allocator: Int32Array,
                 result: [-1, 0, 0, 0, 1, 1, 2, 2, 0] },
             'Uint32': { ctor: Expression.Uint32, allocator: Uint32Array,
-                result: [2147483647, 2147483647, 0, 0, 1, 1, 2, 2, 0] },
+                result: ['ub', 'ub', 'ub', 0, 1, 1, 2, 2, 0] },
             'Float32': { ctor: Expression.Float32, allocator: Float32Array,
                 result: [-1, -0.5, 0, 0.5, 1, 1.5, 2, 2.5, NaN] },
             'Float64': { ctor: Expression.Float64, allocator: Float64Array,
@@ -136,7 +136,7 @@ describe('Expression', () => {
         } as Record<string, {
             ctor: Expression.ExpressionConstructor,
             allocator: Expression.TypedArrayConstructor,
-            result: number[]
+            result: (number|'ub')[]
         }>;
 
         it('Expression', () => {
@@ -159,7 +159,11 @@ describe('Expression', () => {
                 const a = new type.allocator(array);
                 const r = (e as Expression.Int8).map((a as Int8Array), 'a', {b: 1});
                 assert.instanceOf(r, type.allocator);
-                assert.deepEqual(r, new type.allocator(type.result));
+                for (const i in r) {
+                    if (type.result[i] === 'ub') continue;
+                    if (isNaN(r[i])) assert.isNaN(type.result[i]);
+                    else assert.strictEqual(r[i], type.result[i]);
+                }
                 assert.instanceOf((e as Expression.Int8).mapAsync((a as Int8Array), 'a', {b: 1}), Promise);
             });
         }
