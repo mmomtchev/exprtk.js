@@ -128,6 +128,7 @@ const r = await mean.evalAsync(inputArray);
 ### Table of Contents
 
 *   [toString](#tostring)
+*   [allocator](#allocator)
 *   [expression](#expression)
 *   [maxActive](#maxactive)
 *   [maxParallel](#maxparallel)
@@ -146,7 +147,9 @@ const r = await mean.evalAsync(inputArray);
 *   [reduce](#reduce)
     *   [Parameters](#parameters-3)
     *   [Examples](#examples-3)
+*   [allocator](#allocator-1)
 *   [maxParallel](#maxparallel-1)
+*   [type](#type-1)
 *   [Expression](#expression-1)
     *   [Parameters](#parameters-4)
     *   [Examples](#examples-4)
@@ -156,6 +159,12 @@ const r = await mean.evalAsync(inputArray);
 Get a string representation of this object
 
 Returns **string**&#x20;
+
+## allocator
+
+Return the data type constructor
+
+Type: TypedArrayConstructor
 
 ## expression
 
@@ -239,8 +248,14 @@ const result = new Float32Array(P.length);
 // sync
 density.cwise({phi, T, P, R, Md, Mv}, result);
 
+// sync multithreaded
+density.cwise(os.cpus().length, {phi, T, P, R, Md, Mv}, result);
+
 // async
 await density.cwiseAsync({phi, T, P, R, Md, Mv}, result);
+
+// async multithreaded
+await density.cwiseAsync(os.cpus().length, {phi, T, P, R, Md, Mv}, result);
 ```
 
 Returns **TypedArray\<T>**&#x20;
@@ -313,9 +328,9 @@ const r2 = expr.map(array, 'x', {f: 0, c: 0});
 expr.mapAsync(array, 'x', 0, 1000, (e,r) => console.log(e, r));
 expr.mapAsync(array, 'x', {f: 0, c: 0}, (e,r) => console.log(e, r));
 
-// Using 4 multiple parallel threads (OpenMP-style parallelism)
+// Using multiple (4) parallel threads (OpenMP-style parallelism)
 const r1 = expr.map(4, array, 'x', 0, 1000);
-const r2 = expr.map(4, array, 'x', {f: 0, c: 0});
+const r2 = await expr.mapAsync(4, array, 'x', {f: 0, c: 0});
 ```
 
 Returns **TypedArray\<T>**&#x20;
@@ -356,12 +371,24 @@ const sumSq = await sum.reduceAsync(array, 'x', {'a' : 0}, (e,r) => console.log(
 
 Returns **number**&#x20;
 
+## allocator
+
+Return the data type constructor
+
+Type: TypedArrayConstructor
+
 ## maxParallel
 
 Get the number of threads available for evaluating expressions.
 Set by the `EXPRTKJS_THREADS` environment variable.
 
 Type: number
+
+## type
+
+Return the type as a string
+
+Type: string
 
 ## Expression
 

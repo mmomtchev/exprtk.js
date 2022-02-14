@@ -18,7 +18,7 @@
     "codecov": "cd coverage && curl -s https://codecov.io/bash | bash"
   },
   "name": "exprtk.js",
-  "version": "2.0.0-alpha.0",
+  "version": "2.0.0",
   "description": "JS Mathematical Expression Toolkit Library",
   "repository": {
     "type": "git",
