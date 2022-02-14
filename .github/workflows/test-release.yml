@@ -5,6 +5,11 @@ on:
     types: [published]
 
   workflow_dispatch:
+    inputs:
+      testConcurrency:
+        description: 'Check that parallel tests run in parallel (requires real CPUs)'
+        required: false
+        default: 0
 
 
 jobs:
@@ -25,4 +30,7 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - run: npm install --ignore-scripts
     - run: npx @mapbox/node-pre-gyp install
-    - run: npm test
+    - name: Run unit tests
+      run: npm test
+      env:
+        MOCHA_TEST_CONCURRENCY: ${{ github.event.inputs.testConcurrency }}
