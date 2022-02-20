@@ -1,0 +1,1444 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset='utf-8'>
+  <title>exprtk.js 2.0.0 | Documentation</title>
+  <meta name='description' content='JS Mathematical Expression Toolkit Library'>
+  <meta name='viewport' content='width=device-width,initial-scale=1'>
+  <link href='assets/bass.css' rel='stylesheet'>
+  <link href='assets/style.css' rel='stylesheet'>
+  <link href='assets/github.css' rel='stylesheet'>
+  <link href='assets/split.css' rel='stylesheet'>
+</head>
+<body class='documentation m0'>
+    <div class='flex'>
+      <div id='split-left' class='overflow-auto fs0 height-viewport-100'>
+        <div class='py1 px2'>
+          <h3 class='mb0 no-anchor'>exprtk.js</h3>
+          <div class='mb1'><code>2.0.0</code></div>
+          <input
+            placeholder='Filter'
+            id='filter-input'
+            class='col12 block input'
+            spellcheck='false'
+            autocapitalize='off'
+            autocorrect='off'
+            type='text' />
+          <div id='toc'>
+            <ul class='list-reset h5 py1-ul'>
+              
+                
+                <li><a
+                  href='#exprtkjs'
+                  class="h5 bold black caps">
+                  ExprTk.js
+                  
+                </a>
+                
+                </li>
+              
+                
+                <li><a
+                  href='#expression'
+                  class=" toggle-sibling">
+                  Expression
+                  <span class='icon'>▸</span>
+                </a>
+                
+                <div class='toggle-target display-none'>
+                  
+                  <ul class='list-reset py1-ul pl1'>
+                    <li class='h5'><span>Static members</span></li>
+                    
+                      <li><a
+                        href='#expressionallocator'
+                        class='regular pre-open'>
+                        .allocator
+                      </a></li>
+                    
+                      <li><a
+                        href='#expressionmaxparallel'
+                        class='regular pre-open'>
+                        .maxParallel
+                      </a></li>
+                    
+                    </ul>
+                  
+                  
+                    <ul class='list-reset py1-ul pl1'>
+                      <li class='h5'><span>Instance members</span></li>
+                      
+                      <li><a
+                        href='#expressiontostring'
+                        class='regular pre-open'>
+                        #toString
+                      </a></li>
+                      
+                      <li><a
+                        href='#expressioncwise'
+                        class='regular pre-open'>
+                        #cwise
+                      </a></li>
+                      
+                      <li><a
+                        href='#expressioneval'
+                        class='regular pre-open'>
+                        #eval
+                      </a></li>
+                      
+                      <li><a
+                        href='#expressionmap'
+                        class='regular pre-open'>
+                        #map
+                      </a></li>
+                      
+                      <li><a
+                        href='#expressionreduce'
+                        class='regular pre-open'>
+                        #reduce
+                      </a></li>
+                      
+                      <li><a
+                        href='#expressionallocator'
+                        class='regular pre-open'>
+                        #allocator
+                      </a></li>
+                      
+                      <li><a
+                        href='#expressionexpression'
+                        class='regular pre-open'>
+                        #expression
+                      </a></li>
+                      
+                      <li><a
+                        href='#expressionmaxactive'
+                        class='regular pre-open'>
+                        #maxActive
+                      </a></li>
+                      
+                      <li><a
+                        href='#expressionmaxparallel'
+                        class='regular pre-open'>
+                        #maxParallel
+                      </a></li>
+                      
+                      <li><a
+                        href='#expressionscalars'
+                        class='regular pre-open'>
+                        #scalars
+                      </a></li>
+                      
+                      <li><a
+                        href='#expressiontype'
+                        class='regular pre-open'>
+                        #type
+                      </a></li>
+                      
+                      <li><a
+                        href='#expressiontype'
+                        class='regular pre-open'>
+                        #type
+                      </a></li>
+                      
+                      <li><a
+                        href='#expressionvectors'
+                        class='regular pre-open'>
+                        #vectors
+                      </a></li>
+                      
+                    </ul>
+                  
+                  
+                  
+                </div>
+                
+                </li>
+              
+            </ul>
+          </div>
+          <div class='mt1 h6 quiet'>
+            <a href='https://documentation.js.org/reading-documentation.html'>Need help reading this?</a>
+          </div>
+        </div>
+      </div>
+      <div id='split-right' class='relative overflow-auto height-viewport-100'>
+        
+          
+            <div class='keyline-top-not py2'><section class='py2 clearfix'>
+
+  <h2 id='exprtkjs' class='mt0'>
+    ExprTk.js
+  </h2>
+
+  
+    <h1>Node.js bindings for <a href="http://www.partow.net/programming/exprtk/index.html">ExprTk</a></h1>
+<p><a href="https://github.com/mmomtchev/exprtk.js">!</a>
+<a href="https://github.com/mmomtchev/exprtk.js/blob/master/LICENSE"><img src="https://img.shields.io/github/license/mmomtchev/exprtk.js" alt="License: ISC"></a>
+<a href="https://www.npmjs.com/package/exprtk.js"><img src="https://img.shields.io/npm/v/exprtk.js" alt="npm version"></a>
+<a href="https://github.com/mmomtchev/exprtk.js/actions/workflows/test-dev.yml"><img src="https://github.com/mmomtchev/exprtk.js/actions/workflows/test-dev.yml/badge.svg" alt="Node.js CI"></a>
+<a href="https://github.com/mmomtchev/exprtk.js/actions/workflows/test-release.yml"><img src="https://github.com/mmomtchev/exprtk.js/actions/workflows/test-release.yml/badge.svg" alt="Test published packages"></a>
+<a href="https://codecov.io/gh/mmomtchev/exprtk.js"><img src="https://codecov.io/gh/mmomtchev/exprtk.js/branch/main/graph/badge.svg?token=H8v2uuZGYg" alt="codecov"></a></p>
+<p><code>ExprTk.js</code> supports both synchronous and asynchronous background execution of thunks precompiled from a string including asynchronous and multithreaded versions of <code>TypedArray.prototype.map</code> and <code>TypedArray.prototype.reduce</code> and a synchronous multi-threaded version of <code>TypedArray.prototype.map</code>.</p>
+<p>Its main advantage is that it allows deferring of heavy computation for asynchronous execution in a background thread - something that Node.js/V8 does not allow without the very complex mechanisms of <code>worker_threads</code>.</p>
+<p>Even in single-threaded synchronous mode <code>ExprTk.js</code> outperforms the native JS <code>TypedArray.prototype.map</code> running in V8 by a significant margin for all types and array sizes and it comes very close to a direct iterative <code>for</code> loop.</p>
+<p>It also supports being directly called from native add-ons, including native threads, without any synchronization with V8, allowing JS code to drive multi-threaded mathematical transformations.</p>
+<h1>Installation</h1>
+<pre><code>npm install exprtk.js
+</code></pre>
+<h1>Usage</h1>
+<pre><code>const Float64Expression = require('exprtk.js').Float64;
+
+const expr = new Float64Expression('(a + b) / 2');
+const inputArray = new Float64Array(1e6);
+
+// Happens in a background thread, iterates over 'a', with b=4
+const outputArray = await expr.mapAsync(inputArray, 'a', { 'b': 4 });
+
+// or with 4 threads on 4 cores
+const outputArray = await expr.mapAsync(4, inputArray, 'a', { 'b': 4 });
+</code></pre>
+
+  
+</section></div>
+          
+        
+          
+          <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+  <div class='clearfix'>
+    
+    <h3 class='fl m0' id='expression'>
+      Expression
+    </h3>
+    
+    
+  </div>
+  
+
+  
+    <div class='pre p1 fill-light mt0'>new Expression(expression: string, variables: Array&#x3C;string>?, vectors: Record&#x3C;string, number>?): <a href="#expression">Expression</a></div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>expression</span> <code class='quiet'>(string)</code>
+	    function
+
+          </div>
+          
+        </div>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>variables</span> <code class='quiet'>(Array&#x3C;string>?)</code>
+	    An array containing all the scalar variables' names, will be determined automatically if omitted, however order won't be guaranteed, scalars are passed by value
+
+          </div>
+          
+        </div>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>vectors</span> <code class='quiet'>(Record&#x3C;string, number>?)</code>
+	    An object containing all the vector variables' names and their sizes, vector size must be known at compilation (object construction), vectors are passed by reference and can be modified by the ExprTk expression
+
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code><a href="#expression">Expression</a></code>:
+        The 
+<code>Expression</code>
+ represents an expression compiled to an AST from a string. Expressions come in different flavors depending on the internal type used.
+<hr>
+<table>
+<thead>
+<tr>
+<th>JS</th>
+<th>C/C++</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Float64</td>
+<td>double</td>
+</tr>
+<tr>
+<td>Float32</td>
+<td>float</td>
+</tr>
+<tr>
+<td>Uint32</td>
+<td>uint32_t (unsigned long)</td>
+</tr>
+<tr>
+<td>Int32</td>
+<td>int32_t (long)</td>
+</tr>
+<tr>
+<td>Uint16</td>
+<td>uint16_t (unsigned short)</td>
+</tr>
+<tr>
+<td>Int16</td>
+<td>int16_t (short)</td>
+</tr>
+<tr>
+<td>Uint8</td>
+<td>uint8_t (unsigned char)</td>
+</tr>
+<tr>
+<td>Int8</td>
+<td>int8_t (char)</td>
+</tr>
+</tbody>
+</table>
+
+      
+    
+  
+
+  
+
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Example</div>
+    
+      
+      <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// This determines the internally used type</span>
+<span class="hljs-keyword">const</span> expr = <span class="hljs-built_in">require</span>(<span class="hljs-string">&quot;exprtk.js&quot;</span>).<span class="hljs-property">Float64</span>;
+
+<span class="hljs-comment">// arithmetic mean of 2 variables</span>
+<span class="hljs-keyword">const</span> mean = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Expression</span>(<span class="hljs-string">&#x27;(a+b)/2&#x27;</span>, [<span class="hljs-string">&#x27;a&#x27;</span>, <span class="hljs-string">&#x27;b&#x27;</span>]);
+
+<span class="hljs-comment">// naive stddev of an array of 1024 elements</span>
+<span class="hljs-keyword">const</span> stddev = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Expression</span>(
+ <span class="hljs-string">&#x27;var sum := 0; var sumsq := 0; &#x27;</span> + 
+ <span class="hljs-string">&#x27;for (var i := 0; i &lt; x[]; i += 1) { sum += x[i]; sumsq += x[i] * x[i] }; &#x27;</span> +
+ <span class="hljs-string">&#x27;(sumsq - (sum*sum) / x[]) / (x[] - 1);&#x27;</span>,
+ [], {<span class="hljs-attr">x</span>: <span class="hljs-number">1024</span>})</pre>
+    
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Static Members</div>
+    <div class="clearfix">
+  
+    <div class='border-bottom' id='expressionallocator'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>allocator</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>Return the data type constructor</p>
+
+    <div class='pre p1 fill-light mt0'>allocator</div>
+  
+    <p>
+      Type:
+      TypedArrayConstructor
+    </p>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='expressionmaxparallel'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>maxParallel</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>Get the number of threads available for evaluating expressions.
+Set by the <code>EXPRTKJS_THREADS</code> environment variable.</p>
+
+    <div class='pre p1 fill-light mt0'>maxParallel</div>
+  
+    <p>
+      Type:
+      number
+    </p>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+</div>
+
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Instance Members</div>
+    <div class="clearfix">
+  
+    <div class='border-bottom' id='expressiontostring'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>toString</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>Get a string representation of this object</p>
+
+    <div class='pre p1 fill-light mt0'>toString</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code>string</code>:
+        
+      
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='expressioncwise'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>cwise(arguments, arguments)</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>Generic vector operation with implicit traversal.</p>
+<p>Supports automatic type conversions, multiple inputs and writing into a pre-existing array.</p>
+
+    <div class='pre p1 fill-light mt0'>cwise(arguments: Record&#x3C;string, (number | TypedArray&#x3C;T>)>, arguments: ...(Array&#x3C;(number | TypedArray&#x3C;T>)> | Record&#x3C;string, (number | TypedArray&#x3C;T>)>)): TypedArray&#x3C;T></div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>arguments</span> <code class='quiet'>(Record&#x3C;string, (number | TypedArray&#x3C;T>)>)</code>
+	    
+          </div>
+          
+        </div>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>arguments</span> <code class='quiet'>(...(Array&#x3C;(number | TypedArray&#x3C;T>)> | Record&#x3C;string, (number | TypedArray&#x3C;T>)>))</code>
+	    of the function, iterator removed
+
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code>TypedArray&#x3C;T></code>:
+        
+      
+    
+  
+
+  
+
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Example</div>
+    
+      
+      <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// Air density of humid air from relative humidity (phi), temperature (T) and pressure (P)</span>
+<span class="hljs-comment">// rho = ( Pd * Md + Pv * Mv ) / ( R * (T + 273.15) // density (Avogadro&#x27;s law)</span>
+<span class="hljs-comment">// Pv = phi * Ps                                    // vapor pressure of water</span>
+<span class="hljs-comment">// Ps = 6.1078 * 10 ^ (7.5 * T / (T + 237.3))       // saturation vapor pressure (Tetens&#x27; equation)</span>
+<span class="hljs-comment">// Pd = P - Pv                                      // partial pressure of dry air</span>
+<span class="hljs-comment">// R = 0.0831446                                    // universal gas constant</span>
+<span class="hljs-comment">// Md = 0.0289652                                   // molar mass of water vapor</span>
+<span class="hljs-comment">// Mv = 0.018016                                    // molar mass of dry air</span>
+<span class="hljs-comment">// ( this is the weather science form of the equation and not the hard physics one with T in C° )</span>
+<span class="hljs-comment">// phi, T and P are arbitrary TypedArrays of the same size</span>
+<span class="hljs-comment">//</span>
+<span class="hljs-comment">// Calculation uses Float64 internally</span>
+<span class="hljs-comment">// Result is stored in Float32</span>
+
+<span class="hljs-keyword">const</span> R = <span class="hljs-number">0.0831446</span>;
+<span class="hljs-keyword">const</span> <span class="hljs-title class_">Md</span> = <span class="hljs-number">0.0289652</span>;
+<span class="hljs-keyword">const</span> <span class="hljs-title class_">Mv</span> = <span class="hljs-number">0.018016</span>;
+<span class="hljs-comment">// cwise()/cwiseAsync() accept and automatically convert all data types</span>
+<span class="hljs-keyword">const</span> phi = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Float32Array</span>([<span class="hljs-number">0</span>, <span class="hljs-number">0.2</span>, <span class="hljs-number">0.5</span>, <span class="hljs-number">0.9</span>, <span class="hljs-number">0.5</span>]);
+<span class="hljs-keyword">const</span> P = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Uint16Array</span>([<span class="hljs-number">1013</span>, <span class="hljs-number">1013</span>, <span class="hljs-number">1013</span>, <span class="hljs-number">1013</span>, <span class="hljs-number">995</span>]);
+<span class="hljs-keyword">const</span> T = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Uint16Array</span>([<span class="hljs-number">25</span>, <span class="hljs-number">25</span>, <span class="hljs-number">25</span>, <span class="hljs-number">25</span>, <span class="hljs-number">25</span>]);
+
+<span class="hljs-keyword">const</span> density = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Float64Expression</span>(
+  <span class="hljs-string">&#x27;Pv := ( phi * 6.1078 * pow(10, (7.5 * T / (T + 237.3))) ); &#x27;</span> +  <span class="hljs-comment">// compute Pv and store it</span>
+  <span class="hljs-string">&#x27;( (P - Pv) * Md + Pv * Mv ) / ( R * (T + 273.13) )&#x27;</span>,            <span class="hljs-comment">// return expression</span>
+   [<span class="hljs-string">&#x27;P&#x27;</span>, <span class="hljs-string">&#x27;T&#x27;</span>, <span class="hljs-string">&#x27;phi&#x27;</span>, <span class="hljs-string">&#x27;R&#x27;</span>, <span class="hljs-string">&#x27;Md&#x27;</span>, <span class="hljs-string">&#x27;Mv&#x27;</span>]
+);
+<span class="hljs-keyword">const</span> result = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Float32Array</span>(P.<span class="hljs-property">length</span>);
+
+<span class="hljs-comment">// sync</span>
+density.<span class="hljs-title function_">cwise</span>({phi, T, P, R, <span class="hljs-title class_">Md</span>, <span class="hljs-title class_">Mv</span>}, result);
+
+<span class="hljs-comment">// sync multithreaded</span>
+density.<span class="hljs-title function_">cwise</span>(os.<span class="hljs-title function_">cpus</span>().<span class="hljs-property">length</span>, {phi, T, P, R, <span class="hljs-title class_">Md</span>, <span class="hljs-title class_">Mv</span>}, result);
+
+<span class="hljs-comment">// async</span>
+<span class="hljs-keyword">await</span> density.<span class="hljs-title function_">cwiseAsync</span>({phi, T, P, R, <span class="hljs-title class_">Md</span>, <span class="hljs-title class_">Mv</span>}, result);
+
+<span class="hljs-comment">// async multithreaded</span>
+<span class="hljs-keyword">await</span> density.<span class="hljs-title function_">cwiseAsync</span>(os.<span class="hljs-title function_">cpus</span>().<span class="hljs-property">length</span>, {phi, T, P, R, <span class="hljs-title class_">Md</span>, <span class="hljs-title class_">Mv</span>}, result);</pre>
+    
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='expressioneval'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>eval(arguments)</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>Evaluate the expression.</p>
+<p>All arrays must match the internal data type.</p>
+
+    <div class='pre p1 fill-light mt0'>eval(arguments: ...(Array&#x3C;(number | TypedArray&#x3C;T>)> | Record&#x3C;string, (number | TypedArray&#x3C;T>)>)): number</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>arguments</span> <code class='quiet'>(...(Array&#x3C;(number | TypedArray&#x3C;T>)> | Record&#x3C;string, (number | TypedArray&#x3C;T>)>))</code>
+	    of the function
+
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code>number</code>:
+        
+      
+    
+  
+
+  
+
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Example</div>
+    
+      
+      <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// These two are equivalent</span>
+<span class="hljs-keyword">const</span> r1 = expr.<span class="hljs-built_in">eval</span>({<span class="hljs-attr">a</span>: <span class="hljs-number">2</span>, <span class="hljs-attr">b</span>: <span class="hljs-number">5</span>});  <span class="hljs-comment">// less error-prone</span>
+<span class="hljs-keyword">const</span> r2 = expr.<span class="hljs-built_in">eval</span>(<span class="hljs-number">2</span>, <span class="hljs-number">5</span>);          <span class="hljs-comment">// slightly faster</span>
+
+<span class="hljs-comment">// These two are equivalent</span>
+expr.evalAsync({<span class="hljs-attr">a</span>: <span class="hljs-number">2</span>, <span class="hljs-attr">b</span>: <span class="hljs-number">5</span>}, <span class="hljs-function">(<span class="hljs-params">e,r</span>) =&gt;</span> <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(e, r));
+expr.evalAsync(<span class="hljs-number">2</span>, <span class="hljs-number">5</span>, <span class="hljs-function">(<span class="hljs-params">e,r</span>) =&gt;</span> <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(e, r));</pre>
+    
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='expressionmap'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>map(threads?, target?, array, iterator, arguments)</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>Evaluate the expression for every element of a TypedArray.</p>
+<p>Evaluation and traversal happens entirely in C++ so this will be much
+faster than calling <code>array.map(expr.eval)</code>.</p>
+<p>All arrays must match the internal data type.</p>
+<p>If target is specified, it will write the data into a preallocated array.
+This can be used when multiple operations are chained to avoid reallocating a new array at every step.
+Otherwise it will return a new array.</p>
+
+    <div class='pre p1 fill-light mt0'>map(threads: TypedArray&#x3C;T>?, target: TypedArray&#x3C;T>?, array: TypedArray&#x3C;T>, iterator: string, arguments: ...(Array&#x3C;(number | TypedArray&#x3C;T>)> | Record&#x3C;string, (number | TypedArray&#x3C;T>)>)): TypedArray&#x3C;T></div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>threads</span> <code class='quiet'>(TypedArray&#x3C;T>?)</code>
+	    number of threads to use, 1 if not specified
+
+          </div>
+          
+        </div>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>target</span> <code class='quiet'>(TypedArray&#x3C;T>?)</code>
+	    array in which the data is to be written, will allocate a new array if none is specified
+
+          </div>
+          
+        </div>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>array</span> <code class='quiet'>(TypedArray&#x3C;T>)</code>
+	    for the expression to be iterated over
+
+          </div>
+          
+        </div>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>iterator</span> <code class='quiet'>(string)</code>
+	    variable name
+
+          </div>
+          
+        </div>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>arguments</span> <code class='quiet'>(...(Array&#x3C;(number | TypedArray&#x3C;T>)> | Record&#x3C;string, (number | TypedArray&#x3C;T>)>))</code>
+	    of the function, iterator removed
+
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code>TypedArray&#x3C;T></code>:
+        
+      
+    
+  
+
+  
+
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Example</div>
+    
+      
+      <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// Clamp values in an array to [0..1000]</span>
+<span class="hljs-keyword">const</span> expr = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Expression</span>(<span class="hljs-string">&#x27;clamp(f, x, c)&#x27;</span>, [<span class="hljs-string">&#x27;f&#x27;</span>, <span class="hljs-string">&#x27;x&#x27;</span>, <span class="hljs-string">&#x27;c&#x27;</span>]);
+
+<span class="hljs-comment">// In a preallocated array</span>
+<span class="hljs-keyword">const</span> r = <span class="hljs-keyword">new</span> array.<span class="hljs-title function_">constructor</span>(<span class="hljs-params">array.length</span>);
+<span class="hljs-comment">// These two are equivalent</span>
+expr.<span class="hljs-title function_">map</span>(r, array, <span class="hljs-string">&#x27;x&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1000</span>);
+expr.<span class="hljs-title function_">map</span>(r, array, <span class="hljs-string">&#x27;x&#x27;</span>, {<span class="hljs-attr">f</span>: <span class="hljs-number">0</span>, <span class="hljs-attr">c</span>: <span class="hljs-number">0</span>});
+
+expr.<span class="hljs-title function_">mapAsync</span>(r, array, <span class="hljs-string">&#x27;x&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1000</span>, <span class="hljs-function">(<span class="hljs-params">e,r</span>) =&gt;</span> <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(e, r));
+expr.<span class="hljs-title function_">mapAsync</span>(r, array, <span class="hljs-string">&#x27;x&#x27;</span>, {<span class="hljs-attr">f</span>: <span class="hljs-number">0</span>, <span class="hljs-attr">c</span>: <span class="hljs-number">0</span>}, <span class="hljs-function">(<span class="hljs-params">e,r</span>) =&gt;</span> <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(e, r));
+
+<span class="hljs-comment">// In a new array</span>
+<span class="hljs-comment">// r1/r2 will be TypedArray&#x27;s of the same type</span>
+<span class="hljs-keyword">const</span> r1 = expr.<span class="hljs-title function_">map</span>(array, <span class="hljs-string">&#x27;x&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1000</span>);
+<span class="hljs-keyword">const</span> r2 = expr.<span class="hljs-title function_">map</span>(array, <span class="hljs-string">&#x27;x&#x27;</span>, {<span class="hljs-attr">f</span>: <span class="hljs-number">0</span>, <span class="hljs-attr">c</span>: <span class="hljs-number">0</span>});
+
+expr.<span class="hljs-title function_">mapAsync</span>(array, <span class="hljs-string">&#x27;x&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1000</span>, <span class="hljs-function">(<span class="hljs-params">e,r</span>) =&gt;</span> <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(e, r));
+expr.<span class="hljs-title function_">mapAsync</span>(array, <span class="hljs-string">&#x27;x&#x27;</span>, {<span class="hljs-attr">f</span>: <span class="hljs-number">0</span>, <span class="hljs-attr">c</span>: <span class="hljs-number">0</span>}, <span class="hljs-function">(<span class="hljs-params">e,r</span>) =&gt;</span> <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(e, r));
+
+<span class="hljs-comment">// Using multiple (4) parallel threads (OpenMP-style parallelism)</span>
+<span class="hljs-keyword">const</span> r1 = expr.<span class="hljs-title function_">map</span>(<span class="hljs-number">4</span>, array, <span class="hljs-string">&#x27;x&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1000</span>);
+<span class="hljs-keyword">const</span> r2 = <span class="hljs-keyword">await</span> expr.<span class="hljs-title function_">mapAsync</span>(<span class="hljs-number">4</span>, array, <span class="hljs-string">&#x27;x&#x27;</span>, {<span class="hljs-attr">f</span>: <span class="hljs-number">0</span>, <span class="hljs-attr">c</span>: <span class="hljs-number">0</span>});</pre>
+    
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='expressionreduce'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>reduce(array, iterator, accumulator, initializer, arguments)</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>Evaluate the expression for every element of a TypedArray
+passing a scalar accumulator to every evaluation.</p>
+<p>Evaluation and traversal happens entirely in C++ so this will be much
+faster than calling <code>array.reduce(expr.eval)</code>.</p>
+<p>All arrays must match the internal data type.</p>
+
+    <div class='pre p1 fill-light mt0'>reduce(array: TypedArray&#x3C;T>, iterator: string, accumulator: string, initializer: number, arguments: ...(Array&#x3C;(number | TypedArray&#x3C;T>)> | Record&#x3C;string, (number | TypedArray&#x3C;T>)>)): number</div>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Parameters</div>
+    <div class='prose'>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>array</span> <code class='quiet'>(TypedArray&#x3C;T>)</code>
+	    for the expression to be iterated over
+
+          </div>
+          
+        </div>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>iterator</span> <code class='quiet'>(string)</code>
+	    variable name
+
+          </div>
+          
+        </div>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>accumulator</span> <code class='quiet'>(string)</code>
+	    variable name
+
+          </div>
+          
+        </div>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>initializer</span> <code class='quiet'>(number)</code>
+	    for the accumulator
+
+          </div>
+          
+        </div>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>arguments</span> <code class='quiet'>(...(Array&#x3C;(number | TypedArray&#x3C;T>)> | Record&#x3C;string, (number | TypedArray&#x3C;T>)>))</code>
+	    of the function, iterator removed
+
+          </div>
+          
+        </div>
+      
+    </div>
+  
+
+  
+
+  
+    
+      <div class='py1 quiet mt1 prose-big'>Returns</div>
+      <code>number</code>:
+        
+      
+    
+  
+
+  
+
+  
+
+  
+    <div class='py1 quiet mt1 prose-big'>Example</div>
+    
+      
+      <pre class='p1 overflow-auto round fill-light'><span class="hljs-comment">// n-power sum of an array</span>
+<span class="hljs-keyword">const</span> sum = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Expression</span>(<span class="hljs-string">&#x27;a + pow(x, p)&#x27;</span>, [<span class="hljs-string">&#x27;a&#x27;</span>, <span class="hljs-string">&#x27;x&#x27;</span>, <span class="hljs-string">&#x27;p&#x27;</span>]);
+
+<span class="hljs-comment">// sumSq will be a scalar number</span>
+
+<span class="hljs-comment">// These are equivalent</span>
+<span class="hljs-keyword">const</span> sumSq = sum.<span class="hljs-title function_">reduce</span>(array, <span class="hljs-string">&#x27;x&#x27;</span>, <span class="hljs-string">&#x27;a&#x27;</span>, <span class="hljs-number">0</span>, {<span class="hljs-string">&#x27;p&#x27;</span>: <span class="hljs-number">2</span>});
+<span class="hljs-keyword">const</span> sumSq = sum.<span class="hljs-title function_">reduce</span>(array, <span class="hljs-string">&#x27;x&#x27;</span>, <span class="hljs-string">&#x27;a&#x27;</span>, <span class="hljs-number">0</span>, <span class="hljs-number">2</span>);
+
+sum.<span class="hljs-title function_">reduceAsync</span>(array, <span class="hljs-string">&#x27;x&#x27;</span>, {<span class="hljs-string">&#x27;a&#x27;</span> : <span class="hljs-number">0</span>}, <span class="hljs-function">(<span class="hljs-params">e,r</span>) =&gt;</span> <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(e, r));
+<span class="hljs-keyword">const</span> sumSq = <span class="hljs-keyword">await</span> sum.<span class="hljs-title function_">reduceAsync</span>(array, <span class="hljs-string">&#x27;x&#x27;</span>, {<span class="hljs-string">&#x27;a&#x27;</span> : <span class="hljs-number">0</span>}, <span class="hljs-function">(<span class="hljs-params">e,r</span>) =&gt;</span> <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(e, r));</pre>
+    
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='expressionallocator'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>allocator</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>Return the data type constructor</p>
+
+    <div class='pre p1 fill-light mt0'>allocator</div>
+  
+    <p>
+      Type:
+      TypedArrayConstructor
+    </p>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='expressionexpression'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>expression</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>Return the expression as a string</p>
+
+    <div class='pre p1 fill-light mt0'>expression</div>
+  
+    <p>
+      Type:
+      string
+    </p>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='expressionmaxactive'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>maxActive</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>Get the currently reached peak of simultaneously running instances for this Expression</p>
+
+    <div class='pre p1 fill-light mt0'>maxActive</div>
+  
+    <p>
+      Type:
+      number
+    </p>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='expressionmaxparallel'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>maxParallel</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>Get/set the maximum allowed parallel instances for this Expression</p>
+
+    <div class='pre p1 fill-light mt0'>maxParallel</div>
+  
+    <p>
+      Type:
+      number
+    </p>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='expressionscalars'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>scalars</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>Return the scalar arguments as an array</p>
+
+    <div class='pre p1 fill-light mt0'>scalars</div>
+  
+    <p>
+      Type:
+      Array&#x3C;string>
+    </p>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='expressiontype'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>type</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>Return the type as a string</p>
+
+    <div class='pre p1 fill-light mt0'>type</div>
+  
+    <p>
+      Type:
+      string
+    </p>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='expressiontype'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>type</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>Return the type as a string</p>
+
+    <div class='pre p1 fill-light mt0'>type</div>
+  
+    <p>
+      Type:
+      string
+    </p>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+    <div class='border-bottom' id='expressionvectors'>
+      <div class="clearfix small pointer toggle-sibling">
+        <div class="py1 contain">
+            <a class='icon pin-right py1 dark-link caret-right'>▸</a>
+            <span class='code strong strong truncate'>vectors</span>
+        </div>
+      </div>
+      <div class="clearfix display-none toggle-target">
+        <section class='p2 mb2 clearfix bg-white minishadow'>
+
+  
+
+  <p>Return the vector arguments as an object</p>
+
+    <div class='pre p1 fill-light mt0'>vectors</div>
+  
+    <p>
+      Type:
+      Record&#x3C;string, Array&#x3C;number>>
+    </p>
+  
+  
+
+  
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+</section>
+
+      </div>
+    </div>
+  
+</div>
+
+  
+
+  
+
+  
+</section>
+
+          
+        
+      </div>
+    </div>
+  <script src='assets/anchor.js'></script>
+  <script src='assets/split.js'></script>
+  <script src='assets/site.js'></script>
+</body>
+</html>
