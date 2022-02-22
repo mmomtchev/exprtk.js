@@ -11,7 +11,6 @@ using namespace exprtk_js;
  * @param {string[]} [variables] An array containing all the scalar variables' names, will be determined automatically if omitted, however order won't be guaranteed, scalars are passed by value
  * @param {Record<string, number>} [vectors] An object containing all the vector variables' names and their sizes, vector size must be known at compilation (object construction), vectors are passed by reference and can be modified by the ExprTk expression
  * @returns {Expression}
- * @memberof Expression
  * 
  * The `Expression` represents an expression compiled to an AST from a string. Expressions come in different flavors depending on the internal type used.
  * 
@@ -42,17 +41,6 @@ using namespace exprtk_js;
  *  [], {x: 1024})
  */
 
-/**
- * Get the number of threads available for evaluating expressions.
- * Set by the `EXPRTKJS_THREADS` environment variable.
- *
- * @readonly
- * @kind member
- * @name maxParallel
- * @static
- * @memberof Expression
- * @type {number}
- */
 size_t ExpressionMaxParallel = std::thread::hardware_concurrency();
 template <typename T>
 Expression<T>::Expression(const Napi::CallbackInfo &info)
@@ -213,6 +201,7 @@ template <typename T> static inline T *GetTypedArrayPtr(const Napi::TypedArray &
  * 
  * All arrays must match the internal data type.
  *
+ * @instance
  * @param {...(number|TypedArray<T>)[]|Record<string, number|TypedArray<T>>} arguments of the function
  * @returns {number}
  * @memberof Expression
@@ -286,6 +275,7 @@ template <typename T> exprtk_result Expression<T>::capi_eval(const void *_scalar
  * This can be used when multiple operations are chained to avoid reallocating a new array at every step.
  * Otherwise it will return a new array.
  *
+ * @instance
  * @param {TypedArray<T>} [threads] number of threads to use, 1 if not specified
  * @param {TypedArray<T>} [target] array in which the data is to be written, will allocate a new array if none is specified
  * @param {TypedArray<T>} array for the expression to be iterated over
@@ -472,6 +462,7 @@ exprtk_result Expression<T>::capi_map(
  * 
  * All arrays must match the internal data type.
  * 
+ * @instance
  * @param {TypedArray<T>} array for the expression to be iterated over
  * @param {string} iterator variable name
  * @param {string} accumulator variable name
@@ -716,6 +707,7 @@ static const size_t NapiElementSize[] = {
  * 
  * Supports automatic type conversions, multiple inputs and writing into a pre-existing array.
  *
+ * @instance
  * @param {Record<string, number|TypedArray<T>>} arguments
  * @param {...(number|TypedArray<T>)[]|Record<string, number|TypedArray<T>>} arguments of the function, iterator removed
  * @returns {TypedArray<T>}
@@ -1032,7 +1024,7 @@ template <typename T> Napi::Value Expression<T>::GetExpression(const Napi::Callb
  * @readonly
  * @kind member
  * @name type
- * @static
+ * @instance
  * @memberof Expression
  * @type {string}
  */
@@ -1226,6 +1218,18 @@ template <typename T> Napi::Value Expression<T>::GetCAPI(const Napi::CallbackInf
 
   return result;
 }
+
+/**
+ * Get the number of threads available for evaluating expressions.
+ * Set by the `EXPRTKJS_THREADS` environment variable.
+ *
+ * @readonly
+ * @kind member
+ * @name maxParallel
+ * @static
+ * @memberof Expression
+ * @type {number}
+ */
 
 /**
  * Get/set the maximum allowed parallel instances for this Expression

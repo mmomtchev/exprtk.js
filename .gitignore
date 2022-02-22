@@ -3,3 +3,5 @@ build
 deps/*.zip
 lib/binding
 coverage
+doc/*
+!doc/CNAME
