@@ -17,14 +17,46 @@ on:
 
 
 jobs:
-  test:
+  unix:
 
     runs-on: ${{ matrix.platforms }}
 
     strategy:
       matrix:
         node-version: [ 12.x, 14.x, 16.x, 17.x ]
-        platforms: [ ubuntu-20.04, macos-10.15, windows-2019 ]
+        platforms: [ ubuntu-20.04, macos-10.15 ]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: ccache
+      uses: hendrikmuhs/ccache-action@v1
+    - run: npm install --ignore-scripts
+    - run: npx node-pre-gyp configure
+      env:
+        CXX: ccache g++
+        CC: ccache gcc
+    - name: Build from sources
+      run: npx node-pre-gyp build -j max
+      env:
+        CXX: ccache g++
+        CC: ccache gcc
+    - name: Run unit tests
+      run: npm test
+      env:
+        MOCHA_TEST_CONCURRENCY: ${{ github.event.inputs.testConcurrency }}
+
+
+  windows:
+
+    runs-on: windows-2019
+
+    strategy:
+      matrix:
+        node-version: [ 12.x, 14.x, 16.x, 17.x ]
 
     steps:
     - uses: actions/checkout@v2
@@ -52,10 +84,18 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: 16.x
+    - name: ccache
+      uses: hendrikmuhs/ccache-action@v1
     - run: npm install --ignore-scripts
     - run: npx node-pre-gyp configure --debug --enable_coverage
+      env:
+        CXX: ccache g++
+        CC: ccache gcc
     - name: Build from sources
       run: npx node-pre-gyp build -j max
+      env:
+        CXX: ccache g++
+        CC: ccache gcc
     - name: Run unit tests
       run: npm test
       env:
