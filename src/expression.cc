@@ -111,10 +111,9 @@ Expression<T>::Expression(const Napi::CallbackInfo &info)
       // However it will happily swallow an invalid pointer
       size_t size = value.ToNumber().Int64Value();
       T *dummy = (T *)&size;
-      auto *v = new exprtk::vector_view<T>(dummy, size);
-      instances[0].vectorViews[name] = v;
+      instances[0].vectorViews[name] = std::make_unique<exprtk::vector_view<T>>(dummy, size);
 
-      if (!instances[0].symbolTable.add_vector(name, *v)) {
+      if (!instances[0].symbolTable.add_vector(name, *instances[0].vectorViews[name])) {
         Napi::TypeError::New(env, name + " is not a valid vector name").ThrowAsJavaScriptException();
         return;
       }
@@ -164,7 +163,6 @@ template <typename T> Expression<T>::~Expression() {
         // exprtk will sometimes try to free this pointer
         // on object destruction even if it never allocated it
         v.second->rebase((T *)nullptr);
-        delete v.second;
       }
       i.vectorViews.clear();
     }
@@ -180,9 +178,8 @@ template <typename T> void Expression<T>::compileInstance(ExpressionInstance<T> 
       auto vector = instances[0].symbolTable.get_vector(name);
       auto size = vector->size();
       T *dummy = (T *)&size;
-      auto *v = new exprtk::vector_view<T>(dummy, size);
-      i->vectorViews[name] = v;
-      i->symbolTable.add_vector(name, *v);
+      i->vectorViews[name] = std::make_unique<exprtk::vector_view<T>>(dummy, size);
+      i->symbolTable.add_vector(name, *i->vectorViews[name]);
     }
   }
   i->isInit = true;

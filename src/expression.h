@@ -112,13 +112,13 @@ template <class T> struct ExpressionInstance {
   bool isInit;
   // These are the vectorViews needed for rebasing the vectors when evaluating
   // Read "SECTION 14" of the ExprTk manual for more information on this
-  std::map<std::string, exprtk::vector_view<T> *> vectorViews;
+  std::map<std::string, std::unique_ptr<exprtk::vector_view<T>>> vectorViews;
 };
 
 template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> {
     public:
   Expression(const Napi::CallbackInfo &);
-  ~Expression();
+  virtual ~Expression();
   void compileInstance(ExpressionInstance<T> *instance);
 
   ASYNCABLE_DECLARE(eval);
@@ -203,25 +203,21 @@ template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> 
       if (instances[0].vectorViews.count(name) == 0) {
         throw Napi::TypeError::New(env, name + " is not a declared vector variable");
       }
-      auto v = instances[0].vectorViews.at(name);
       if (value.As<Napi::TypedArray>().TypedArrayType() != NapiArrayType<T>::type) {
         throw Napi::TypeError::New(env, "vector data must be a " + std::string(NapiArrayType<T>::name) + "Array");
       }
       Napi::TypedArray data = value.As<Napi::TypedArray>();
 
-      if (v->size() != data.ElementLength()) {
+      if (instances[0].vectorViews.at(name)->size() != data.ElementLength()) {
         throw Napi::TypeError::New(
           env,
           "vector " + name + " size " + std::to_string(data.ElementLength()) + " does not match declared size " +
-            std::to_string(v->size()));
+            std::to_string(instances[0].vectorViews.at(name)->size()));
       }
 
       T *raw = reinterpret_cast<T *>(data.ArrayBuffer().Data());
       job.persist(data);
-      importers.push_back([raw, name](const ExpressionInstance<T> &i) {
-        auto v = i.vectorViews.at(name);
-        v->rebase(raw);
-      });
+      importers.push_back([raw, name](const ExpressionInstance<T> &i) { i.vectorViews.at(name)->rebase(raw); });
       return;
     }
 
