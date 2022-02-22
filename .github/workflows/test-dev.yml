@@ -106,3 +106,35 @@ jobs:
       run: npm run codecov
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+
+  asan:
+
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js 16.x
+      uses: actions/setup-node@v1
+      with:
+        node-version: 16.x
+    - name: ccache
+      uses: hendrikmuhs/ccache-action@v1
+    - run: npm install --ignore-scripts
+    - run: npx node-pre-gyp configure --debug --enable_coverage --enable_asan
+      env:
+        CXX: ccache g++
+        CC: ccache gcc
+    - name: Build from sources
+      run: npx node-pre-gyp build -j max
+      env:
+        CXX: ccache g++
+        CC: ccache gcc
+    - name: Run unit tests
+      run: "npm test &> asan.output ; true"
+      env:
+        LD_PRELOAD: /usr/lib/x86_64-linux-gnu/libasan.so.5.0.0
+        MOCHA_TEST_CONCURRENCY: 0
+        MOCHA_SKIP_EXEC: 1
+    - name: Check for memory leaks
+      run: "! egrep -q \"exprtk_js\" asan.output"

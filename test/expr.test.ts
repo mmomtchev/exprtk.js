@@ -95,7 +95,9 @@ describe('Expression', () => {
         it(`should have \`os.cpus().length=${os.cpus().length}\` number of worker threads by default`, () => {
             assert.equal(expr.maxParallel, os.cpus().length);
         });
-        it('should support setting the number of worker threads', (done) => {
+        it('should support setting the number of worker threads', function(done) {
+            if (process.env.MOCHA_SKIP_EXEC !== undefined)
+                this.skip();
             const testCode = '"const expr = require(\'.\').Float64; console.log(expr.maxParallel);"';
             let execPath = process.execPath;
             if (process.platform === 'win32') {
