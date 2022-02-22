@@ -34,6 +34,8 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - name: ccache
       uses: hendrikmuhs/ccache-action@v1
+      with:
+        key: unix-${{ matrix.platforms }}-${{ matrix.node-version }}
     - run: npm install --ignore-scripts
     - run: npx node-pre-gyp configure
       env:
@@ -86,6 +88,8 @@ jobs:
         node-version: 16.x
     - name: ccache
       uses: hendrikmuhs/ccache-action@v1
+      with:
+        key: codecov
     - run: npm install --ignore-scripts
     - run: npx node-pre-gyp configure --debug --enable_coverage
       env:
@@ -120,6 +124,8 @@ jobs:
         node-version: 16.x
     - name: ccache
       uses: hendrikmuhs/ccache-action@v1
+      with:
+        key: asan
     - run: npm install --ignore-scripts
     - run: npx node-pre-gyp configure --debug --enable_coverage --enable_asan
       env:
@@ -131,9 +137,11 @@ jobs:
         CXX: ccache g++
         CC: ccache gcc
     - name: Run unit tests
-      run: "npm test &> asan.output ; true"
+      shell: bash {0}
+      run: |
+        LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libasan.so.5.0.0 npm test &> asan.output
+        true
       env:
-        LD_PRELOAD: /usr/lib/x86_64-linux-gnu/libasan.so.5.0.0
         MOCHA_TEST_CONCURRENCY: 0
         MOCHA_SKIP_EXEC: 1
     - name: Check for memory leaks
