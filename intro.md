@@ -35,3 +35,5 @@ const outputArray = await expr.mapAsync(inputArray, 'a', { 'b': 4 });
 // or with 4 threads on 4 cores
 const outputArray = await expr.mapAsync(4, inputArray, 'a', { 'b': 4 });
 ```
+
+Refer to the [ExprTk manual](https://github.com/ArashPartow/exprtk/blob/master/readme.txt) for the full expression syntax.

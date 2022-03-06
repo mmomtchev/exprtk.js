@@ -16,6 +16,8 @@ Even in single-threaded synchronous mode `ExprTk.js` outperforms the native JS `
 
 It also supports being directly called from native add-ons, including native threads, without any synchronization with V8, allowing JS code to drive multi-threaded mathematical transformations.
 
+[https://exprtk.js.org](https://exprtk.js.org)
+
 # Installation
 
 `ExprTk.js` uses `node-pre-gyp` and it comes with pre-built binaries for x86-64 for Linux (baseline is Ubuntu 18.04), Windows and OS X.
@@ -51,6 +53,8 @@ When launching a large number of parallel operations, unless the expression is v
 The original documentation of `ExprTk` and the syntax used for the expressions is available here: <https://github.com/ArashPartow/exprtk>
 
 When launching an asynchronous operation, the scalar arguments will be copied and any `TypedArray`s will be locked in place and protected from the GC. The whole operation, including traversal and evaluation will happen entirely in a pre-existing background thread picked from a pool and won't solicit the main thread until completion.
+
+Refer to the [ExprTk manual](https://github.com/ArashPartow/exprtk/blob/master/readme.txt) for the full expression syntax.
 
 ## Parallelism
 
