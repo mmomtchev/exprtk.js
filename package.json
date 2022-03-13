@@ -61,7 +61,7 @@
     "c8": "^7.11.0",
     "chai": "^4.3.6",
     "chai-as-promised": "^7.1.1",
-    "documentation-polyglot": "^1.0.0",
+    "documentation-polyglot": "^1.0.1",
     "eslint": "^8.8.0",
     "eslint-plugin-array-func": "^3.1.7",
     "eslint-plugin-mocha": "^10.0.3",
