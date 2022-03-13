@@ -49,7 +49,7 @@
     }
   },
   "devDependencies": {
-    "@mmomtchev/documentation": "^14.0.0",
+    "@mmomtchev/documentation": "^14.0.1",
     "@octokit/core": "^3.5.1",
     "@types/chai": "^4.3.0",
     "@types/chai-as-promised": "^7.1.5",
