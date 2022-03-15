@@ -3,7 +3,7 @@
   "require": [
     "ts-node/register"
   ],
-  "timeout": "10000",
+  "timeout": "20000",
   "reporter": "tap",
   "v8-expose-gc": true
 }
