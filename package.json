@@ -29,7 +29,12 @@
   "keywords": [
     "node.js",
     "math",
-    "multithreading"
+    "multithreading",
+    "async",
+    "TypedArray",
+    "parallel",
+    "openmp",
+    "mpi"
   ],
   "author": "Momtchil Momtchev <momtchil@momtchev.com>",
   "license": "ISC",

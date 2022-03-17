@@ -6,6 +6,8 @@
 [![Test published packages](https://github.com/mmomtchev/exprtk.js/actions/workflows/test-release.yml/badge.svg)](https://github.com/mmomtchev/exprtk.js/actions/workflows/test-release.yml)
 [![codecov](https://codecov.io/gh/mmomtchev/exprtk.js/branch/main/graph/badge.svg?token=H8v2uuZGYg)](https://codecov.io/gh/mmomtchev/exprtk.js)
 
+[https://exprtk.js.org](https://exprtk.js.org)
+
 Node.js bindings for [ExprTk](http://www.partow.net/programming/exprtk/index.html) [(Github)](https://github.com/ArashPartow/exprtk) by [@ArashPartow](https://github.com/ArashPartow)
 
 `ExprTk.js` supports both synchronous and asynchronous background execution of thunks precompiled from a string including asynchronous and multithreaded versions of `TypedArray.prototype.map` and `TypedArray.prototype.reduce` and a synchronous multi-threaded version of `TypedArray.prototype.map`.
@@ -16,7 +18,9 @@ Even in single-threaded synchronous mode `ExprTk.js` outperforms the native JS `
 
 It also supports being directly called from native add-ons, including native threads, without any synchronization with V8, allowing JS code to drive multi-threaded mathematical transformations.
 
-[https://exprtk.js.org](https://exprtk.js.org)
+It has two main use cases:
+* Performing heavy mathematical calculation in Express-like frameworks which are not allowed to block
+* Speed-up of back-end calculation by parallelizing over multiple cores
 
 # Installation
 
