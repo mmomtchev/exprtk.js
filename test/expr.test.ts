@@ -686,14 +686,20 @@ describe('Expression', () => {
 
             it('should throw on invalid number of threads', () => {
                 assert.throws(() => {
-                    (density as any).cwise(1e3, { P, T, R, Mv, Md });
+                    density.cwise(1e3, { P, T, R, Mv, Md });
                 }, /maximum threads must not exceed maxParallel/);
             });
 
             it('should throw on invalid variables', () => {
                 assert.throws(() => {
-                    (density as any).cwise({ P, T, R, Mv, Md, X: 12 });
+                    density.cwise({ P, T, R, Mv, Md, X: 12 });
                 }, /X is not a declared scalar variable/);
+            });
+
+            it('should throw if the target array cannot hold the result', () => {
+                assert.throws(() => {
+                    density.cwise({ P, T, phi, R, Mv, Md }, new Float64Array(3));
+                }, /target array cannot hold the result/);
             });
 
             it('should throw on invalid vector lengths', () => {

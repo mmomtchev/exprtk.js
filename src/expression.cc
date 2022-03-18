@@ -843,6 +843,10 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
   Napi::TypedArray result;
   if (info.Length() >= arg + 1 && info[arg].IsTypedArray()) {
     result = info[arg].As<Napi::TypedArray>();
+    if (result.ElementLength() < len) {
+      Napi::TypeError::New(env, "target array cannot hold the result").ThrowAsJavaScriptException();
+      return env.Null();
+    }
   } else {
     result = NapiArrayType<T>::New(env, len);
   }
