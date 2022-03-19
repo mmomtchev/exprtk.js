@@ -92,15 +92,7 @@ namespace exprtk
    #endif
 
    template <typename T> struct type_traits {
-      static constexpr T max_vector_size = T(2000000000.0);
-   };
-
-   template <> struct type_traits<int32_t> {
-      static constexpr int32_t max_vector_size = std::numeric_limits<int32_t>::max();
-   };
-
-   template <> struct type_traits<uint32_t> {
-     static constexpr uint32_t max_vector_size = std::numeric_limits<uint32_t>::max();
+      static constexpr T max_vector_size = T(2'000'000'000);
    };
 
    template <> struct type_traits<int16_t> {
