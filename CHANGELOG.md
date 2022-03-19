@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 # [2.0.1] WIP
  - Fix #28, validate the length of the target array in `cwise`/`cwiseAsync`
  - Fix #20, minor memory leak when the `Expression()` constructor throws on invalid vector name
+ - Fix #30, impose a limit for vector sizes when using integer `Expression` types
 
 # [2.0.0] 2022-02-14
  - Full reentrancy, supporting multiple concurrent evaluations of the same `Expression` object

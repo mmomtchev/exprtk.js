@@ -55,6 +55,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <limits>
 
 
 namespace exprtk
@@ -89,6 +90,34 @@ namespace exprtk
       #define exprtk_override
       #define exprtk_final
    #endif
+
+   template <typename T> struct type_traits {
+      static constexpr T max_vector_size = T(2000000000.0);
+   };
+
+   template <> struct type_traits<int32_t> {
+      static constexpr int32_t max_vector_size = std::numeric_limits<int32_t>::max();
+   };
+
+   template <> struct type_traits<uint32_t> {
+     static constexpr uint32_t max_vector_size = std::numeric_limits<uint32_t>::max();
+   };
+
+   template <> struct type_traits<int16_t> {
+     static constexpr uint16_t max_vector_size = std::numeric_limits<int16_t>::max();
+   };
+
+   template <> struct type_traits<uint16_t> {
+     static constexpr uint16_t max_vector_size = std::numeric_limits<uint16_t>::max();
+   };
+
+   template <> struct type_traits<int8_t> {
+     static constexpr int8_t max_vector_size = std::numeric_limits<int8_t>::max();
+   };
+
+   template <> struct type_traits<uint8_t> {
+     static constexpr uint8_t max_vector_size = std::numeric_limits<uint8_t>::max();
+   };
 
    namespace details
    {
@@ -25744,7 +25773,7 @@ namespace exprtk
 
          free_node(node_allocator_,size_expr);
 
-         const T max_vector_size = T(2000000000.0);
+         const T max_vector_size = type_traits<T>::max_vector_size;
 
          if (
               (vector_size <= T(0)) ||

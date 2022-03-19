@@ -1,6 +1,49 @@
 --- exprtk/exprtk.hpp.orig	2021-12-19 21:15:10.168970664 +0100
-+++ exprtk/exprtk.hpp	2021-12-20 16:28:28.254173512 +0100
-@@ -809,6 +809,8 @@
++++ exprtk/exprtk.hpp	2022-03-19 18:42:59.860247072 +0100
+@@ -55,6 +55,7 @@
+ #include <string>
+ #include <utility>
+ #include <vector>
++#include <limits>
+ 
+ 
+ namespace exprtk
+@@ -90,6 +91,34 @@
+       #define exprtk_final
+    #endif
+ 
++   template <typename T> struct type_traits {
++      static constexpr T max_vector_size = T(2000000000.0);
++   };
++
++   template <> struct type_traits<int32_t> {
++      static constexpr int32_t max_vector_size = std::numeric_limits<int32_t>::max();
++   };
++
++   template <> struct type_traits<uint32_t> {
++     static constexpr uint32_t max_vector_size = std::numeric_limits<uint32_t>::max();
++   };
++
++   template <> struct type_traits<int16_t> {
++     static constexpr uint16_t max_vector_size = std::numeric_limits<int16_t>::max();
++   };
++
++   template <> struct type_traits<uint16_t> {
++     static constexpr uint16_t max_vector_size = std::numeric_limits<uint16_t>::max();
++   };
++
++   template <> struct type_traits<int8_t> {
++     static constexpr int8_t max_vector_size = std::numeric_limits<int8_t>::max();
++   };
++
++   template <> struct type_traits<uint8_t> {
++     static constexpr uint8_t max_vector_size = std::numeric_limits<uint8_t>::max();
++   };
++
+    namespace details
+    {
+       typedef char                   char_t;
+@@ -809,6 +838,8 @@
              exprtk_register_complex_type_tag(long double)
              exprtk_register_complex_type_tag(float      )
  
@@ -9,7 +52,7 @@
              exprtk_register_int_type_tag(short         )
              exprtk_register_int_type_tag(int           )
              exprtk_register_int_type_tag(_int64_t      )
-@@ -845,18 +847,36 @@
+@@ -845,18 +876,36 @@
              }
  
              template <typename T>
@@ -46,7 +89,7 @@
              inline bool is_true_impl(const T v)
              {
                 return std::not_equal_to<T>()(T(0),v);
-@@ -918,7 +938,7 @@
+@@ -918,7 +967,7 @@
              template <typename T>
              inline T expm1_impl(const T v, int_type_tag)
              {
@@ -55,7 +98,7 @@
              }
  
              template <typename T>
-@@ -1347,6 +1367,10 @@
+@@ -1347,6 +1396,10 @@
              template <typename T> inline T  sqrt_impl(const T v, int_type_tag) { return std::sqrt (v); }
              template <typename T> inline T  frac_impl(const T  , int_type_tag) { return T(0);          }
              template <typename T> inline T trunc_impl(const T v, int_type_tag) { return v;             }
@@ -66,7 +109,7 @@
              template <typename T> inline T  acos_impl(const T  , int_type_tag) { return std::numeric_limits<T>::quiet_NaN(); }
              template <typename T> inline T acosh_impl(const T  , int_type_tag) { return std::numeric_limits<T>::quiet_NaN(); }
              template <typename T> inline T  asin_impl(const T  , int_type_tag) { return std::numeric_limits<T>::quiet_NaN(); }
-@@ -2003,6 +2027,59 @@
+@@ -2003,6 +2056,59 @@
           return true;
        }
  
@@ -126,7 +169,7 @@
        template <typename T>
        inline bool string_to_real(const std::string& s, T& t)
        {
-@@ -5234,6 +5311,26 @@
+@@ -5234,6 +5340,26 @@
           return std::not_equal_to<float>()(0.0f,v);
        }
  
@@ -153,7 +196,7 @@
        template <typename T>
        inline bool is_true(const std::complex<T>& v)
        {
-@@ -17300,6 +17397,9 @@
+@@ -17300,6 +17426,9 @@
        typedef T (*ff14_functor)(T, T, T, T, T, T, T, T, T, T, T, T, T, T);
        typedef T (*ff15_functor)(T, T, T, T, T, T, T, T, T, T, T, T, T, T, T);
  
@@ -163,7 +206,7 @@
     protected:
  
         struct freefunc00 : public exprtk::ifunction<T>
-@@ -17862,9 +17962,7 @@
+@@ -17862,9 +17991,7 @@
        };
  
        typedef details::expression_node<T>*        expression_ptr;
@@ -173,7 +216,16 @@
        #ifndef exprtk_disable_string_capabilities
        typedef typename details::stringvar_node<T> stringvar_t;
        typedef stringvar_t*                        stringvar_ptr;
-@@ -25831,7 +25929,7 @@
+@@ -25646,7 +25773,7 @@
+ 
+          free_node(node_allocator_,size_expr);
+ 
+-         const T max_vector_size = T(2000000000.0);
++         const T max_vector_size = type_traits<T>::max_vector_size;
+ 
+          if (
+               (vector_size <= T(0)) ||
+@@ -25831,7 +25958,7 @@
                 }
              }
  
