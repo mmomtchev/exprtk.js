@@ -3,7 +3,7 @@
 #include <memory>
 #include <cstdlib>
 
-using namespace exprtk_js;
+namespace exprtk_js {
 
 /**
  * @class Expression
@@ -13,18 +13,6 @@ using namespace exprtk_js;
  * @returns {Expression}
  * 
  * The `Expression` represents an expression compiled to an AST from a string. Expressions come in different flavors depending on the internal type used.
- * 
- * ---------------------------------------
- * | JS      | C/C++                     |
- * | ------- | ------------------------- |
- * | Float64 | double                    |
- * | Float32 | float                     |
- * | Uint32  | uint32_t (unsigned long)  |
- * | Int32   | int32_t (long)            |
- * | Uint16  | uint16_t (unsigned short) |
- * | Int16   | int16_t (short)           |
- * | Uint8   | uint8_t (unsigned char)   |
- * | Int8    | int8_t (char)             |
  *
  * @example
  * // This determines the internally used type
@@ -619,6 +607,11 @@ template <typename T> struct symbolDesc {
   size_t elementSize;
   T *exprtk_var;
   NapiFromCaster_t<T> fromCaster;
+
+  // for ndarrays only
+  int64_t offset;
+  std::shared_ptr<size_t[]> index;
+  std::shared_ptr<int32_t[]> stride;
 };
 
 // MSVC Linker has horrible bugs with templated variables
@@ -702,11 +695,16 @@ static const size_t NapiElementSize[] = {
 /**
  * Generic vector operation with implicit traversal.
  * 
- * Supports automatic type conversions, multiple inputs and writing into a pre-existing array.
+ * Supports automatic type conversions, multiple inputs, strided N-dimensional arrays and writing into a pre-existing array.
+ * 
+ * If using N-dimensional arrays, all arrays must have the same shape. The result is always in positive row-major order.
+ * When mixing linear vectors and N-dimensional arrays, the linear vectors are considered to be in positive row-major order
+ * in relation to the N-dimensional arrays.
  *
  * @instance
- * @param {Record<string, number|TypedArray<T>>} arguments
- * @param {...(number|TypedArray<T>)[]|Record<string, number|TypedArray<T>>} arguments of the function, iterator removed
+ * @param {number} [threads]
+ * @param {Record<string, number|TypedArray<any> | ndarray.NdArray<any> | stdlib.ndarray>} arguments
+ * @param {TypedArray<T>} [target]
  * @returns {TypedArray<T>}
  * @memberof Expression
  *
@@ -789,9 +787,10 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
 
   bool typeConversionRequired = false;
 
-  size_t len = 0;
+  size_t len = 0, dims = 0;
   Napi::Array argNames = args.GetPropertyNames();
-  std::vector<symbolDesc<T>> scalars, vectors;
+  std::vector<symbolDesc<T>> scalars, vectors, ndarrays;
+  std::shared_ptr<size_t[]> shape;
   for (std::size_t i = 0; i < argNames.Length(); i++) {
     const std::string name = argNames.Get(i).As<Napi::String>().Utf8Value();
     Napi::Value value = args.Get(name);
@@ -803,17 +802,43 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
     symbolDesc<T> current;
     current.exprtk_var = &exprtk_ptr->ref();
 
+    size_t thisDims;
+    std::shared_ptr<size_t[]> thisShape;
     if (value.IsNumber()) {
       current.name = name;
       current.type = NapiArrayType<T>::type;
       current.data = current.storage;
       *(reinterpret_cast<T *>(current.data)) = NapiArrayType<T>::CastFrom(value);
       scalars.push_back(current);
-    } else if (value.IsTypedArray()) {
-      Napi::TypedArray array = value.As<Napi::TypedArray>();
+    } else if (value.IsTypedArray() || ImportStridedArray(value, thisDims, current.offset, thisShape, current.stride)) {
+      Napi::TypedArray array;
+      size_t thisLen;
+
+      if (value.IsTypedArray()) {
+        array = value.As<Napi::TypedArray>();
+        thisLen = array.ElementLength();
+      } else {
+        array = StridedArrayBuffer(value.ToObject());
+        thisLen = 1;
+        if (dims == 0) {
+          dims = thisDims;
+          shape = thisShape;
+        }
+        if (dims != thisDims) {
+          Napi::TypeError::New(env, "all strided arrays must have the same number of dimensions")
+            .ThrowAsJavaScriptException();
+          return env.Null();
+        }
+        if (!ArraysEqual(thisShape, shape, dims)) {
+          Napi::TypeError::New(env, "all strided arrays must have the same shape").ThrowAsJavaScriptException();
+          return env.Null();
+        }
+        thisLen = StridedLength(thisShape, dims);
+      }
+
       if (len == 0)
-        len = array.ElementLength();
-      else if (len != array.ElementLength()) {
+        len = thisLen;
+      else if (len != thisLen) {
         Napi::TypeError::New(env, "all vectors must have the same number of elements").ThrowAsJavaScriptException();
         return env.Null();
       }
@@ -823,14 +848,19 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
       current.elementSize = array.ElementSize();
       current.fromCaster = NapiFromCasters<T>[current.type];
       if (current.type != NapiArrayType<T>::type) typeConversionRequired = true;
-      vectors.push_back(current);
+      if (value.IsTypedArray()) {
+        vectors.push_back(current);
+      } else {
+        current.data += current.offset * current.elementSize;
+        ndarrays.push_back(current);
+      }
     } else {
       Napi::TypeError::New(env, name + " is not a number or a TypedArray").ThrowAsJavaScriptException();
       return env.Null();
     }
   }
 
-  if (instances[0].symbolTable.variable_count() != scalars.size() + vectors.size()) {
+  if (instances[0].symbolTable.variable_count() != scalars.size() + vectors.size() + ndarrays.size()) {
     Napi::TypeError::New(env, "wrong number of input arguments").ThrowAsJavaScriptException();
     return env.Null();
   }
@@ -862,11 +892,23 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
   // integer division ceiling
   size_t lenPerJoblet = (len + job.joblets - 1) / job.joblets;
 
-  if (typeConversionRequired) {
+  if (typeConversionRequired || ndarrays.size() > 0) {
+    std::shared_ptr<int32_t[]> rowMajorStride;
+
+    if (ndarrays.size() > 0) {
+      rowMajorStride = std::shared_ptr<int32_t[]>(new int32_t[dims]);
+      int32_t stride = 1;
+      for (int32_t d = dims - 1; d >= 0; d--) {
+        rowMajorStride[d] = stride;
+        stride *= shape[d];
+      }
+    }
     job.main =
-      [scalars, vectors, output, elementSize, len, toCaster, lenPerJoblet](const ExpressionInstance<T> &i, size_t id) {
+      [scalars, vectors, ndarrays, output, elementSize, len, toCaster, lenPerJoblet, dims, shape, rowMajorStride](
+        const ExpressionInstance<T> &i, size_t id) {
         auto localVectors = vectors;
         auto localScalars = scalars;
+        auto localNDArrays = ndarrays;
         for (auto &v : localScalars) {
           v.exprtk_var = &i.symbolTable.get_variable(v.name)->ref();
           *v.exprtk_var = *(reinterpret_cast<const T *>(v.storage));
@@ -876,6 +918,19 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
           v.data = v.data + id * lenPerJoblet * v.elementSize;
         }
 
+        // Output is (for now) always positive-row-major
+        for (auto &v : localNDArrays) {
+          v.exprtk_var = &i.symbolTable.get_variable(v.name)->ref();
+          v.index = std::shared_ptr<size_t[]>(new size_t[dims]);
+          // Offset (linear index) is determined by the joblet id
+          v.offset = id * lenPerJoblet;
+          // Convert the offset to subscripts for a rowMajorStide
+          // to find the starting position
+          GetStridedIndex(v.offset, v.index, dims, shape, rowMajorStride);
+          // and then convert the subscripts to index for each ndarray separately
+          GetLinearOffset(v.offset, v.index, dims, shape, v.stride);
+        }
+
         auto &expression = i.expression;
         uint8_t *output_end = output + std::min((id + 1) * lenPerJoblet, len) * elementSize;
         for (uint8_t *output_ptr = output + id * lenPerJoblet * elementSize; output_ptr < output_end;
@@ -883,6 +938,10 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
           for (auto &v : localVectors) {
             *v.exprtk_var = v.fromCaster(v.data);
             v.data += v.elementSize;
+          }
+          for (auto &v : localNDArrays) {
+            *v.exprtk_var = v.fromCaster(v.data + v.offset * v.elementSize);
+            IncrementStridedIndex(v.index, v.offset, dims, shape, v.stride);
           }
           toCaster(output_ptr, expression.value());
         }
@@ -1340,3 +1399,4 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
 }
 
 NODE_API_MODULE(exprtkjs, Init)
+} // namespace exprtk_js

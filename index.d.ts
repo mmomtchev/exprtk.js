@@ -1,12 +1,13 @@
+import ndarray from 'ndarray';
+import * as stdlib from '@stdlib/types/ndarray';
+
 export type TypedArray = Int8Array | Uint8Array | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array;
 export type TypedArrayType = 'Int8' | 'Uint8' | 'Int16' | 'Uint16' | 'Int32' | 'Uint32' | 'Float32' | 'Float64';
 export type TypedArrayConstructor = Int8ArrayConstructor | Uint8ArrayConstructor | Int16ArrayConstructor |
   Uint16ArrayConstructor | Int32ArrayConstructor | Uint32ArrayConstructor |
   Float32ArrayConstructor | Float64ArrayConstructor;
 
-export class Expression {}
-
-export class TypedExpression<T extends TypedArray> extends Expression {
+export class Expression {
   constructor(expression: string, scalars?: string[], vectors?: Record<string, number>);
 
   static readonly maxParallel: number;
@@ -20,7 +21,9 @@ export class TypedExpression<T extends TypedArray> extends Expression {
   readonly maxActive: number;
   static readonly allocator: TypedArrayConstructor;
   readonly allocator: TypedArrayConstructor;
+}
 
+export class TypedExpression<T extends TypedArray> extends Expression {
   eval(arguments: Record<string, number | T>): number;
   eval(...arguments: (number | T)[]): number;
 
@@ -63,18 +66,18 @@ export class TypedExpression<T extends TypedArray> extends Expression {
   reduceAsync(array: T, iterator: string, accumulator: string, initializer: number, ...arguments: (number | T)[]): Promise<number>;
   reduceAsync(array: T, iterator: string, accumulator: string, initializer: number, arguments: Record<string, number | T>, callback: (this: TypedExpression<T>, e: Error | null, r: number | undefined) => void): void
 
-  
-  cwise(arguments: Record<string, number | TypedArray>): T;
-  cwise<U extends TypedArray>(arguments: Record<string, number | TypedArray>, result: U): U;
-  cwise(threads: number, arguments: Record<string, number | TypedArray>): T;
-  cwise<U extends TypedArray>(threads: number, arguments: Record<string, number | TypedArray>, result: U): U;
 
-  cwiseAsync(arguments: Record<string, number | TypedArray>): Promise<T>;
-  cwiseAsync<U extends TypedArray>(arguments: Record<string, number | TypedArray>, result: U): Promise<U>;
-  cwiseAsync(arguments: Record<string, number | TypedArray>, callback: (this: TypedExpression<T>, e: Error | null, r: T | undefined) => void): void;
-  cwiseAsync(threads: number, arguments: Record<string, number | TypedArray>): Promise<T>;
-  cwiseAsync<U extends TypedArray>(threads: number, arguments: Record<string, number | TypedArray>, result: U): Promise<U>;
-  cwiseAsync(threads: number, arguments: Record<string, number | TypedArray>, callback: (this: TypedExpression<T>, e: Error | null, r: T | undefined) => void): void;
+  cwise(arguments: Record<string, number | TypedArray | ndarray.NdArray<T> | stdlib.ndarray>): T;
+  cwise<U extends TypedArray>(arguments: Record<string, number | TypedArray | ndarray.NdArray<T> | stdlib.ndarray>, result: U): U;
+  cwise(threads: number, arguments: Record<string, number | TypedArray | ndarray.NdArray<T> | stdlib.ndarray>): T;
+  cwise<U extends TypedArray>(threads: number, arguments: Record<string, number | TypedArray | ndarray.NdArray<T> | stdlib.ndarray>, result: U): U;
+
+  cwiseAsync(arguments: Record<string, number | TypedArray | ndarray.NdArray<T> | stdlib.ndarray>): Promise<T>;
+  cwiseAsync<U extends TypedArray>(arguments: Record<string, number | TypedArray | ndarray.NdArray<T> | stdlib.ndarray>, result: U): Promise<U>;
+  cwiseAsync(arguments: Record<string, number | TypedArray | ndarray.NdArray<T> | stdlib.ndarray>, callback: (this: TypedExpression<T>, e: Error | null, r: T | undefined) => void): void;
+  cwiseAsync(threads: number, arguments: Record<string, number | TypedArray | ndarray.NdArray<T> | stdlib.ndarray>): Promise<T>;
+  cwiseAsync<U extends TypedArray>(threads: number, arguments: Record<string, number | TypedArray | ndarray.NdArray<T> | stdlib.ndarray>, result: U): Promise<U>;
+  cwiseAsync(threads: number, arguments: Record<string, number | TypedArray | ndarray.NdArray<T>>, callback: (this: TypedExpression<T>, e: Error | null, r: T | undefined) => void): void;
 }
 
 export class Int8 extends TypedExpression<Int8Array>{ }
