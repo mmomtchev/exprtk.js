@@ -1,18 +1,24 @@
-const path = require('path');
-const binary = require('@mapbox/node-pre-gyp');
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import * as path from 'path';
+import binary from '@mapbox/node-pre-gyp';
 
-const Expression = require('../lib/binding.js');
+import Expression from 'exprtk.js';
 
-const chai = require('chai');
-const chaiAsPromised = require('chai-as-promised');
+import chai from 'chai';
+import chaiAsPromised from 'chai-as-promised';
 chai.use(chaiAsPromised);
 const assert = chai.assert;
 
+declare module 'exprtk.js' {
+  interface Expression {
+    _CAPI_: Uint8Array;
+  }
+}
 describe('Expression C-API', () => {
-  let mean_f32, mean_u32, vector;
-  let testAddon;
+  let mean_f32: Expression.Float32, mean_u32: Expression.Uint32, vector: Expression.Uint32;
+  let testAddon: any;
 
-  afterEach(global.gc);
+  afterEach((global as any).gc);
   
   before(() => {
     mean_u32 = new Expression.Uint32('(a + b) / 2');

@@ -2,6 +2,15 @@
   "compilerOptions": {
     "esModuleInterop": true,
     "strict": true,
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    "baseUrl": ".",
+    "paths": {
+      "exprtk.js": [
+        "."
+      ],
+      "@mapbox/node-pre-gyp": [
+        "./test/mapbox-node-pre-gyp"
+      ]
+    }
   }
 }

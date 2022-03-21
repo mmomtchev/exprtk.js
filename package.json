@@ -75,6 +75,7 @@
     "mocha": "^9.2.1",
     "node-gyp": "^8.4.1",
     "ts-node": "^10.4.0",
+    "tsconfig-paths": "^3.14.0",
     "typescript": "^4.5.4"
   }
 }
