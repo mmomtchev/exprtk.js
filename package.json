@@ -17,7 +17,8 @@
     "postversion": "git push && git push --tags && node ./scripts/publish-packages.js && npm run web && node ./scripts/publish-docs.js ",
     "gcov": "mkdir -p coverage && cd coverage && gcov -o ../build/Debug/obj.target/exprtk.js/src ../src/*",
     "lcov": "npx c8 report --reporter=text-lcov > coverage/tests.lcov",
-    "codecov": "cd coverage && curl -s https://codecov.io/bash | bash"
+    "codecov": "cd coverage && curl -s https://codecov.io/bash | bash",
+    "postpublish": "gh workflow run test-npm.yml -F version=$npm_package_version"
   },
   "name": "exprtk.js",
   "version": "2.0.0",
