@@ -1,4 +1,4 @@
-import { Float64 } from '..';
+import { Float64 } from 'exprtk.js';
 
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';

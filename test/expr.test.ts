@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import Expression, { Float64 as expr } from '..';
+import Expression, { Float64 as expr } from 'exprtk.js';
 
 import { exec } from 'child_process';
 import * as asyncHooks from 'async_hooks';

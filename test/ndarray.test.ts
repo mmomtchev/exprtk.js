@@ -1,4 +1,4 @@
-import { Float64 as Float64Expression } from '..';
+import { Float64 as Float64Expression } from 'exprtk.js';
 import ndarray from 'ndarray';
 import ops from 'ndarray-ops';
 import array from '@stdlib/ndarray/array';
