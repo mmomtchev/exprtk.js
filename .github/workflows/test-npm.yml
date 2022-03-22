@@ -35,6 +35,9 @@ jobs:
       run: |
         cd test
         npx mocha --reporter=tap -r ts-node/register -r tsconfig-paths/register --timeout 20000 --v8-expose-gc *.test.ts
+      env:
+        TS_NODE_PROJECT: tsconfig.test.json
+        MOCHA_SKIP_EXEC: 1
 
 
   test_npm_rebuild:
@@ -64,3 +67,6 @@ jobs:
       run: |
         cd test
         npx mocha --reporter=tap -r ts-node/register -r tsconfig-paths/register --timeout 20000 --v8-expose-gc *.test.ts
+      env:
+        TS_NODE_PROJECT: tsconfig.test.json
+        MOCHA_SKIP_EXEC: 1
