@@ -88,6 +88,7 @@
         '<!@(node -p "require(\'node-addon-api\').include")'
       ],
       'defines': [
+        'NAPI_VERSION=4',
         'exprtk_disable_string_capabilities',
         'exprtk_disable_rtl_io_file'
       ],

@@ -27,6 +27,8 @@ It has two main use cases:
 
 `ExprTk.js` uses `node-pre-gyp` and it comes with pre-built binaries for x86-64 for Linux (baseline is Ubuntu 18.04), Windows and OS X.
 
+Since version 2.0.1, the minimum required Node.js version is 10.16.0.
+
 ```bash
 npm install exprtk.js
 ```

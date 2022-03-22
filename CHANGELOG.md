@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Switch to C++17
  - Support strided N-dimensional arrays in `cwise`/`cwiseAsync`
 
-# [2.0.1] WIP
+# [2.0.1] 2022-03-22
+ - Fix baseline N-API to version 4 allowing extending support to akk Node.js >=10.16.0
  - Fix #28, validate the length of the target array in `cwise`/`cwiseAsync`
  - Fix #20, minor memory leak when the `Expression()` constructor throws on invalid vector name
  - Fix #30, impose a limit for vector sizes when using integer `Expression` types
