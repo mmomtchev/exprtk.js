@@ -1314,12 +1314,17 @@ template <typename T> Napi::Function Expression<T>::GetClass(Napi::Env env) {
        "maxParallel", &Expression<T>::GetMaxParallel, &Expression<T>::SetMaxParallel, napi_enumerable),
      Expression<T>::InstanceAccessor("maxActive", &Expression<T>::GetMaxActive, nullptr, napi_enumerable),
      Expression<T>::StaticValue("maxParallel", maxParallel, napi_enumerable),
-     Expression<T>::InstanceMethod("toString", &Expression<T>::ToString, napi_default_method),
+     Expression<T>::InstanceMethod(
+       "toString", &Expression<T>::ToString, static_cast<napi_property_attributes>(napi_writable | napi_configurable)),
      Expression<T>::InstanceAccessor(toStringTag, &Expression<T>::ToString, nullptr, napi_default),
-     ASYNCABLE_INSTANCE_METHOD(Expression<T>, eval, napi_default_method),
-     ASYNCABLE_INSTANCE_METHOD(Expression<T>, map, napi_default_method),
-     ASYNCABLE_INSTANCE_METHOD(Expression<T>, reduce, napi_default_method),
-     ASYNCABLE_INSTANCE_METHOD(Expression<T>, cwise, napi_default_method)});
+     ASYNCABLE_INSTANCE_METHOD(
+       Expression<T>, eval, static_cast<napi_property_attributes>(napi_writable | napi_configurable)),
+     ASYNCABLE_INSTANCE_METHOD(
+       Expression<T>, map, static_cast<napi_property_attributes>(napi_writable | napi_configurable)),
+     ASYNCABLE_INSTANCE_METHOD(
+       Expression<T>, reduce, static_cast<napi_property_attributes>(napi_writable | napi_configurable)),
+     ASYNCABLE_INSTANCE_METHOD(
+       Expression<T>, cwise, static_cast<napi_property_attributes>(napi_writable | napi_configurable))});
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {

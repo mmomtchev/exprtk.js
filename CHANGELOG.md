@@ -5,7 +5,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [2.0.1] WIP
+# [2.0.1] 2022-03-22
+ - Fix baseline N-API to version 4 allowing extending support to all Node.js >=10.16.0
  - Fix #28, validate the length of the target array in `cwise`/`cwiseAsync`
  - Fix #20, minor memory leak when the `Expression()` constructor throws on invalid vector name
  - Fix #30, impose a limit for vector sizes when using integer `Expression` types
