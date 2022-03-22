@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset='utf-8'>
-  <title>exprtk.js 2.0.0 | Documentation</title>
+  <title>exprtk.js 2.0.1 | Documentation</title>
   <meta name='description' content='JS Mathematical Expression Toolkit Library'>
   <meta name='viewport' content='width=device-width,initial-scale=1'>
   <link href='assets/bass.css' rel='stylesheet'>
@@ -15,7 +15,7 @@
       <div id='split-left' class='overflow-auto fs0 height-viewport-100'>
         <div class='py1 px2'>
           <h3 class='mb0 no-anchor'>exprtk.js</h3>
-          <div class='mb1'><code>2.0.0</code></div>
+          <div class='mb1'><code>2.0.1</code></div>
           <input
             placeholder='Filter'
             id='filter-input'
@@ -99,7 +99,7 @@
                       </a></li>
                       
                       <li><a
-                        href='#expressionallocator'
+                        href='#expressionallocator-1'
                         class='regular pre-open'>
                         #allocator
                       </a></li>
@@ -117,7 +117,7 @@
                       </a></li>
                       
                       <li><a
-                        href='#expressionmaxparallel'
+                        href='#expressionmaxparallel-1'
                         class='regular pre-open'>
                         #maxParallel
                       </a></li>
@@ -272,49 +272,6 @@ const outputArray = await expr.mapAsync(4, inputArray, 'a', { 'b': 4 });
         The 
 <code>Expression</code>
  represents an expression compiled to an AST from a string. Expressions come in different flavors depending on the internal type used.
-<hr>
-<table>
-<thead>
-<tr>
-<th>JS</th>
-<th>C/C++</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Float64</td>
-<td>double</td>
-</tr>
-<tr>
-<td>Float32</td>
-<td>float</td>
-</tr>
-<tr>
-<td>Uint32</td>
-<td>uint32_t (unsigned long)</td>
-</tr>
-<tr>
-<td>Int32</td>
-<td>int32_t (long)</td>
-</tr>
-<tr>
-<td>Uint16</td>
-<td>uint16_t (unsigned short)</td>
-</tr>
-<tr>
-<td>Int16</td>
-<td>int16_t (short)</td>
-</tr>
-<tr>
-<td>Uint8</td>
-<td>uint8_t (unsigned char)</td>
-</tr>
-<tr>
-<td>Int8</td>
-<td>int8_t (char)</td>
-</tr>
-</tbody>
-</table>
 
       
     
@@ -993,7 +950,7 @@ sum.<span class="hljs-title function_">reduceAsync</span>(array, <span class="hl
       </div>
     </div>
   
-    <div class='border-bottom' id='expressionallocator'>
+    <div class='border-bottom' id='expressionallocator-1'>
       <div class="clearfix small pointer toggle-sibling">
         <div class="py1 contain">
             <a class='icon pin-right py1 dark-link caret-right'>▸</a>
@@ -1155,7 +1112,7 @@ sum.<span class="hljs-title function_">reduceAsync</span>(array, <span class="hl
       </div>
     </div>
   
-    <div class='border-bottom' id='expressionmaxparallel'>
+    <div class='border-bottom' id='expressionmaxparallel-1'>
       <div class="clearfix small pointer toggle-sibling">
         <div class="py1 contain">
             <a class='icon pin-right py1 dark-link caret-right'>▸</a>
