@@ -11,7 +11,7 @@
   "scripts": {
     "install": "node-pre-gyp install --fallback-to-build",
     "test": "mocha",
-    "lint": "clang-format -i src/*.cc src/*.h && eslint lib/*.js test/*.js bench/*.js scripts/*.js",
+    "lint": "clang-format -i src/*.cc src/*.h && eslint lib/*.[tj]s test/*.[tj]s bench/*.[tj]s scripts/*.[tj]s",
     "bench": "node bench/bench.js",
     "doc": "documentation readme --section=API --config=documentation.yml src/*.cc lib/binding.js",
     "web": "documentation build --config=website.yml src/*.cc lib/binding.js -f=html -o=doc",
