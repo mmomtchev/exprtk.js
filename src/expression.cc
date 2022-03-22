@@ -13,18 +13,6 @@ using namespace exprtk_js;
  * @returns {Expression}
  * 
  * The `Expression` represents an expression compiled to an AST from a string. Expressions come in different flavors depending on the internal type used.
- * 
- * ---------------------------------------
- * | JS      | C/C++                     |
- * | ------- | ------------------------- |
- * | Float64 | double                    |
- * | Float32 | float                     |
- * | Uint32  | uint32_t (unsigned long)  |
- * | Int32   | int32_t (long)            |
- * | Uint16  | uint16_t (unsigned short) |
- * | Int16   | int16_t (short)           |
- * | Uint8   | uint8_t (unsigned char)   |
- * | Int8    | int8_t (char)             |
  *
  * @example
  * // This determines the internally used type
