@@ -404,8 +404,8 @@ describe('Expression', () => {
                 const r = plus.map(expr.maxParallel, bigarray, 'a', 12);
                 assert.instanceOf(r, Float64Array);
                 assert.equal(r.length, big);
-                if (process.env.MOCHA_TEST_CONCURRENCY === undefined
-                    || +process.env.MOCHA_TEST_CONCURRENCY == 1
+                if ((process.env.MOCHA_TEST_CONCURRENCY === undefined
+                    || +process.env.MOCHA_TEST_CONCURRENCY == 1)
                     && os.cpus().length >= 4)
                     assert.isAbove(plus.maxActive, 1);
                 for (let i = 0; i < big; i += big / 1024)
