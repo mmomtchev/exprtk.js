@@ -6,7 +6,7 @@
 [![Test published packages](https://github.com/mmomtchev/exprtk.js/actions/workflows/test-release.yml/badge.svg)](https://github.com/mmomtchev/exprtk.js/actions/workflows/test-release.yml)
 [![codecov](https://codecov.io/gh/mmomtchev/exprtk.js/branch/main/graph/badge.svg?token=H8v2uuZGYg)](https://codecov.io/gh/mmomtchev/exprtk.js)
 
-[https://exprtk.js.org](https://exprtk.js.org)
+<https://exprtk.js.org>
 
 Node.js bindings for [ExprTk](http://www.partow.net/programming/exprtk/index.html) [(Github)](https://github.com/ArashPartow/exprtk) by [@ArashPartow](https://github.com/ArashPartow)
 
@@ -19,8 +19,9 @@ Even in single-threaded synchronous mode `ExprTk.js` outperforms the native JS `
 It also supports being directly called from native add-ons, including native threads, without any synchronization with V8, allowing JS code to drive multi-threaded mathematical transformations.
 
 It has two main use cases:
-* Performing heavy mathematical calculation in Express-like frameworks which are not allowed to block
-* Speed-up of back-end calculation by parallelizing over multiple cores
+
+*   Performing heavy mathematical calculation in Express-like frameworks which are not allowed to block
+*   Speed-up of back-end calculation by parallelizing over multiple cores
 
 # Installation
 
@@ -40,9 +41,7 @@ npm install exprtk.js --build-from-source
 
 If you do not use the integer types, you can obtain a significantly smaller binary by doing:
 
-```
-npm install exprtk.js --build-from-source --disable_int
-```
+    npm install exprtk.js --build-from-source --disable_int
 
 However this won't have any effect on the startup times, since the addon uses lazy binding and does not load code that is not used.
 
@@ -162,93 +161,78 @@ const r = await mean.evalAsync(inputArray);
 
 ### Table of Contents
 
-*   [toString](#tostring)
-*   [allocator](#allocator)
-*   [expression](#expression)
-*   [maxActive](#maxactive)
-*   [maxParallel](#maxparallel)
-*   [scalars](#scalars)
-*   [type](#type)
-*   [vectors](#vectors)
-*   [cwise](#cwise)
+*   [Expression](#expression)
     *   [Parameters](#parameters)
     *   [Examples](#examples)
-*   [eval](#eval)
-    *   [Parameters](#parameters-1)
-    *   [Examples](#examples-1)
-*   [map](#map)
-    *   [Parameters](#parameters-2)
-    *   [Examples](#examples-2)
-*   [reduce](#reduce)
-    *   [Parameters](#parameters-3)
-    *   [Examples](#examples-3)
-*   [allocator](#allocator-1)
-*   [maxParallel](#maxparallel-1)
-*   [type](#type-1)
-*   [Expression](#expression-1)
-    *   [Parameters](#parameters-4)
-    *   [Examples](#examples-4)
+    *   [toString](#tostring)
+    *   [cwise](#cwise)
+        *   [Parameters](#parameters-1)
+        *   [Examples](#examples-1)
+    *   [eval](#eval)
+        *   [Parameters](#parameters-2)
+        *   [Examples](#examples-2)
+    *   [map](#map)
+        *   [Parameters](#parameters-3)
+        *   [Examples](#examples-3)
+    *   [reduce](#reduce)
+        *   [Parameters](#parameters-4)
+        *   [Examples](#examples-4)
+    *   [allocator](#allocator)
+    *   [expression](#expression-1)
+    *   [maxActive](#maxactive)
+    *   [maxParallel](#maxparallel)
+    *   [scalars](#scalars)
+    *   [type](#type)
+    *   [type](#type-1)
+    *   [vectors](#vectors)
+    *   [allocator](#allocator-1)
+    *   [maxParallel](#maxparallel-1)
 
-## toString
+## Expression
+
+### Parameters
+
+*   `expression` **string** function
+*   `variables` **Array\<string>?** An array containing all the scalar variables' names, will be determined automatically if omitted, however order won't be guaranteed, scalars are passed by value
+*   `vectors` **Record\<string, number>?** An object containing all the vector variables' names and their sizes, vector size must be known at compilation (object construction), vectors are passed by reference and can be modified by the ExprTk expression
+
+### Examples
+
+```javascript
+// This determines the internally used type
+const expr = require("exprtk.js").Float64;
+
+// arithmetic mean of 2 variables
+const mean = new Expression('(a+b)/2', ['a', 'b']);
+
+// naive stddev of an array of 1024 elements
+const stddev = new Expression(
+ 'var sum := 0; var sumsq := 0; ' + 
+ 'for (var i := 0; i < x[]; i += 1) { sum += x[i]; sumsq += x[i] * x[i] }; ' +
+ '(sumsq - (sum*sum) / x[]) / (x[] - 1);',
+ [], {x: 1024})
+```
+
+Returns **[Expression](#expression)** The `Expression` represents an expression compiled to an AST from a string. Expressions come in different flavors depending on the internal type used.
+
+### toString
 
 Get a string representation of this object
 
 Returns **string**&#x20;
 
-## allocator
-
-Return the data type constructor
-
-Type: TypedArrayConstructor
-
-## expression
-
-Return the expression as a string
-
-Type: string
-
-## maxActive
-
-Get the currently reached peak of simultaneously running instances for this Expression
-
-Type: number
-
-## maxParallel
-
-Get/set the maximum allowed parallel instances for this Expression
-
-Type: number
-
-## scalars
-
-Return the scalar arguments as an array
-
-Type: Array\<string>
-
-## type
-
-Return the type as a string
-
-Type: string
-
-## vectors
-
-Return the vector arguments as an object
-
-Type: Record\<string, Array\<number>>
-
-## cwise
+### cwise
 
 Generic vector operation with implicit traversal.
 
 Supports automatic type conversions, multiple inputs and writing into a pre-existing array.
 
-### Parameters
+#### Parameters
 
 *   `arguments` **Record\<string, (number | TypedArray\<T>)>**&#x20;
 *   `arguments` **...(Array<(number | TypedArray\<T>)> | Record\<string, (number | TypedArray\<T>)>)** of the function, iterator removed
 
-### Examples
+#### Examples
 
 ```javascript
 // Air density of humid air from relative humidity (phi), temperature (T) and pressure (P)
@@ -295,17 +279,17 @@ await density.cwiseAsync(os.cpus().length, {phi, T, P, R, Md, Mv}, result);
 
 Returns **TypedArray\<T>**&#x20;
 
-## eval
+### eval
 
 Evaluate the expression.
 
 All arrays must match the internal data type.
 
-### Parameters
+#### Parameters
 
 *   `arguments` **...(Array<(number | TypedArray\<T>)> | Record\<string, (number | TypedArray\<T>)>)** of the function
 
-### Examples
+#### Examples
 
 ```javascript
 // These two are equivalent
@@ -319,7 +303,7 @@ expr.evalAsync(2, 5, (e,r) => console.log(e, r));
 
 Returns **number**&#x20;
 
-## map
+### map
 
 Evaluate the expression for every element of a TypedArray.
 
@@ -332,7 +316,7 @@ If target is specified, it will write the data into a preallocated array.
 This can be used when multiple operations are chained to avoid reallocating a new array at every step.
 Otherwise it will return a new array.
 
-### Parameters
+#### Parameters
 
 *   `threads` **TypedArray\<T>?** number of threads to use, 1 if not specified
 *   `target` **TypedArray\<T>?** array in which the data is to be written, will allocate a new array if none is specified
@@ -340,7 +324,7 @@ Otherwise it will return a new array.
 *   `iterator` **string** variable name
 *   `arguments` **...(Array<(number | TypedArray\<T>)> | Record\<string, (number | TypedArray\<T>)>)** of the function, iterator removed
 
-### Examples
+#### Examples
 
 ```javascript
 // Clamp values in an array to [0..1000]
@@ -370,7 +354,7 @@ const r2 = await expr.mapAsync(4, array, 'x', {f: 0, c: 0});
 
 Returns **TypedArray\<T>**&#x20;
 
-## reduce
+### reduce
 
 Evaluate the expression for every element of a TypedArray
 passing a scalar accumulator to every evaluation.
@@ -380,7 +364,7 @@ faster than calling `array.reduce(expr.eval)`.
 
 All arrays must match the internal data type.
 
-### Parameters
+#### Parameters
 
 *   `array` **TypedArray\<T>** for the expression to be iterated over
 *   `iterator` **string** variable name
@@ -388,7 +372,7 @@ All arrays must match the internal data type.
 *   `initializer` **number** for the accumulator
 *   `arguments` **...(Array<(number | TypedArray\<T>)> | Record\<string, (number | TypedArray\<T>)>)** of the function, iterator removed
 
-### Examples
+#### Examples
 
 ```javascript
 // n-power sum of an array
@@ -406,51 +390,66 @@ const sumSq = await sum.reduceAsync(array, 'x', {'a' : 0}, (e,r) => console.log(
 
 Returns **number**&#x20;
 
-## allocator
+### allocator
 
 Return the data type constructor
 
 Type: TypedArrayConstructor
 
-## maxParallel
+### expression
 
-Get the number of threads available for evaluating expressions.
-Set by the `EXPRTKJS_THREADS` environment variable.
+Return the expression as a string
+
+Type: string
+
+### maxActive
+
+Get the currently reached peak of simultaneously running instances for this Expression
 
 Type: number
 
-## type
+### maxParallel
+
+Get/set the maximum allowed parallel instances for this Expression
+
+Type: number
+
+### scalars
+
+Return the scalar arguments as an array
+
+Type: Array\<string>
+
+### type
 
 Return the type as a string
 
 Type: string
 
-## Expression
+### type
 
-### Parameters
+Return the type as a string
 
-*   `expression` **string** function
-*   `variables` **Array\<string>?** An array containing all the scalar variables' names, will be determined automatically if omitted, however order won't be guaranteed, scalars are passed by value
-*   `vectors` **Record\<string, number>?** An object containing all the vector variables' names and their sizes, vector size must be known at compilation (object construction), vectors are passed by reference and can be modified by the ExprTk expression
+Type: string
 
-### Examples
+### vectors
 
-```javascript
-// This determines the internally used type
-const expr = require("exprtk.js").Float64;
+Return the vector arguments as an object
 
-// arithmetic mean of 2 variables
-const mean = new Expression('(a+b)/2', ['a', 'b']);
+Type: Record\<string, Array\<number>>
 
-// naive stddev of an array of 1024 elements
-const stddev = new Expression(
- 'var sum := 0; var sumsq := 0; ' + 
- 'for (var i := 0; i < x[]; i += 1) { sum += x[i]; sumsq += x[i] * x[i] }; ' +
- '(sumsq - (sum*sum) / x[]) / (x[] - 1);',
- [], {x: 1024})
-```
+### allocator
 
-Returns **[Expression](#expression)**&#x20;
+Return the data type constructor
+
+Type: TypedArrayConstructor
+
+### maxParallel
+
+Get the number of threads available for evaluating expressions.
+Set by the `EXPRTKJS_THREADS` environment variable.
+
+Type: number
 
 # Notes
 
