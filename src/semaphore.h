@@ -21,9 +21,12 @@ class Semaphore {
   }
 
   void inline unlock() {
+    // Normally for best performance the mutex should be released before calling notify_all
+    // However this semaphore can guard its own deletion
+    // In this case, the condition variable will disappear as soon as the mutex is released
+    // https://github.com/mmomtchev/exprtk.js/issues/31
     std::unique_lock<std::mutex> guard(mtx);
     busy = false;
-    guard.unlock();
     cond.notify_all();
   }
 
