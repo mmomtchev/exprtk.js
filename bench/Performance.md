@@ -21,14 +21,17 @@ This function has been chosen as an example of a function that is very well opti
 When used in conjunction with `cwise` of `scijs/ndarray` and 64-bit floating point numbers, V8 produces an absolutely unbeatable code for this function, on par with hand-optimized assembly:
 
 ```
-movaps %xmm1,%xmm3
+movapd %xmm1,%xmm2
+addsd  %xmm1,%xmm2
+movapd %xmm1,%xmm3
 mulsd  %xmm1,%xmm3
 addsd  %xmm2,%xmm3
 lea    (%r11,%rax,1),%rdx
 addsd  %xmm0,%xmm3
+movsd  %xmm3,(%rdx,%r15,8)
 ```
 
-Loading the floating point number is performed in the most efficient way possible (`movaps`), the number is then squared, the multiplication by two has been transformed to 2 additions and the increment by one is performed by abusing the `lea` instruction. `gcc`/`clang` produce a near-identical code for the same function, leaving `ExprTk` in the dust.
+Loading the floating point number is performed in the most efficient way possible (`MOVAPSD`), the number is then squared, the multiplication by two has been transformed to 2 additions, everything is interleaved to take advantage of the super-scalar pipeline, and the increment by one is performed by using a constant held throughout the loop in the `xmm0` register - which means that there was register optimization. `gcc`/`clang` produce a near-identical code for the same function when invoked with `-O3`, leaving `ExprTk` in the dust. In fact, when performing this function, the array traversal accounts for 90% of the spent CPU time with the actual calculation being 10%.
 
 ## V8
 
