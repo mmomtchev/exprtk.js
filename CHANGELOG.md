@@ -5,11 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [2.1.0] WIP
+## [2.1.0] WIP
  - Switch to C++17
  - Support strided N-dimensional arrays in `cwise`/`cwiseAsync`
 
-# [2.0.1] 2022-03-22
+### [2.0.2] WIP
+ - Fix #31, race condition in `cwise` MP mode
+
+### [2.0.1] 2022-03-22
  - Fix baseline N-API to version 4 allowing extending support to akk Node.js >=10.16.0
  - Fix #28, validate the length of the target array in `cwise`/`cwiseAsync`
  - Fix #20, minor memory leak when the `Expression()` constructor throws on invalid vector name
