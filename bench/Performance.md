@@ -8,9 +8,27 @@ V8 has an obvious performance problem with `TypedArray.prototype.map` which I ha
 
 As one can see from the benchmark, function calls not only are next to free, they can in fact lead to increased performance. The reason is that V8 will be more keen to compile/optimize an isolated function than a loop in a larger function. When it comes to the function call itself - modern CPUs are very good at branch prediction and prefetching when they have to deal with a single `CALL` instruction - which means they will be capable to execute the subroutine almost in the same way as if it was inlined. There is a common misconception that V8 is very good at inlining functions - in fact V8 is simply good at producing subroutines in a way that allows CPU prefetching to work.
 
+## 2 * cos(x) / sqrt(x)
+
+This function has been chosen as an example of a function where JIT compilation doesn't play such an important role as both `cos` and `sqrt` are performed by very well optimized subroutines both in V8 and in `ExprTk`. Also, given the more complex nature of the function, this test is less dependant on cache bandwidth and parallelization has a greater impact.
+
 ## x² + 2x + 1
 
-The performance function chosen for the benchmark is a function that is very well optimized both by V8 and ExprTK. Both recognize its polynomial form and generate very efficient machine code that comes relatively close to the maximum achievable on the given hardware without the use of SIMD instructions.
+This function has been chosen as an example of a function that is very well optimized both by V8.
+
+### In conjunction with `cwise` from `scijs/ndarray`
+
+When used in conjunction with `cwise` of `scijs/ndarray` and 64-bit floating point numbers, V8 produces an absolutely unbeatable code for this function, on par with hand-optimized assembly:
+
+```
+movaps %xmm1,%xmm3
+mulsd  %xmm1,%xmm3
+addsd  %xmm2,%xmm3
+lea    (%r11,%rax,1),%rdx
+addsd  %xmm0,%xmm3
+```
+
+Loading the floating point number is performed in the most efficient way possible (`movaps`), the number is then squared, the multiplication by two has been transformed to 2 additions and the increment by one is performed by abusing the `lea` instruction. `gcc`/`clang` produce a near-identical code for the same function, leaving `ExprTk` in the dust.
 
 ## V8
 
