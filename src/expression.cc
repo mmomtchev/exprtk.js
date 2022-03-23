@@ -612,6 +612,9 @@ template <typename T> struct symbolDesc {
   int64_t offset;
   std::shared_ptr<size_t[]> index;
   std::shared_ptr<int32_t[]> stride;
+  int32_t smallestStride;
+  uint8_t *data_ptr;
+  uint8_t *data_end;
 };
 
 // MSVC Linker has horrible bugs with templated variables
@@ -852,6 +855,7 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
         vectors.push_back(current);
       } else {
         current.data += current.offset * current.elementSize;
+        current.smallestStride = current.stride[dims - 1] * current.elementSize;
         ndarrays.push_back(current);
       }
     } else {
@@ -892,86 +896,137 @@ ASYNCABLE_DEFINE(template <typename T>, Expression<T>::cwise) {
   // integer division ceiling
   size_t lenPerJoblet = (len + job.joblets - 1) / job.joblets;
 
-  if (typeConversionRequired || ndarrays.size() > 0) {
-    std::shared_ptr<int32_t[]> rowMajorStride;
-
-    if (ndarrays.size() > 0) {
-      rowMajorStride = std::shared_ptr<int32_t[]>(new int32_t[dims]);
-      int32_t stride = 1;
-      for (int32_t d = dims - 1; d >= 0; d--) {
-        rowMajorStride[d] = stride;
-        stride *= shape[d];
-      }
+  std::shared_ptr<int32_t[]> rowMajorStride;
+  if (ndarrays.size() > 0) {
+    rowMajorStride = std::shared_ptr<int32_t[]>(new int32_t[dims]);
+    int32_t stride = 1;
+    for (int32_t d = dims - 1; d >= 0; d--) {
+      rowMajorStride[d] = stride;
+      stride *= shape[d];
     }
-    job.main =
-      [scalars, vectors, ndarrays, output, elementSize, len, toCaster, lenPerJoblet, dims, shape, rowMajorStride](
-        const ExpressionInstance<T> &i, size_t id) {
-        auto localVectors = vectors;
-        auto localScalars = scalars;
-        auto localNDArrays = ndarrays;
-        for (auto &v : localScalars) {
-          v.exprtk_var = &i.symbolTable.get_variable(v.name)->ref();
-          *v.exprtk_var = *(reinterpret_cast<const T *>(v.storage));
-        }
-        for (auto &v : localVectors) {
-          v.exprtk_var = &i.symbolTable.get_variable(v.name)->ref();
-          v.data = v.data + id * lenPerJoblet * v.elementSize;
-        }
+  }
+  job.main = [scalars,
+              vectors,
+              ndarrays,
+              output,
+              elementSize,
+              len,
+              toCaster,
+              lenPerJoblet,
+              dims,
+              typeConversionRequired,
+              shape,
+              rowMajorStride](const ExpressionInstance<T> &i, size_t id) {
+    size_t scalarsNumber = scalars.size();
+    size_t vectorsNumber = vectors.size();
+    size_t ndArraysNumber = ndarrays.size();
 
-        // Output is (for now) always positive-row-major
-        for (auto &v : localNDArrays) {
-          v.exprtk_var = &i.symbolTable.get_variable(v.name)->ref();
-          v.index = std::shared_ptr<size_t[]>(new size_t[dims]);
-          // Offset (linear index) is determined by the joblet id
-          v.offset = id * lenPerJoblet;
-          // Convert the offset to subscripts for a rowMajorStide
-          // to find the starting position
-          GetStridedIndex(v.offset, v.index, dims, shape, rowMajorStride);
-          // and then convert the subscripts to index for each ndarray separately
-          GetLinearOffset(v.offset, v.index, dims, shape, v.stride);
-        }
+    symbolDesc<T> *localScalars = new symbolDesc<T>[scalarsNumber];
+    for (size_t j = 0; j < scalarsNumber; j++) localScalars[j] = scalars[j];
+    symbolDesc<T> *localVectors = new symbolDesc<T>[vectorsNumber];
+    for (size_t j = 0; j < vectorsNumber; j++) localVectors[j] = vectors[j];
+    symbolDesc<T> *localNDArrays = new symbolDesc<T>[ndArraysNumber];
+    for (size_t j = 0; j < ndArraysNumber; j++) localNDArrays[j] = ndarrays[j];
 
-        auto &expression = i.expression;
-        uint8_t *output_end = output + std::min((id + 1) * lenPerJoblet, len) * elementSize;
-        for (uint8_t *output_ptr = output + id * lenPerJoblet * elementSize; output_ptr < output_end;
-             output_ptr += elementSize) {
-          for (auto &v : localVectors) {
-            *v.exprtk_var = v.fromCaster(v.data);
-            v.data += v.elementSize;
+    auto *localScalarsEnd = localScalars + scalarsNumber;
+    auto *localVectorsEnd = localVectors + vectorsNumber;
+    auto *localNDArraysEnd = localNDArrays + ndArraysNumber;
+
+    for (auto *v = localScalars; v != localScalarsEnd; v++) {
+      v->exprtk_var = &i.symbolTable.get_variable(v->name)->ref();
+      *v->exprtk_var = *(reinterpret_cast<const T *>(v->storage));
+    }
+    for (auto *v = localVectors; v != localVectorsEnd; v++) {
+      v->exprtk_var = &i.symbolTable.get_variable(v->name)->ref();
+      v->data = v->data + id * lenPerJoblet * v->elementSize;
+    }
+
+    // Output is (for now) always positive-row-major
+    for (auto *v = localNDArrays; v != localNDArraysEnd; v++) {
+      v->exprtk_var = &i.symbolTable.get_variable(v->name)->ref();
+      v->index = std::shared_ptr<size_t[]>(new size_t[dims]);
+      // Offset (linear index) is determined by the joblet id
+      v->offset = id * lenPerJoblet;
+      // Convert the offset to subscripts for a rowMajorStide
+      // to find the starting position
+      GetStridedIndex(v->offset, v->index, dims, shape, rowMajorStride);
+      // and then convert the subscripts to index for each ndarray separately
+      GetLinearOffset(v->offset, v->index, dims, shape, v->stride);
+
+      // Shortcut to allow iterating over the last dimension with a normal linear loop
+      v->data_ptr = v->data + v->offset * v->elementSize;
+      v->data_end = v->data_ptr + (shape[dims - 1] - v->index[dims - 1]) * v->stride[dims - 1] * v->elementSize;
+    }
+
+    auto &expression = i.expression;
+
+    // The time critical loops
+    if (typeConversionRequired && ndArraysNumber > 0) {
+      // The full loop
+      uint8_t *output_end = output + std::min((id + 1) * lenPerJoblet, len) * elementSize;
+      for (uint8_t *output_ptr = output + id * lenPerJoblet * elementSize; output_ptr < output_end;
+           output_ptr += elementSize) {
+        for (auto *v = localVectors; v != localVectorsEnd; v++) {
+          *v->exprtk_var = v->fromCaster(v->data);
+          v->data += v->elementSize;
+        }
+        for (auto *v = localNDArrays; v != localNDArraysEnd; v++) {
+          *v->exprtk_var = v->fromCaster(v->data_ptr);
+          v->data_ptr += v->smallestStride;
+          if (v->data_ptr == v->data_end) {
+            v->index[dims - 1] = shape[dims - 1] - 1;
+            IncrementStridedIndex(v->index, v->data, &v->data_ptr, v->elementSize, dims, shape, v->stride);
+            v->data_end = v->data_ptr + (shape[dims - 1] - v->index[dims - 1]) * v->stride[dims - 1] * v->elementSize;
           }
-          for (auto &v : localNDArrays) {
-            *v.exprtk_var = v.fromCaster(v.data + v.offset * v.elementSize);
-            IncrementStridedIndex(v.index, v.offset, dims, shape, v.stride);
-          }
-          toCaster(output_ptr, expression.value());
         }
-        return 0;
-      };
-  } else {
-    job.main = [scalars, vectors, output, len, lenPerJoblet](const ExpressionInstance<T> &i, size_t id) {
-      auto localVectors = vectors;
-      auto localScalars = scalars;
-      for (auto &v : localScalars) {
-        v.exprtk_var = &i.symbolTable.get_variable(v.name)->ref();
-        *v.exprtk_var = *(reinterpret_cast<const T *>(v.storage));
+        toCaster(output_ptr, expression.value());
       }
-      for (auto &v : localVectors) {
-        v.exprtk_var = &i.symbolTable.get_variable(v.name)->ref();
-        v.data = v.data + id * lenPerJoblet * v.elementSize;
-      }
-
-      auto &expression = i.expression;
+    } else if (ndArraysNumber > 0) {
+      // With ndarrays without type conversion
       T *output_end = reinterpret_cast<T *>(output) + std::min((id + 1) * lenPerJoblet, len);
       for (T *output_ptr = reinterpret_cast<T *>(output) + id * lenPerJoblet; output_ptr < output_end; output_ptr++) {
-        for (auto &v : localVectors) {
-          *v.exprtk_var = *(reinterpret_cast<T *>(v.data));
-          v.data += v.elementSize;
+        for (auto *v = localVectors; v != localVectorsEnd; v++) {
+          *v->exprtk_var = *(reinterpret_cast<T *>(v->data));
+          v->data += v->elementSize;
+        }
+        for (auto *v = localNDArrays; v != localNDArraysEnd; v++) {
+          *v->exprtk_var = *(reinterpret_cast<T *>(v->data_ptr));
+          v->data_ptr += v->smallestStride;
+          if (v->data_ptr == v->data_end) {
+            v->index[dims - 1] = shape[dims - 1] - 1;
+            IncrementStridedIndex(v->index, v->data, &v->data_ptr, v->elementSize, dims, shape, v->stride);
+            v->data_end = v->data_ptr + (shape[dims - 1] - v->index[dims - 1]) * v->stride[dims - 1] * v->elementSize;
+          }
         }
         *output_ptr = expression.value();
       }
-      return 0;
-    };
-  }
+    } else if (typeConversionRequired) {
+      // Without ndarrays with type conversion
+      uint8_t *output_end = output + std::min((id + 1) * lenPerJoblet, len) * elementSize;
+      for (uint8_t *output_ptr = output + id * lenPerJoblet * elementSize; output_ptr < output_end;
+           output_ptr += elementSize) {
+        for (auto *v = localVectors; v != localVectorsEnd; v++) {
+          *v->exprtk_var = v->fromCaster(v->data);
+          v->data += v->elementSize;
+        }
+        toCaster(output_ptr, expression.value());
+      }
+    } else {
+      // The fast simple loop
+      T *output_end = reinterpret_cast<T *>(output) + std::min((id + 1) * lenPerJoblet, len);
+      for (T *output_ptr = reinterpret_cast<T *>(output) + id * lenPerJoblet; output_ptr < output_end; output_ptr++) {
+        for (auto *v = localVectors; v != localVectorsEnd; v++) {
+          *v->exprtk_var = *(reinterpret_cast<T *>(v->data));
+          v->data += v->elementSize;
+        }
+        *output_ptr = expression.value();
+      }
+    }
+    delete[] localScalars;
+    delete[] localVectors;
+    delete[] localNDArrays;
+    return 0;
+  };
 
   job.rval = [persistent](T r) { return persistent->Value(); };
   return job.run(info, async, info.Length() - 1);

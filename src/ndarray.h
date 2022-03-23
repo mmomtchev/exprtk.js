@@ -30,22 +30,26 @@ void GetLinearOffset(
   const std::shared_ptr<size_t[]> &shape,
   const std::shared_ptr<int32_t[]> &stride);
 
-// Get the next element in a strided array, returns false on reaching the end
-inline bool IncrementStridedIndex(
+// Get the next element in a strided array
+inline void IncrementStridedIndex(
   std::shared_ptr<size_t[]> &index,
-  int64_t &offset,
+  uint8_t *start,
+  uint8_t **ptr,
+  const size_t elementSize,
   const size_t dims,
   const std::shared_ptr<size_t[]> &shape,
   const std::shared_ptr<int32_t[]> &stride) {
 
   for (int64_t d = dims - 1; d >= 0; d--) {
     index[d]++;
-    offset += stride[d];
-    if (index[d] < shape[d]) return true;
+    if (index[d] < shape[d]) break;
     index[d] = 0;
-    offset -= stride[d] * shape[d];
   }
-  return false;
+
+  *ptr = start;
+  for (int64_t d = dims - 1; d >= 0; d--) {
+    *ptr += index[d] * stride[d] * elementSize;
+  }
 }
 
 template <typename T>
