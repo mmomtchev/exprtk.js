@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - Switch to C++17
  - Support strided N-dimensional arrays in `cwise`/`cwiseAsync`
 
-### [2.0.2] WIP
+### [2.0.2] 2022-03-24
  - Fix #31, race condition in `cwise` MP mode
 
 ### [2.0.1] 2022-03-22
