@@ -16,7 +16,7 @@ module.exports = function (type, size, fn) {
     },
     'complex': {
       exprJS: (x) => (2 * Math.cos(x) / (Math.sqrt(x) + 1)),
-      exprExprTkI: (type) => new e[type]('2 * cos(x) / (sqrt(x) + 1)', ['x']),
+      exprExprTkI: new e[type]('2 * cos(x) / (sqrt(x) + 1)', ['x']),
       exprExprTkE: new e[type](
         'for (var i := 0; i < a1[]; i += 1) { var x := a1[i]; a2[i] := 2 * cos(x) / (sqrt(x) + 1); };',
         [], { a1: size, a2: size }),
