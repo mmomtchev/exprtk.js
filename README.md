@@ -231,12 +231,16 @@ Returns **string**&#x20;
 
 Generic vector operation with implicit traversal.
 
-Supports automatic type conversions, multiple inputs and writing into a pre-existing array.
+Supports automatic type conversions, multiple inputs, strided N-dimensional arrays and writing into a pre-existing array.
+
+If using N-dimensional arrays, all arrays must have the same shape. The result is always in positive row-major order.
+When mixing linear vectors and N-dimensional arrays, the linear vectors are considered to be in positive row-major order
+in relation to the N-dimensional arrays.
 
 #### Parameters
 
 *   `threads` **number?**&#x20;
-*   `arguments` **Record\<string, (number | TypedArray\<any> | ndarray.NdArray\<any>)>**&#x20;
+*   `arguments` **Record\<string, (number | TypedArray\<any> | ndarray.NdArray\<any> | stdlib.ndarray)>**&#x20;
 *   `target` **TypedArray\<T>?**&#x20;
 
 #### Examples
