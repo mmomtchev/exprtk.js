@@ -1,4 +1,3 @@
-const wtf = require('wtfnode');
 const fs = require('fs');
 const process = require('process');
 
@@ -23,7 +22,6 @@ const bench = fs.readdirSync(__dirname).filter((file) => file.match(/\.bench\.js
           // eslint-disable-next-line no-await-in-loop
           await require(`${__dirname}/${b}`)(t, size, fn);
           console.log(`\n\n`);
-          wtf.dump();
         }
       }
 })();
