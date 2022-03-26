@@ -102,4 +102,4 @@ template <> struct NapiArrayType<size_t> {
   }
 };
 
-}
+} // namespace exprtk_js

@@ -10,11 +10,7 @@ Napi::Array StridedArrayStride(Napi::Object ndarray);
 size_t StridedArrayOffset(Napi::Object ndarray);
 
 bool ImportStridedArray(
-  Napi::Value v,
-  size_t &dims,
-  int64_t &offset,
-  std::shared_ptr<size_t[]> &shape,
-  std::shared_ptr<int32_t[]> &stride);
+  Napi::Value v, size_t &dims, int64_t &offset, std::shared_ptr<size_t[]> &shape, std::shared_ptr<int32_t[]> &stride);
 
 void GetStridedIndex(
   const int64_t offset,
@@ -47,9 +43,7 @@ inline void IncrementStridedIndex(
   }
 
   *ptr = start;
-  for (int64_t d = dims - 1; d >= 0; d--) {
-    *ptr += index[d] * stride[d] * elementSize;
-  }
+  for (int64_t d = dims - 1; d >= 0; d--) { *ptr += index[d] * stride[d] * elementSize; }
 }
 
 template <typename T>
@@ -61,9 +55,8 @@ inline bool ArraysEqual(const std::shared_ptr<T[]> &a, const std::shared_ptr<T[]
 
 inline size_t StridedLength(const std::shared_ptr<size_t[]> &shape, const size_t dims) {
   size_t length = 1;
-  for (size_t i = 0; i < dims; i++)
-    length *= shape[i];
+  for (size_t i = 0; i < dims; i++) length *= shape[i];
   return length;
 }
 
-}
+} // namespace exprtk_js
