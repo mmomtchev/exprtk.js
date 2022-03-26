@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset='utf-8'>
-  <title>exprtk.js 2.0.2 | Documentation</title>
+  <title>exprtk.js 2.1.0-rc.0 | Documentation</title>
   <meta name='description' content='JS Mathematical Expression Toolkit Library'>
   <meta name='viewport' content='width=device-width,initial-scale=1'>
   <link href='assets/bass.css' rel='stylesheet'>
@@ -15,7 +15,7 @@
       <div id='split-left' class='overflow-auto fs0 height-viewport-100'>
         <div class='py1 px2'>
           <h3 class='mb0 no-anchor'>exprtk.js</h3>
-          <div class='mb1'><code>2.0.2</code></div>
+          <div class='mb1'><code>2.1.0-rc.0</code></div>
           <input
             placeholder='Filter'
             id='filter-input'
@@ -481,7 +481,7 @@ Set by the <code>EXPRTKJS_THREADS</code> environment variable.</p>
       <div class="clearfix small pointer toggle-sibling">
         <div class="py1 contain">
             <a class='icon pin-right py1 dark-link caret-right'>▸</a>
-            <span class='code strong strong truncate'>cwise(arguments, arguments)</span>
+            <span class='code strong strong truncate'>cwise(threads?, arguments, target?)</span>
         </div>
       </div>
       <div class="clearfix display-none toggle-target">
@@ -490,9 +490,12 @@ Set by the <code>EXPRTKJS_THREADS</code> environment variable.</p>
   
 
   <p>Generic vector operation with implicit traversal.</p>
-<p>Supports automatic type conversions, multiple inputs and writing into a pre-existing array.</p>
+<p>Supports automatic type conversions, multiple inputs, strided N-dimensional arrays and writing into a pre-existing array.</p>
+<p>If using N-dimensional arrays, all arrays must have the same shape. The result is always in positive row-major order.
+When mixing linear vectors and N-dimensional arrays, the linear vectors are considered to be in positive row-major order
+in relation to the N-dimensional arrays.</p>
 
-    <div class='pre p1 fill-light mt0'>cwise(arguments: Record&#x3C;string, (number | TypedArray&#x3C;T>)>, arguments: ...(Array&#x3C;(number | TypedArray&#x3C;T>)> | Record&#x3C;string, (number | TypedArray&#x3C;T>)>)): TypedArray&#x3C;T></div>
+    <div class='pre p1 fill-light mt0'>cwise(threads: number?, arguments: Record&#x3C;string, (number | TypedArray&#x3C;any> | ndarray.NdArray&#x3C;any> | stdlib.ndarray)>, target: TypedArray&#x3C;T>?): TypedArray&#x3C;T></div>
   
   
 
@@ -509,7 +512,7 @@ Set by the <code>EXPRTKJS_THREADS</code> environment variable.</p>
       
         <div class='space-bottom0'>
           <div>
-            <span class='code bold'>arguments</span> <code class='quiet'>(Record&#x3C;string, (number | TypedArray&#x3C;T>)>)</code>
+            <span class='code bold'>threads</span> <code class='quiet'>(number?)</code>
 	    
           </div>
           
@@ -517,9 +520,16 @@ Set by the <code>EXPRTKJS_THREADS</code> environment variable.</p>
       
         <div class='space-bottom0'>
           <div>
-            <span class='code bold'>arguments</span> <code class='quiet'>(...(Array&#x3C;(number | TypedArray&#x3C;T>)> | Record&#x3C;string, (number | TypedArray&#x3C;T>)>))</code>
-	    of the function, iterator removed
-
+            <span class='code bold'>arguments</span> <code class='quiet'>(Record&#x3C;string, (number | TypedArray&#x3C;any> | ndarray.NdArray&#x3C;any> | stdlib.ndarray)>)</code>
+	    
+          </div>
+          
+        </div>
+      
+        <div class='space-bottom0'>
+          <div>
+            <span class='code bold'>target</span> <code class='quiet'>(TypedArray&#x3C;T>?)</code>
+	    
           </div>
           
         </div>
