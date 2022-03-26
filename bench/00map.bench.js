@@ -23,6 +23,8 @@ module.exports = function (type, size, fn) {
     }
   };
 
+  if (type.match(/[Ii]nt/) && fn == 'complex') return;
+
   const allocator = global[type + 'Array'];
 
   const { exprJS, exprExprTkE, exprExprTkI} = fns[fn];
