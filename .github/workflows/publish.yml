@@ -17,6 +17,7 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: 12.x
+    - run: npm i -g npm@latest
     - run: npm install --ignore-scripts
     - run: npx @mapbox/node-pre-gyp configure
     - run: npx @mapbox/node-pre-gyp build -j max
