@@ -28,8 +28,8 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-    - run: npm install --ignore-scripts
     - run: npm i -g npm@latest
+    - run: npm install --ignore-scripts
     - run: npx @mapbox/node-pre-gyp install
     - name: Run unit tests
       run: npm test
