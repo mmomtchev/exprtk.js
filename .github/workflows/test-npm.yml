@@ -22,6 +22,7 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
+    - run: npm i -g npm@latest
     - name: Set up the unit tests
       run: |
         curl https://codeload.github.com/mmomtchev/exprtk.js/zip/refs/tags/v${{ github.event.inputs.version }} --output repo.zip
@@ -54,6 +55,7 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
+    - run: npm i -g npm@latest
     - name: Set up the unit tests
       run: |
         curl https://codeload.github.com/mmomtchev/exprtk.js/zip/refs/tags/v${{ github.event.inputs.version }} --output repo.zip
