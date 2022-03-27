@@ -10,7 +10,7 @@ As one can see from the benchmark, function calls not only are next to free, the
 
 ## 2 * cos(x) / sqrt(x)
 
-This function has been chosen as an example of a function where JIT compilation doesn't play such an important role as both `cos` and `sqrt` are performed by very well optimized subroutines both in V8 and in `ExprTk`. Also, given the more complex nature of the function, this test is less dependant on cache bandwidth and parallelization has a greater impact.
+This function has been chosen as an example of a function where JIT compilation doesn't play such an important role as both `cos` and `sqrt` are performed by very well optimized subroutines both in V8 and in `ExprTk`. Also, given the more complex nature of the function, this test is less dependant on cache bandwidth and allows for parallelization to have greater impact.
 
 ## x² + 2x + 1
 
@@ -41,4 +41,6 @@ You can also check this Medium article which discusses in detail the code produc
 
 ## ExprTk
 
-ExprTk also generates very good machine code for the given function. It comes down to a single master `CALL` from `expression.cc` to the first control block in the template which in turn calls the polynomial evaluator. The problem is that modern CPUs are not as good with two cascading `CALL` instructions in a tight loop as they are with only one. Also, the way the symbol table works - holding a reference and not a pointer - `ExprTk.js` has to generate an extra store instruction which could have been avoided at every access of the iterator array. Both problems could eventually be addressed in the future.
+ExprTk also generates very good machine code for the given function. It comes down to a single master `CALL` from `expression.cc` to the first control block in the template which in turn calls the polynomial evaluator. Most of the performance loss, compared to the inlined code in the V8 case, comes from having to save and reload all the values from memory before and after each `CALL` - and also from the `CALL` itself - since this `CALL` will be a dynamic call with the value held in a register - potentially stalling the CPU pipeline. The inline code produced by V8 is able to keep some values in a register. This can't be achieved without *fusing* the expression evaluation into the loop logic.
+
+Also, the way the `ExprTk` symbol table works - holding a reference and not a pointer - `ExprTk.js` has to generate an extra store instruction which could have been avoided at every access of the iterator array. This problem could eventually be addressed in the future.
