@@ -15,14 +15,13 @@ jobs:
     strategy:
       matrix:
         platforms: [ ubuntu-latest, windows-2019, macos-11 ]
-        node-version: [ 14.x, 16.x, 18.x ]
+        node-version: [ 16.x, 18.x, 20.x ]
 
     steps:
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-    - run: npm i -g npm@latest
     - name: Set up the unit tests
       run: |
         curl https://codeload.github.com/mmomtchev/exprtk.js/zip/refs/tags/v${{ github.event.inputs.version }} --output repo.zip
@@ -48,14 +47,13 @@ jobs:
     strategy:
       matrix:
         platforms: [ ubuntu-latest, windows-2019, macos-11 ]
-        node-version: [ 14.x, 16.x, 18.x ]
+        node-version: [ 16.x, 18.x, 20.x ]
 
     steps:
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-    - run: npm i -g npm@latest
     - name: Set up the unit tests
       run: |
         curl https://codeload.github.com/mmomtchev/exprtk.js/zip/refs/tags/v${{ github.event.inputs.version }} --output repo.zip

@@ -9,7 +9,7 @@ on:
       testConcurrency:
         description: 'Check that parallel tests run in parallel (requires real CPUs)'
         required: false
-        default: 0
+        default: '0'
 
 
 jobs:
@@ -20,7 +20,7 @@ jobs:
     strategy:
       matrix:
         platforms: [ ubuntu-18.04, ubuntu-20.04, windows-2019, macos-11 ]
-        node-version: [ 14.x, 16.x, 18.x ]
+        node-version: [ 16.x, 18.x, 20.x ]
 
     steps:
     - uses: actions/checkout@v2
@@ -28,7 +28,6 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-    - run: npm i -g npm@latest
     - run: npm install --ignore-scripts
     - run: npx @mapbox/node-pre-gyp install
     - name: Run unit tests
