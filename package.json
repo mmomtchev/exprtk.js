@@ -84,6 +84,6 @@
     "node-gyp": "^8.4.1",
     "ts-node": "^10.4.0",
     "tsconfig-paths": "^3.14.2",
-    "typescript": "^4.5.4"
+    "typescript": "^4.9.5"
   }
 }
