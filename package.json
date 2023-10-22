@@ -1,7 +1,7 @@
 {
   "main": "lib/binding.js",
   "dependencies": {
-    "@mapbox/node-pre-gyp": "^1.0.8",
+    "@mapbox/node-pre-gyp": "^1.0.11",
     "@mmomtchev/node-pre-gyp-github": "^2.0.3",
     "@stdlib/types": "^0.0.14",
     "@types/ndarray": "^1.0.11",
