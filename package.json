@@ -75,7 +75,7 @@
     "cwise": "^1.0.10",
     "documentation-polyglot": "^1.0.1",
     "eslint": "^8.52.0",
-    "eslint-plugin-array-func": "^3.1.7",
+    "eslint-plugin-array-func": "^3.1.8",
     "eslint-plugin-mocha": "^10.2.0",
     "eslint-plugin-prefer-arrow": "^1.2.3",
     "gh-pages": "^5.0.0",
