@@ -61,7 +61,7 @@
     "@mmomtchev/documentation": "^14.0.1",
     "@octokit/core": "^3.6.0",
     "@stdlib/ndarray": "^0.1.1",
-    "@types/chai": "^4.3.9",
+    "@types/chai": "^4.3.10",
     "@types/chai-as-promised": "^7.1.7",
     "@types/mocha": "^9.1.1",
     "@types/ndarray-ops": "^1.2.6",
