@@ -64,7 +64,7 @@
     "@types/chai": "^4.3.10",
     "@types/chai-as-promised": "^7.1.8",
     "@types/mocha": "^9.1.1",
-    "@types/ndarray-ops": "^1.2.6",
+    "@types/ndarray-ops": "^1.2.7",
     "@types/node": "^17.0.45",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
