@@ -12,7 +12,7 @@ jobs:
         platforms: [ ubuntu-18.04, windows-2019, macos-11 ]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Use Node.js 16.x
       uses: actions/setup-node@v4
       with:
