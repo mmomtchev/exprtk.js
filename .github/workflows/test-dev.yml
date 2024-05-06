@@ -27,7 +27,7 @@ jobs:
         platforms: [ ubuntu-20.04, macos-11 ]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
@@ -64,7 +64,7 @@ jobs:
         node-version: [ 16.x, 18.x, 20.x ]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
@@ -84,7 +84,7 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Use Node.js 16.x
       uses: actions/setup-node@v4
       with:
@@ -122,7 +122,7 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Use Node.js 16.x
       uses: actions/setup-node@v4
       with:
