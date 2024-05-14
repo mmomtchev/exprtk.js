@@ -59,7 +59,7 @@
   },
   "devDependencies": {
     "@mmomtchev/documentation": "^14.0.1",
-    "@octokit/core": "^3.6.0",
+    "@octokit/core": "^6.1.2",
     "@stdlib/ndarray": "^0.2.1",
     "@types/chai": "^4.3.11",
     "@types/chai-as-promised": "^7.1.8",
