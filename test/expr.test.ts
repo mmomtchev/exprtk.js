@@ -9,7 +9,7 @@ import * as os from 'os';
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 chai.use(chaiAsPromised);
-const assert = chai.assert;
+const assert: Chai.AssertStatic = chai.assert;
 
 describe('Expression', () => {
     afterEach((global as any).gc);
@@ -151,11 +151,7 @@ describe('Expression', () => {
                 ctor: Expression.Float64, allocator: Float64Array,
                 result: [-1, -0.5, 0, 0.5, 1, 1.5, 2, 2.5, NaN]
             }
-        } as Record<string, {
-            ctor: Expression.ExpressionConstructor,
-            allocator: Expression.TypedArrayConstructor,
-            result: (number | 'ub')[];
-        }>;
+        } as const;
 
         it('Expression', () => {
             assert.throws(() => {
@@ -163,7 +159,7 @@ describe('Expression', () => {
             }, /abstract base class/);
         });
 
-        for (const t of Object.keys(types)) {
+        for (const t of Object.keys(types) as (keyof typeof types)[]) {
             it(t, () => {
                 const type = types[t];
                 assert.equal(type.ctor.type, t);
@@ -176,7 +172,7 @@ describe('Expression', () => {
 
                 const a = new type.allocator(array);
                 const r = (e as Expression.Int8).map((a as Int8Array), 'a', { b: 1 });
-                assert.instanceOf(r, type.allocator);
+                assert.instanceOf(r, type.allocator as typeof Int8Array);
                 for (const i in r) {
                     if (type.result[i] === 'ub') continue;
                     if (isNaN(r[i])) assert.isNaN(type.result[i]);

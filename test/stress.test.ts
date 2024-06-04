@@ -3,7 +3,7 @@ import { Float64 } from 'exprtk.js';
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 chai.use(chaiAsPromised);
-const assert = chai.assert;
+const assert: Chai.AssertStatic = chai.assert;
 
 const size = 10000;
 const iterations = 250;

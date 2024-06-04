@@ -6,7 +6,7 @@ import array from '@stdlib/ndarray/array';
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 chai.use(chaiAsPromised);
-const assert = chai.assert;
+const assert: Chai.AssertStatic = chai.assert;
 
 describe('ndarray support', () => {
     let expr: Float64Expression;
