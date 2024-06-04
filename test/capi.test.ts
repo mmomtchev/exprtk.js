@@ -7,7 +7,7 @@ import Expression from 'exprtk.js';
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 chai.use(chaiAsPromised);
-const assert = chai.assert;
+const assert: Chai.AssertStatic = chai.assert;
 
 declare module 'exprtk.js' {
   interface Expression {
