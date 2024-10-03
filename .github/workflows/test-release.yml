@@ -19,8 +19,8 @@ jobs:
 
     strategy:
       matrix:
-        platforms: [ ubuntu-18.04, ubuntu-20.04, windows-2019, macos-12 ]
-        node-version: [ 16.x, 18.x, 20.x ]
+        platforms: [ ubuntu-20.04, ubuntu-20.04, windows-2019, macos-12, macos-14 ]
+        node-version: [ 18.x, 20.x, 22.x ]
 
     steps:
     - uses: actions/checkout@v4
