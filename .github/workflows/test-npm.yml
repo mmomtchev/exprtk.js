@@ -41,7 +41,7 @@ jobs:
       env:
         TS_NODE_PROJECT: tsconfig.test.json
         MOCHA_SKIP_EXEC: 1
-
+        MOCHA_TEST_CONCURRENCY: 0
 
   test_npm_rebuild:
 
@@ -76,3 +76,4 @@ jobs:
       env:
         TS_NODE_PROJECT: tsconfig.test.json
         MOCHA_SKIP_EXEC: 1
+        MOCHA_TEST_CONCURRENCY: 0
