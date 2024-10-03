@@ -27,6 +27,7 @@ describe('Expression C-API', () => {
 
     const binding_path = path.dirname(binary.find(path.resolve(path.join(__dirname, '../package.json'))));
     const test_addon_path = path.resolve(binding_path, 'exprtk.js-test.node');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     testAddon = require(test_addon_path);
   });
 
