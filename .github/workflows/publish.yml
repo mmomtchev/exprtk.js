@@ -9,14 +9,14 @@ jobs:
 
     strategy:
       matrix:
-        platforms: [ ubuntu-18.04, windows-2019, macos-12 ]
+        platforms: [ ubuntu-20.04, windows-2019, macos-12, macos-14 ]
 
     steps:
     - uses: actions/checkout@v4
-    - name: Use Node.js 16.x
+    - name: Use Node.js 18.x
       uses: actions/setup-node@v4
       with:
-        node-version: 16.x
+        node-version: 18.x
     - uses: actions/setup-python@v5
       with:
         python-version: 3.11
