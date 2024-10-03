@@ -28,7 +28,7 @@ jobs:
       with:
         node-version: 20.x
     - run: npm install --ignore-scripts
-    - run: npm lint
+    - run: npm run lint
 
 
   unix:
