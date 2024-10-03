@@ -17,6 +17,20 @@ on:
 
 
 jobs:
+  lint:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Use Node.js 20.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+    - run: npm install --ignore-scripts
+    - run: npm lint
+
+
   unix:
 
     runs-on: ${{ matrix.platforms }}
