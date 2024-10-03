@@ -24,6 +24,8 @@ jobs:
     - run: npx @mapbox/node-pre-gyp configure
     - run: npx @mapbox/node-pre-gyp build -j max
     - run: npm test
+      env:
+        MOCHA_TEST_CONCURRENCY: 0
     - run: npx @mapbox/node-pre-gyp package
     - run: npx @mmomtchev/node-pre-gyp-github publish
       env:
