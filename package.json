@@ -17,7 +17,7 @@
     "web": "documentation build --config=website.yml src/*.cc lib/binding.js -f=html -o=doc",
     "preversion": "npm run lint && npm run test && npm run doc && git add README.md",
     "version": "git add package.json",
-    "postversion": "git push && git push --tags && node ./scripts/publish-packages.js && npm run web && node ./scripts/publish-docs.js ",
+    "postversion": "git push && git push --tags && node ./scripts/publish-packages.mjs && npm run web && node ./scripts/publish-docs.js ",
     "gcov": "mkdir -p coverage && cd coverage && gcov -o ../build/Debug/obj.target/exprtk.js/src ../src/*",
     "lcov": "npx c8 report --reporter=text-lcov > coverage/tests.lcov",
     "codecov": "cd coverage && curl -s https://codecov.io/bash | bash",
