@@ -3,7 +3,7 @@
   "dependencies": {
     "@mapbox/node-pre-gyp": "^1.0.11",
     "@mmomtchev/node-pre-gyp-github": "^2.0.3",
-    "@stdlib/types": "^0.3.2",
+    "@stdlib/types": "^0.4.1",
     "@types/ndarray": "^1.0.14",
     "ndarray": "^1.0.19",
     "node-addon-api": "^8.0.0"
