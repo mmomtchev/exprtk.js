@@ -59,7 +59,7 @@
   },
   "devDependencies": {
     "@mmomtchev/documentation": "^14.0.1",
-    "@octokit/core": "^6.1.2",
+    "@octokit/core": "^7.0.2",
     "@stdlib/array": "^0.3.1",
     "@stdlib/assert": "^0.3.1",
     "@stdlib/bigint": "^0.3.1",
