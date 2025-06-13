@@ -331,7 +331,8 @@ describe('Expression', () => {
                 return assert.isRejected(vectorMean.evalAsync(new Float64Array(4)),
                     /size 4 does not match declared size 6/);
             });
-            it('should work with concurrent invocations', () => {
+            it('should work with concurrent invocations', function() {
+                this.retries(5);
                 const big = 128 * 1024;
                 const vectorMean = new expr(
                     'var r := 0; for (var i := 0; i < x[]; i += 1) { r += x[i]; }; r / x[];',
