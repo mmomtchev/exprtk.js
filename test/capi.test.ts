@@ -11,7 +11,7 @@ const assert: Chai.AssertStatic = chai.assert;
 
 declare module 'exprtk.js' {
   interface Expression {
-    _CAPI_: Uint8Array;
+    _CAPI_: ArrayBufferView;
   }
 }
 describe('Expression C-API', () => {
