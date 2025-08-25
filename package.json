@@ -86,7 +86,7 @@
     "@typescript-eslint/parser": "^8.0.0",
     "benny": "^3.7.1",
     "c8": "^10.0.0",
-    "chai": "^4.4.0",
+    "chai": "^6.0.1",
     "chai-as-promised": "^7.1.1",
     "cwise": "^1.0.10",
     "documentation-polyglot": "^1.0.1",
