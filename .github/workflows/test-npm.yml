@@ -38,9 +38,7 @@ jobs:
       shell: bash
       run: |
         cd test
-        npx mocha --reporter=tap -r ts-node/register -r tsconfig-paths/register \
-          ${{ matrix.node-version >= 20 && '--node-option=no-experimental-require-module' || '' }} \
-          ${{ matrix.node-version >= 24 && '--node-option=no-experimental-strip-types' || '' }} \
+        npx mocha --reporter=tap -r tsx -r tsconfig-paths/register \
           --timeout 20000 --v8-expose-gc *.test.ts
       env:
         TS_NODE_PROJECT: tsconfig.test.json
@@ -77,9 +75,7 @@ jobs:
       shell: bash
       run: |
         cd test
-        npx mocha --reporter=tap -r ts-node/register -r tsconfig-paths/register \
-          ${{ matrix.node-version >= 20 && '--node-option=no-experimental-require-module' || '' }} \
-          ${{ matrix.node-version >= 24 && '--node-option=no-experimental-strip-types' || '' }} \
+        npx mocha --reporter=tap -r tsx -r tsconfig-paths/register \
           --timeout 20000 --v8-expose-gc *.test.ts
       env:
         TS_NODE_PROJECT: tsconfig.test.json
