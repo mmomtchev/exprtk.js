@@ -97,7 +97,7 @@
     "gh-pages": "^6.1.1",
     "mocha": "^11.0.1",
     "ndarray-ops": "^1.2.2",
-    "node-gyp": "^11.0.0",
+    "node-gyp": "^12.1.0",
     "tsconfig-paths": "^4.2.0",
     "tsx": "^4.20.5",
     "typescript": "^5.4.5"
