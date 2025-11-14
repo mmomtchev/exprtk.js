@@ -3,14 +3,15 @@
  *         C++ Mathematical Expression Toolkit Library        *
  *                                                            *
  * Simple Example 13                                          *
- * Author: Arash Partow (1999-2021)                           *
- * URL: http://www.partow.net/programming/exprtk/index.html   *
+ * Author: Arash Partow (1999-2024)                           *
+ * URL: https://www.partow.net/programming/exprtk/index.html  *
  *                                                            *
  * Copyright notice:                                          *
  * Free use of the Mathematical Expression Toolkit Library is *
  * permitted under the guidelines and in accordance with the  *
  * most current version of the MIT License.                   *
- * http://www.opensource.org/licenses/MIT                     *
+ * https://www.opensource.org/licenses/MIT                    *
+ * SPDX-License-Identifier: MIT                               *
  *                                                            *
  **************************************************************
 */
@@ -32,30 +33,30 @@ void savitzky_golay_filter()
    typedef exprtk::parser<T>       parser_t;
 
    const std::string sgfilter_program =
-                  " var weight[9] :=                                          "
-                  "       {                                                   "
-                  "         -21, 14,  39,                                     "
-                  "          54, 59,  54,                                     "
-                  "          39, 14, -21                                      "
-                  "       };                                                  "
-                  "                                                           "
-                  " if (v_in[] >= weight[])                                   "
-                  " {                                                         "
-                  "   var lower_bound := trunc(weight[] / 2);                 "
-                  "   var upper_bound := v_in[] - lower_bound;                "
-                  "                                                           "
-                  "   v_out := 0;                                             "
-                  "                                                           "
-                  "   for (var i := lower_bound; i < upper_bound; i += 1)     "
-                  "   {                                                       "
-                  "     for (var j := -lower_bound; j <= lower_bound; j += 1) "
-                  "     {                                                     "
-                  "       v_out[i] += weight[j + lower_bound] * v_in[i + j];  "
-                  "     };                                                    "
-                  "   };                                                      "
-                  "                                                           "
-                  "   v_out /= sum(weight);                                   "
-                  " }                                                         ";
+      " var weight[9] :=                                            "
+      "     {                                                       "
+      "        -21, 14,  39,                                        "
+      "         54, 59,  54,                                        "
+      "         39, 14, -21                                         "
+      "     };                                                      "
+      "                                                             "
+      " if (v_in[] >= weight[])                                     "
+      " {                                                           "
+      "    const var lower_bound := trunc(weight[] / 2);            "
+      "    const var upper_bound := v_in[] - lower_bound;           "
+      "                                                             "
+      "    v_out := 0;                                              "
+      "                                                             "
+      "    for (var i := lower_bound; i < upper_bound; i += 1)      "
+      "    {                                                        "
+      "       for (var j := -lower_bound; j <= lower_bound; j += 1) "
+      "       {                                                     "
+      "          v_out[i] += weight[j + lower_bound] * v_in[i + j]; "
+      "       };                                                    "
+      "    };                                                       "
+      "                                                             "
+      "    v_out /= sum(weight);                                    "
+      " }                                                           ";
 
    const std::size_t n = 1024;
 

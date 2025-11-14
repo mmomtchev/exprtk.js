@@ -3,14 +3,15 @@
  *         C++ Mathematical Expression Toolkit Library        *
  *                                                            *
  * Simple Example 11                                          *
- * Author: Arash Partow (1999-2021)                           *
- * URL: http://www.partow.net/programming/exprtk/index.html   *
+ * Author: Arash Partow (1999-2024)                           *
+ * URL: https://www.partow.net/programming/exprtk/index.html  *
  *                                                            *
  * Copyright notice:                                          *
  * Free use of the Mathematical Expression Toolkit Library is *
  * permitted under the guidelines and in accordance with the  *
  * most current version of the MIT License.                   *
- * http://www.opensource.org/licenses/MIT                     *
+ * https://www.opensource.org/licenses/MIT                    *
+ * SPDX-License-Identifier: MIT                               *
  *                                                            *
  **************************************************************
 */
@@ -30,12 +31,14 @@ void square_wave2()
    typedef exprtk::parser<T>       parser_t;
 
    const std::string wave_program =
-                  " var r := 0;                                         "
-                  " for (var i := 0; i < 1000; i += 1)                  "
-                  " {                                                   "
-                  "   r += (1 / (2i + 1)) * sin((4i + 2) * pi * f * t); "
-                  " };                                                  "
-                  " r *= a * (4 / pi);                                  ";
+      " var r := 0;                                          "
+      "                                                      "
+      " for (var i := 0; i < 1000; i += 1)                   "
+      " {                                                    "
+      "    r += (1 / (2i + 1)) * sin((4i + 2) * pi * f * t); "
+      " };                                                   "
+      "                                                      "
+      " r *= a * (4 / pi);                                   ";
 
    static const T pi = T(3.141592653589793238462643383279502);
 
