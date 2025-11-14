@@ -38,7 +38,7 @@ jobs:
     strategy:
       matrix:
         node-version: [ 18.x, 20.x, 22.x, 24.x ]
-        platforms: [ ubuntu-22.04, macos-13, macos-14 ]
+        platforms: [ ubuntu-22.04, macos-15, macos-15-intel ]
 
     steps:
     - uses: actions/checkout@v5
