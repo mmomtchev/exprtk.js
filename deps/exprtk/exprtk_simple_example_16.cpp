@@ -3,14 +3,15 @@
  *         C++ Mathematical Expression Toolkit Library        *
  *                                                            *
  * Simple Example 16                                          *
- * Author: Arash Partow (1999-2021)                           *
- * URL: http://www.partow.net/programming/exprtk/index.html   *
+ * Author: Arash Partow (1999-2024)                           *
+ * URL: https://www.partow.net/programming/exprtk/index.html  *
  *                                                            *
  * Copyright notice:                                          *
  * Free use of the Mathematical Expression Toolkit Library is *
  * permitted under the guidelines and in accordance with the  *
  * most current version of the MIT License.                   *
- * http://www.opensource.org/licenses/MIT                     *
+ * https://www.opensource.org/licenses/MIT                    *
+ * SPDX-License-Identifier: MIT                               *
  *                                                            *
  **************************************************************
 */
@@ -31,21 +32,21 @@ void linear_least_squares()
    typedef exprtk::parser<T>       parser_t;
 
    const std::string linear_least_squares_program =
-                  " if (x[] == y[])                                       "
-                  " {                                                     "
-                  "   beta  := (sum(x * y) - sum(x) * sum(y) / x[]) /     "
-                  "            (sum(x^2) -  sum(x)^2 / x[]);              "
-                  "                                                       "
-                  "   alpha := avg(y) - beta * avg(x);                    "
-                  "                                                       "
-                  "   rmse  := sqrt(sum((beta * x + alpha - y)^2) / y[]); "
-                  " }                                                     "
-                  " else                                                  "
-                  " {                                                     "
-                  "   alpha := null;                                      "
-                  "   beta  := null;                                      "
-                  "   rmse  := null;                                      "
-                  " }                                                     ";
+      " if (x[] == y[])                                        "
+      " {                                                      "
+      "    beta  := (sum(x * y) - sum(x) * sum(y) / x[]) /     "
+      "             (sum(x^2) - sum(x)^2 / x[]);               "
+      "                                                        "
+      "    alpha := avg(y) - beta * avg(x);                    "
+      "                                                        "
+      "    rmse  := sqrt(sum((beta * x + alpha - y)^2) / y[]); "
+      " }                                                      "
+      " else                                                   "
+      " {                                                      "
+      "    alpha := null;                                      "
+      "    beta  := null;                                      "
+      "    rmse  := null;                                      "
+      " }                                                      ";
 
    T x[] = {T(  1), T(  2), T(3), T(  4), T(  5), T(6), T(  7), T(  8), T(  9), T(10)};
    T y[] = {T(8.7), T(6.8), T(6), T(5.6), T(3.8), T(3), T(2.4), T(1.7), T(0.4), T(-1)};

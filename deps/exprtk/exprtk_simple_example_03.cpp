@@ -2,15 +2,16 @@
  **************************************************************
  *         C++ Mathematical Expression Toolkit Library        *
  *                                                            *
- * Simple Example 3                                           *
- * Author: Arash Partow (1999-2021)                           *
- * URL: http://www.partow.net/programming/exprtk/index.html   *
+ * Simple Example 03                                          *
+ * Author: Arash Partow (1999-2024)                           *
+ * URL: https://www.partow.net/programming/exprtk/index.html  *
  *                                                            *
  * Copyright notice:                                          *
  * Free use of the Mathematical Expression Toolkit Library is *
  * permitted under the guidelines and in accordance with the  *
  * most current version of the MIT License.                   *
- * http://www.opensource.org/licenses/MIT                     *
+ * https://www.opensource.org/licenses/MIT                    *
+ * SPDX-License-Identifier: MIT                               *
  *                                                            *
  **************************************************************
 */
@@ -30,7 +31,7 @@ void polynomial()
    typedef exprtk::parser<T>       parser_t;
 
    const std::string expression_string =
-                  "25x^5 - 35x^4 - 15x^3 + 40x^2 - 15x + 1";
+      "25x^5 - 35x^4 - 15x^3 + 40x^2 - 15x + 1";
 
    const T r0 = T(0);
    const T r1 = T(1);

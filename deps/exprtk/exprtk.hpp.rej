@@ -1,0 +1,55 @@
+@@ -883,18 +906,36 @@
+             }
+ 
+             template <typename T>
++            inline bool is_nan_impl(const T, int_type_tag)
++            {
++               return false;
++            }
++
++            template <typename T>
+             inline int to_int32_impl(const T v, real_type_tag)
+             {
+                return static_cast<int>(v);
+             }
+ 
+             template <typename T>
++            inline int to_int32_impl(const T v, int_type_tag)
++            {
++               return static_cast<int>(v);
++            }
++
++            template <typename T>
+             inline _int64_t to_int64_impl(const T v, real_type_tag)
+             {
+                return static_cast<_int64_t>(v);
+             }
+ 
+             template <typename T>
++            inline _int64_t to_int64_impl(const T v, int_type_tag)
++            {
++               return static_cast<_int64_t>(v);
++            }
++
++            template <typename T>
+             inline bool is_true_impl(const T v)
+             {
+                return std::not_equal_to<T>()(T(0),v);
+@@ -25598,7 +25717,7 @@
+ 
+          free_node(node_allocator_,size_expr);
+ 
+-         const T max_vector_size = T(2000000000.0);
++         const T max_vector_size = type_traits<T>::max_vector_size;
+ 
+          if (
+               (vector_size <= T(0)) ||
+@@ -25783,7 +25902,7 @@
+                }
+             }
+ 
+-            if (vec_initilizer_list.size() > vector_size)
++            if (vec_initilizer_list.size() > static_cast<std::size_t>(vector_size))
+             {
+                set_error(
+                   make_error(parser_error::e_syntax,
