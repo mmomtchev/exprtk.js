@@ -94,12 +94,8 @@ Expression<T>::Expression(const Napi::CallbackInfo &info)
         return;
       }
 
-      // We are slightly bending the rules here - a vector view is not supposed to have a nullptr
-      // or ExprTk will display some puzzling behaviour (it will allocate it and forget to free it)
-      // However it will happily swallow an invalid pointer
       size_t size = value.ToNumber().Int64Value();
-      T *dummy = (T *)&size;
-      instances[0].vectorViews[name] = std::make_unique<exprtk::vector_view<T>>(dummy, size);
+      instances[0].vectorViews[name] = std::make_unique<exprtk::vector_view<T>>(nullptr, size);
 
       if (!instances[0].symbolTable.add_vector(name, *instances[0].vectorViews[name])) {
         Napi::TypeError::New(env, name + " is not a valid vector name").ThrowAsJavaScriptException();
@@ -164,8 +160,7 @@ template <typename T> void Expression<T>::compileInstance(ExpressionInstance<T> 
     else {
       auto vector = instances[0].symbolTable.get_vector(name);
       auto size = vector->size();
-      T *dummy = (T *)&size;
-      i->vectorViews[name] = std::make_unique<exprtk::vector_view<T>>(dummy, size);
+      i->vectorViews[name] = std::make_unique<exprtk::vector_view<T>>(nullptr, size);
       i->symbolTable.add_vector(name, *i->vectorViews[name]);
     }
   }
