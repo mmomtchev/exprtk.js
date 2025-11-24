@@ -1008,7 +1008,7 @@ namespace exprtk
             template <typename T>
             inline T expm1_impl(const T v, int_type_tag)
             {
-               return T(std::exp(v)) - T(1);
+               return T(std::exp<double>(v)) - T(1);
             }
 
             template <typename T>
@@ -19964,9 +19964,6 @@ namespace exprtk
      typedef T (*ff14_functor)(T, T, T, T, T, T, T, T, T, T, T, T, T, T);
      typedef T (*ff15_functor)(T, T, T, T, T, T, T, T, T, T, T, T, T, T, T);
 
-      typedef typename details::variable_node<T>  variable_t;
-      typedef variable_t*                         variable_ptr;
-
    protected:
 
        struct freefunc00 exprtk_final : public exprtk::ifunction<T>
@@ -20529,7 +20526,9 @@ namespace exprtk
       };
 
       typedef details::expression_node<T>*        expression_ptr;
+      typedef typename details::variable_node<T>  variable_t;
       typedef typename details::vector_holder<T>  vector_holder_t;
+      typedef variable_t*                         variable_ptr;
       #ifndef exprtk_disable_string_capabilities
       typedef typename details::stringvar_node<T> stringvar_t;
       typedef stringvar_t*                        stringvar_ptr;
