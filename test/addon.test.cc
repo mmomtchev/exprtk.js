@@ -182,7 +182,7 @@ Napi::Value TestCwise(const Napi::CallbackInfo &info) {
     // with type conversion
     uint8_t v1[] = {10, 20, 30, 40, 50};
 
-    static exprtk_js::exprtk_capi_cwise_arg args[] = {
+    exprtk_js::exprtk_capi_cwise_arg args[] = {
       {"a", exprtk_js::napi_uint8_compatible, 5, reinterpret_cast<void *>(v1)},
       {"b", exprtk_js::napi_float64_compatible, 5, reinterpret_cast<void *>(v2)}};
 
@@ -194,7 +194,7 @@ Napi::Value TestCwise(const Napi::CallbackInfo &info) {
     // without type conversion
     double v1[] = {10.0, 20.0, 30.0, 40.0, 50.0};
 
-    static exprtk_js::exprtk_capi_cwise_arg args[] = {
+    exprtk_js::exprtk_capi_cwise_arg args[] = {
       {"a", exprtk_js::napi_float64_compatible, 5, reinterpret_cast<void *>(v1)},
       {"b", exprtk_js::napi_float64_compatible, 5, reinterpret_cast<void *>(v2)}};
 
