@@ -152,7 +152,6 @@ template <typename T> Expression<T>::~Expression() {
         // on object destruction even if it never allocated it
         v.second->rebase((T *)nullptr);
       }
-      i.vectorViews.clear();
     }
   }
 }
