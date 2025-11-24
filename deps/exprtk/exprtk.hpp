@@ -1008,7 +1008,7 @@ namespace exprtk
             template <typename T>
             inline T expm1_impl(const T v, int_type_tag)
             {
-               return T(std::exp<double>(v)) - T(1);
+               return T(std::exp(v)) - T(1);
             }
 
             template <typename T>

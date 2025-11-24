@@ -93,6 +93,15 @@
              inline bool is_true_impl(const T v)
              {
                 return std::not_equal_to<T>()(T(0),v);
+@@ -961,7 +1008,7 @@
+             template <typename T>
+             inline T expm1_impl(const T v, int_type_tag)
+             {
+-               return T(std::exp<double>(v)) - T(1);
++               return T(std::exp(v)) - T(1);
+             }
+ 
+             template <typename T>
 @@ -1423,6 +1470,10 @@
              template <typename T> inline T  sqrt_impl(const T v, int_type_tag) { return std::sqrt (v); }
              template <typename T> inline T  frac_impl(const T  , int_type_tag) { return T(0);          }
