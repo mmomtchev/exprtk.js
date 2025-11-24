@@ -19,11 +19,12 @@ namespace exprtk_js {
 
 template <class T> struct ExpressionInstance {
   exprtk::symbol_table<T> symbolTable;
-  exprtk::expression<T> expression;
   bool isInit;
   // These are the vectorViews needed for rebasing the vectors when evaluating
   // Read "SECTION 14" of the ExprTk manual for more information on this
   std::map<std::string, std::unique_ptr<exprtk::vector_view<T>>> vectorViews;
+  // This must be the last element because it must be destroyed first
+  exprtk::expression<T> expression;
 };
 
 template <typename T> class Expression : public Napi::ObjectWrap<Expression<T>> {

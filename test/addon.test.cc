@@ -174,7 +174,7 @@ Napi::Value TestCwise(const Napi::CallbackInfo &info) {
 
   Napi::TypedArray r = Napi::Float64Array::New(env, 5);
   exprtk_js::exprtk_capi_cwise_arg result = {
-    "a", exprtk_js::napi_float64_compatible, 5, reinterpret_cast<void *>(r.ArrayBuffer().Data())};
+    "r", exprtk_js::napi_float64_compatible, 5, r.ArrayBuffer().Data()};
 
   double v2[] = {1.0, 2.0, 3.0, 4.0, 5.0};
 
@@ -182,7 +182,7 @@ Napi::Value TestCwise(const Napi::CallbackInfo &info) {
     // with type conversion
     uint8_t v1[] = {10, 20, 30, 40, 50};
 
-    static const exprtk_js::exprtk_capi_cwise_arg args[] = {
+    exprtk_js::exprtk_capi_cwise_arg args[] = {
       {"a", exprtk_js::napi_uint8_compatible, 5, reinterpret_cast<void *>(v1)},
       {"b", exprtk_js::napi_float64_compatible, 5, reinterpret_cast<void *>(v2)}};
 
@@ -194,13 +194,18 @@ Napi::Value TestCwise(const Napi::CallbackInfo &info) {
     // without type conversion
     double v1[] = {10.0, 20.0, 30.0, 40.0, 50.0};
 
-    static const exprtk_js::exprtk_capi_cwise_arg args[] = {
+    exprtk_js::exprtk_capi_cwise_arg args[] = {
       {"a", exprtk_js::napi_float64_compatible, 5, reinterpret_cast<void *>(v1)},
       {"b", exprtk_js::napi_float64_compatible, 5, reinterpret_cast<void *>(v2)}};
 
     if (expr->cwise(expr, 2, args, &result) != exprtk_js::exprtk_ok) {
       Napi::TypeError::New(env, "Failed to evaluate the expression").ThrowAsJavaScriptException();
       return env.Null();
+    }
+
+    double *ret = reinterpret_cast<double*>(r.ArrayBuffer().Data());
+    if (ret[0] != 5.5) {
+      printf("Error: (%lf + %lf) / 2 != %lf\n", v1[0], v2[0], ret[0]);
     }
   }
 

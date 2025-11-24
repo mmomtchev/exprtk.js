@@ -98,6 +98,7 @@ describe('Expression', () => {
         it('should support setting the number of worker threads', function (done) {
             if (process.env.MOCHA_SKIP_EXEC !== undefined)
                 this.skip();
+            this.repeats(10);
             const testCode = '"const expr = require(\'.\').Float64; console.log(expr.maxParallel);"';
             let execPath = process.execPath;
             if (process.platform === 'win32') {
