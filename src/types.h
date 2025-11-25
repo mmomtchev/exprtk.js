@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <napi.h>
 
 namespace exprtk_js {

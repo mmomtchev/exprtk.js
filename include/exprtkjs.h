@@ -1,6 +1,8 @@
 #ifndef EXPRTKJS_H
 #define EXPRTKJS_H
 
+#include <cstdint>
+
 #ifdef __cplusplus
 namespace exprtk_js {
 extern "C" {
