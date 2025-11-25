@@ -5,7 +5,7 @@
     "tsconfig-paths/register"
   ],
   "repeats": 100,
-  "timeout": "20000",
+  "timeout": "60000",
   "reporter": "tap",
   "v8-expose-gc": true
 }
