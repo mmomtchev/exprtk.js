@@ -25,7 +25,7 @@
     "postpublish": "gh workflow run test-npm.yml -F version=$npm_package_version"
   },
   "name": "exprtk.js",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "JS Mathematical Expression Toolkit Library",
   "repository": {
     "type": "git",
