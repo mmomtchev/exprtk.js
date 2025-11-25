@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.2.0] 2025-11-25
  - Update `ExprTk` to 0.0.3
- - Drop macOS <15 support
+ - Build macOS binaries on macOS 15 with macOS 13/14 with *may work* status
 
 ## [2.1.0] 2024-10-03
  - Switch to C++17

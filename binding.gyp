@@ -13,6 +13,7 @@
       'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',
 			'GCC_ENABLE_CPP_RTTI': 'YES',
       'CLANG_CXX_LIBRARY': 'libc++',
+      'MACOSX_DEPLOYMENT_TARGET': '13.0',
 			'OTHER_CPLUSPLUSFLAGS': [
 				'-frtti',
 				'-fexceptions',
