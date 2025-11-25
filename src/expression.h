@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <exprtk.hpp>
 #include <map>
 #include <mutex>
