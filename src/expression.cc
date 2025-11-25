@@ -131,8 +131,7 @@ template <typename T> Expression<T>::~Expression() {
   std::lock_guard<std::mutex> lock(asyncLock);
   if (instances[0].isInit) {
     size_t free = 0;
-    for (; !instancesIdle.empty(); instancesIdle.pop_front(), free++)
-      ;
+    for (; !instancesIdle.empty(); instancesIdle.pop_front(), free++);
     if (free != instances.size())
       fprintf(
         stderr,

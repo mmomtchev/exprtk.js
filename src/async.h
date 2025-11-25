@@ -280,7 +280,7 @@ template <class T> class Job {
   RValFunc rval;
   size_t joblets;
 
-  Job(Expression<T> *e) : main(), rval(), joblets(1), expression(e), persistent(), autoIndex(0){};
+  Job(Expression<T> *e) : main(), rval(), joblets(1), expression(e), persistent(), autoIndex(0) {};
 
   inline void persist(const std::string &key, const Napi::Object &obj) {
     persistent[key] = obj;
