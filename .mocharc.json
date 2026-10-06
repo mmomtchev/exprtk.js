@@ -4,7 +4,7 @@
     "tsx",
     "tsconfig-paths/register"
   ],
-  "repeats": 100,
+  "repeats": 10000,
   "timeout": "120000",
   "reporter": "tap",
   "v8-expose-gc": true

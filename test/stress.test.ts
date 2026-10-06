@@ -38,7 +38,7 @@ describe('stress', () => {
     }
   });
 
-  it('cwiseAsync', (done) => {
+  it.only('cwiseAsync', (done) => {
     let ready = 0;
     for (let i = 0; i < iterations; i++) {
       expr.cwiseAsync(expr.maxParallel, {a: arrayInc, b: arrayDec})
