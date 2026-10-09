@@ -69,7 +69,7 @@
     "@stdlib/buffer": "^0.3.1",
     "@stdlib/complex": "^0.3.1",
     "@stdlib/constants": "^0.3.1",
-    "@stdlib/math": "^0.3.1",
+    "@stdlib/math": "^0.4.1",
     "@stdlib/ndarray": "^0.3.1",
     "@stdlib/number": "^0.3.1",
     "@stdlib/object": "^0.3.1",
