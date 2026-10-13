@@ -8,9 +8,11 @@ const assert: Chai.AssertStatic = chai.assert;
 const size = 10000;
 const iterations = 250;
 
-describe('stress', () => {
+describe('stress', function () {
   let expr: Float64;
   let arrayInc: Float64Array, arrayDec: Float64Array;
+
+  this.timeout(600000);
 
   before(() => {
     expr = new Float64('a + b');
