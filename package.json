@@ -61,7 +61,7 @@
   "devDependencies": {
     "@mmomtchev/documentation": "^14.0.1",
     "@octokit/core": "^7.0.2",
-    "@stdlib/array": "^0.3.1",
+    "@stdlib/array": "^0.5.1",
     "@stdlib/assert": "^0.3.1",
     "@stdlib/bigint": "^0.4.1",
     "@stdlib/blas": "^0.3.1",
