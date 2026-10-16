@@ -25,32 +25,34 @@ describe('stress', function () {
   });
 
   it('mapAsync', (done) => {
-    let ready = 0;
+    const q = [];
     for (let i = 0; i < iterations; i++) {
-      expr.mapAsync(expr.maxParallel, arrayInc, 'a', 4)
+      q.push(expr.mapAsync(expr.maxParallel, arrayInc, 'a', 4)
         .then((r) => {
           assert.equal(r.length, size);
           // This is the slowest and most expensive part
           // so we check 1 out of 100 elements
           for (let j = 0; j < r.length; j += r.length / 100)
             assert.closeTo(r[j], j + 4, 1e-9);
-          if (++ready == iterations) done();
-        })
-        .catch((e) => done(e));
+        }));
     }
+    Promise.all(q)
+      .then(() => done())
+      .catch((e) => done(e));
   });
 
   it('cwiseAsync', (done) => {
-    let ready = 0;
+    const q = [];
     for (let i = 0; i < iterations; i++) {
-      expr.cwiseAsync(expr.maxParallel, {a: arrayInc, b: arrayDec})
+      q.push(expr.cwiseAsync(expr.maxParallel, { a: arrayInc, b: arrayDec })
         .then((r) => {
           assert.equal(r.length, size);
           for (let j = 0; j < r.length; j += r.length / 100)
             assert.closeTo(r[j], size - 1, 1e-9);
-          if (++ready == iterations) done();
-        })
-        .catch((e) => done(e));
+        }));
     }
+    Promise.all(q)
+      .then(() => done())
+      .catch((e) => done(e));
   });
 });
